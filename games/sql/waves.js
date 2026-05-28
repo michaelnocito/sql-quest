@@ -20,6 +20,11 @@ window.WAVES = [
     realWorld: "SELECT is the first thing an analyst writes — it pulls raw rows out of a table so you can see what you're working with.",
     // Learning layer: copy/modify. Starter query is shown pre-filled.
     layer: "copy",                // copy → modify → scratch
+    // Combat tuning: rounds = correct volleys needed to clear the lane
+    // (drilling the new syntax a few times), creep = how far enemies edge
+    // forward per turn (0..4 reaches the base). Early waves creep slowly.
+    rounds: 3,
+    creep: 0.10,
     starter: "SELECT * FROM enemies;",
     solution: "SELECT * FROM enemies;",
     schema: `
@@ -47,6 +52,8 @@ window.WAVES = [
     objective: "Return only the Raiders. Spare everyone else.",
     realWorld: "WHERE zooms a whole table down to just the rows a question is about — one date range, one region, one customer.",
     layer: "modify",
+    rounds: 3,
+    creep: 0.14,
     starter: "SELECT * FROM enemies WHERE type = '____';",
     solution: "SELECT * FROM enemies WHERE type = 'Raider';",
     schema: `
@@ -74,6 +81,8 @@ window.WAVES = [
     objective: "Return the enemies that have a matching bounty.",
     realWorld: "Real data lives across many tables. JOIN stitches them together — orders to customers, users to events — to answer almost any question.",
     layer: "scratch",
+    rounds: 4,
+    creep: 0.18,
     starter: "SELECT e.id, e.name, e.type, e.health\nFROM enemies e\nJOIN bounties b ON ____ = ____;",
     solution: "SELECT e.id, e.name, e.type, e.health FROM enemies e JOIN bounties b ON e.id = b.enemy_id;",
     schema: `

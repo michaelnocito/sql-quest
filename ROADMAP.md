@@ -12,8 +12,8 @@ then moves into **Now / Next / Later / Icebox**. Done items drop to **Shipped**.
 _Nothing in flight._
 
 ## Next (queued, agreed)
-- **[P1] Damage numbers / HP feedback on hit** — show how each enemy reacts; reinforce that a wrong-but-valid query still "hits" weakly.
 - **[P2] Turret muzzle flash + recoil** — make the base feel like it fires, not just the enemies exploding.
+- **[P2] Per-wave combat tuning pass** — once Mike plays it, dial `rounds`/`creep` per wave so each fight reinforces without going stale.
 
 ## Later (good ideas, not scheduled)
 - **[P2] Waves 4–7** — GROUP BY + HAVING, subqueries, CTEs, window functions.
@@ -28,6 +28,7 @@ _Nothing in flight._
 ---
 
 ## Shipped
+- **[P1] FF-style HP-whittle combat exchange** (2026-05-28) — enemies have HP bars; a correct query is a volley chipping `maxHp/rounds` per turn, so you re-fire the right query a few times to clear (drilling the syntax). All living enemies creep forward slowly (visible, near-harmless early). Wrong query = wasted turn + free creep; over-broad query = friendly-fire base damage. Floating damage numbers + non-lethal hit flash. Tuning is data-driven per wave (`rounds`, `creep` in waves.js).
 - **[P1] Explosion/attack animation on correct query** (2026-05-28) — staggered beams from the base, per-enemy detonation (flash + expanding ring + 7 shards), enemy death fade. Real visual payoff before the Wave Cleared card.
 - Wayfinding pass: Wave X/N counter, concept track, "Next up" preview, stuck-nudge.
 - Waves 1–3 (SELECT / WHERE / JOIN), 4 feedback tiers, hints, persistence, audio, theme, mobile.
@@ -39,4 +40,5 @@ Raw incoming notes from Mike. Newest first. Triaged into the lists above.
 
 | Date | Feedback | Priority | Status | Where it went |
 |------|----------|----------|--------|----------------|
+| 2026-05-28 | "Back-and-forth with enemies — they creep closer, we attack with SQL, takes some HP off, exchange continues, Final Fantasy style." Chose HP-whittle: slow visible creep early, re-type the attack each round, tuned so a wave lasts long enough to learn but not get stale; friendly fire on over-broad queries. | P1 | done | Shipped |
 | 2026-05-28 | "Need animation when the query executes — an attack/explosion of each enemy. Right now it congratulates you but there's no visual payoff." | P1 | done | Shipped |

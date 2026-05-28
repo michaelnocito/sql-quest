@@ -135,6 +135,12 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 .enemy.hit{animation:enemy-die .26s ease-in forwards}
 @keyframes enemy-die{0%{opacity:.92}100%{opacity:0;transform:scale(.2)}}
 .enemy{transform-box:fill-box;transform-origin:center}
+.enemy.flash > circle:first-of-type{animation:enemy-flash .3s ease-out}
+@keyframes enemy-flash{0%{fill:#fff}100%{fill:var(--red)}}
+.dmgnum{font-family:var(--mono);font-size:13px;font-weight:700;pointer-events:none;animation:dmgfloat .8s ease-out forwards}
+.dmg-hit{fill:#ffd9a0}
+.dmg-ff{fill:var(--red)}
+@keyframes dmgfloat{0%{opacity:0;transform:translateY(5px)}20%{opacity:1}100%{opacity:0;transform:translateY(-16px)}}
 
 /* BREAK NUDGE */
 .break-nudge{position:fixed;bottom:0;left:0;right:0;background:var(--surf);border-top:1px solid var(--accent);padding:12px 16px;display:none;align-items:center;gap:12px;z-index:180;font-size:13px}
@@ -269,6 +275,15 @@ function sameResult(a, b){
   return na.every((v,i) => v === nb[i]);
 }
 
+// Rows the player returned that aren't in the solution set = over-broad "stray"
+// rows. Drives friendly-fire damage. Column-set mismatch counts every row as stray.
+function falsePositives(player, expected){
+  const exp = new Set(expected.rows.map(r => JSON.stringify(r)));
+  let extra = 0;
+  player.rows.forEach(r => { if(!exp.has(JSON.stringify(r))) extra++; });
+  return extra;
+}
+
 /* Security: allow only read-only query verbs. */
 function isSafe(sql){
   const banned = /\b(DROP|DELETE|UPDATE|INSERT|ALTER|CREATE|REPLACE|ATTACH|DETACH|PRAGMA|VACUUM)\b/i;
@@ -313,11 +328,11 @@ function loadWave(){
     const obj = {}; sol.columns.forEach((c,j)=>obj[c]=row[j]);
     return {
       name: obj.name || obj.id || ('Target '+(i+1)),
-      hp: obj.health || 40, advance: 0, alive: true
+      maxHp: ENEMY_MAXHP, hp: ENEMY_MAXHP, advance: 0, alive: true
     };
   });
   document.getElementById('field-status').textContent =
-    `${enemiesLive.length} target${enemiesLive.length!==1?'s':''} in the lane — clear them with the right query.`;
+    `${enemiesLive.length} target${enemiesLive.length!==1?'s':''} advancing — hit them with the right query each turn until they drop.`;
   drawField();
   hideOverlay();
 }
@@ -445,17 +460,24 @@ function runQuery(){
   showResult(player);
 
   if(sameResult(player, expected)){
-    // Tier: correct → tower clears the lane
+    // Correct → a volley. It may take several correct volleys to drop the lane.
     state.correct++;
-    setFb('ok', `Direct hit — ${player.rows.length} target${player.rows.length!==1?'s':''} locked.`);
-    fireAndClear();
+    const hit = correctHit();
+    const willClear = enemiesLive.filter(e=>e.alive).every(e => e.hp - hit <= 0);
+    setFb('ok', willClear
+      ? `Direct hit — lane down! Targets neutralized.`
+      : `Volley lands for ${hit} — the swarm reels. Hit them again to finish the job.`);
+    volley();
   } else {
-    // Tier 3: valid but wrong result set
+    // Valid but wrong result set → wasted turn (+ friendly fire if over-broad).
     waveTries++;
+    const fp = falsePositives(player, expected);
     const nudge = waveTries >= 2 ? ' Stuck? Tap “Show hint”.' : '';
-    setFb('warn', `Query ran, but it targeted ${player.rows.length} row${player.rows.length!==1?'s':''} — the lane has ${expected.rows.length}. The swarm advances. Adjust and fire again.${nudge}`);
+    setFb('warn', fp > 0
+      ? `Over-broad — ${fp} stray row${fp!==1?'s':''} hit your own base (friendly fire). Tighten the filter; the swarm edges closer.${nudge}`
+      : `Query ran, but it didn't lock the right ${expected.rows.length} target${expected.rows.length!==1?'s':''} — you hit ${player.rows.length}. The swarm edges closer. Adjust and fire again.${nudge}`);
     if(waveTries >= 2) pulseHint();
-    enemyAdvance();
+    missTurn(fp);
   }
   save();
 }
@@ -476,7 +498,13 @@ function showResult(r){
 
 /* ─── BATTLEFIELD (SVG) ──────────────────────────────────────────────────── */
 const FIELD_W = 800, FIELD_H = 320, BASE_X = 720, LANE_TOP = 60, LANE_GAP = 52;
+const ENEMY_MAXHP = 100;   // every enemy starts here; a correct volley chips maxHp/rounds
+const FF_DMG = 4;          // friendly-fire: base HP lost per over-broad (false-positive) row
+const BASE_REACH_DMG = 14; // base HP lost for each enemy that creeps all the way in
 function laneY(i){ return LANE_TOP + i * LANE_GAP; }
+function waveRounds(){ const r = currentWave().rounds; return (r && r > 0) ? r : 3; }
+function waveCreep(){ const c = currentWave().creep; return (c != null) ? c : 0.12; }
+function correctHit(){ return Math.ceil(ENEMY_MAXHP / waveRounds()); }
 function enemyX(adv){ return 90 + adv * (BASE_X - 150) / 4; } // 4 steps to reach base
 
 function drawField(){
@@ -496,10 +524,16 @@ function drawField(){
     if(!en.alive) return;
     const y = laneY(i % Math.max(1,Math.min(enemiesLive.length,5)));
     const x = enemyX(en.advance);
+    const frac = Math.max(0, en.hp) / en.maxHp;
+    const barW = 34, barH = 4, barX = x - barW/2, barY = y - 28;
+    const hpCol = frac > 0.5 ? 'var(--green)' : frac > 0.25 ? 'var(--yellow)' : 'var(--red)';
     s += `<g class="enemy" data-i="${i}">`
       + `<circle cx="${x}" cy="${y}" r="16" fill="var(--red)" opacity="0.92"/>`
       + `<circle cx="${x}" cy="${y}" r="16" fill="none" stroke="#fff" stroke-opacity="0.25" stroke-width="1.5"/>`
       + `<text x="${x}" y="${y+4}" fill="#fff" font-size="11" text-anchor="middle" font-family="var(--mono)">${esc(String(en.name)).slice(0,7)}</text>`
+      // HP bar
+      + `<rect x="${barX}" y="${barY}" width="${barW}" height="${barH}" rx="2" fill="var(--surf2)" stroke="var(--border)" stroke-width="0.5"/>`
+      + `<rect x="${barX}" y="${barY}" width="${(barW*frac).toFixed(1)}" height="${barH}" rx="2" fill="${hpCol}"/>`
       + `</g>`;
   });
   svg.innerHTML = s;
@@ -532,20 +566,54 @@ function spawnBoom(svg, x, y){
   setTimeout(()=>g.remove(), 620);
 }
 
-function fireAndClear(){
+// Floating number above a point (damage / friendly-fire).
+function spawnDmg(svg, x, y, text, cls){
+  const t = document.createElementNS(SVGNS,'text');
+  t.setAttribute('x', x); t.setAttribute('y', y - 18);
+  t.setAttribute('text-anchor','middle');
+  t.setAttribute('class', 'dmgnum ' + (cls||''));
+  t.textContent = text;
+  svg.appendChild(t);
+  setTimeout(()=>t.remove(), 820);
+}
+
+// Slow ambient advance for every living enemy. Returns base damage from any
+// that reached the wall this turn. Early waves creep so slowly it's mostly
+// just visible movement, not a real threat.
+function creepEnemies(){
+  let reachDmg = 0;
+  enemiesLive.forEach(en=>{
+    if(!en.alive) return;
+    en.advance = Math.min(4, en.advance + waveCreep());
+    if(en.advance >= 4) reachDmg += BASE_REACH_DMG;
+  });
+  return reachDmg;
+}
+function applyBaseDmg(dmg){
+  if(dmg <= 0) return;
+  state.baseHP = Math.max(0, state.baseHP - dmg);
+  updateHP();
+  beep(160, 140);
+}
+
+// CORRECT query → a volley that chips every living enemy by maxHp/rounds.
+// Repeating the correct query (waveRounds of them) whittles the lane to zero —
+// the Final-Fantasy-style exchange. Survivors creep a step between volleys.
+function volley(){
   busy = true;
   const svg = document.getElementById('field');
+  const hit = correctHit();
   const targets = [];
   enemiesLive.forEach((en,i)=>{
     if(!en.alive) return;
+    en.hp -= hit;
     const y = laneY(i % Math.max(1,Math.min(enemiesLive.length,5)));
-    targets.push({ i, x: enemyX(en.advance), y });
+    targets.push({ i, x: enemyX(en.advance), y, dead: en.hp <= 0 });
   });
   beep(660, 70); setTimeout(()=>beep(880,90),90);
-  const STEP = 70, FLIGHT = 170;
+  const STEP = 60, FLIGHT = 160;
   targets.forEach((t, idx)=>{
     const delay = idx * STEP;
-    // beam from base to this enemy
     setTimeout(()=>{
       const beam = document.createElementNS(SVGNS,'line');
       beam.setAttribute('x1', BASE_X); beam.setAttribute('y1', FIELD_H/2);
@@ -555,37 +623,51 @@ function fireAndClear(){
       svg.appendChild(beam);
       setTimeout(()=>beam.remove(), FLIGHT + 40);
     }, delay);
-    // impact: detonate the enemy
     setTimeout(()=>{
+      spawnDmg(svg, t.x, t.y, '-' + hit, 'dmg-hit');
       const node = svg.querySelector(`.enemy[data-i="${t.i}"]`);
-      if(node) node.classList.add('hit');
-      spawnBoom(svg, t.x, t.y);
-      beep(200 + Math.random()*140, 70);
+      if(t.dead){
+        if(node) node.classList.add('hit');
+        spawnBoom(svg, t.x, t.y);
+        beep(200 + Math.random()*140, 70);
+      } else if(node){
+        node.classList.add('flash');
+      }
     }, delay + FLIGHT);
   });
-  const total = (targets.length ? (targets.length-1)*STEP : 0) + FLIGHT + 300;
+  const settle = (targets.length ? (targets.length-1)*STEP : 0) + FLIGHT + 320;
   setTimeout(()=>{
-    enemiesLive.forEach(en=>en.alive=false);
-    drawField();
-    busy = false;
-    waveCleared();
-  }, total);
+    enemiesLive.forEach(en=>{ if(en.hp <= 0) en.alive = false; });
+    const cleared = enemiesLive.every(en=>!en.alive);
+    if(cleared){
+      drawField();
+      busy = false;
+      waveCleared();
+    } else {
+      const reach = creepEnemies();
+      drawField();
+      applyBaseDmg(reach);
+      // Clear the editor so the next volley is re-typed from memory — the drill.
+      const ed = document.getElementById('sql'); ed.value = ''; updateGhost();
+      busy = false;
+      if(state.baseHP <= 0) waveLost();
+    }
+  }, settle);
 }
 
-function enemyAdvance(){
+// VALID-but-WRONG query → wasted turn. No enemy damage; the swarm creeps a
+// free step, and any over-broad (false-positive) rows cost base HP: friendly fire.
+function missTurn(falsePos){
   busy = true;
-  enemiesLive.forEach(en=>{ if(en.alive) en.advance = Math.min(4, en.advance + 1); });
-  drawField();
-  // any enemy reaching the base damages it
-  let dmg = 0;
-  enemiesLive.forEach(en=>{
-    if(en.alive && en.advance >= 4){ dmg += 12; en.advance = 4; }
-  });
-  if(dmg){
-    state.baseHP = Math.max(0, state.baseHP - dmg);
-    updateHP();
-    beep(160, 140);
+  const svg = document.getElementById('field');
+  const ffDmg = Math.min(falsePos, 6) * FF_DMG;
+  if(ffDmg > 0){
+    spawnDmg(svg, BASE_X, FIELD_H/2, '-' + ffDmg + ' FF', 'dmg-ff');
+    beep(120, 160);
   }
+  const reach = creepEnemies();
+  drawField();
+  applyBaseDmg(reach + ffDmg);
   setTimeout(()=>{
     busy = false;
     if(state.baseHP <= 0) waveLost();
