@@ -40,10 +40,17 @@ header{background:var(--surf);border-bottom:1px solid var(--border);padding:8px 
 .icon-btn:hover{color:var(--text);border-color:var(--text)}
 .icon-btn.on{color:var(--accent);border-color:var(--accent)}
 
-/* LAYOUT — editor top, battlefield bottom */
+/* LAYOUT — the battlefield (the action) is ALWAYS visible. On phones it sits on
+   top with the command console scrolling beneath it; on wide screens it's a
+   full-height panel beside the console. The result table never covers the fight. */
 main{flex:1;display:flex;flex-direction:column;min-height:0}
-.editor-pane{flex:0 0 auto;padding:12px 14px;overflow-y:auto;border-bottom:1px solid var(--border);background:var(--bg)}
-.field-pane{flex:1;min-height:0;position:relative;background:radial-gradient(circle at 70% 30%,rgba(88,170,162,.06),transparent 60%),var(--surf)}
+.editor-pane{flex:1 1 auto;min-height:0;padding:12px 14px;overflow-y:auto;background:var(--bg)}
+.field-pane{order:-1;flex:0 0 42vh;min-height:240px;position:relative;border-bottom:1px solid var(--border);background:radial-gradient(circle at 70% 30%,rgba(88,170,162,.06),transparent 60%),var(--surf)}
+@media (min-width:900px){
+  main{flex-direction:row}
+  .editor-pane{order:0;flex:0 0 46%;max-width:46%;height:100%;border-right:1px solid var(--border)}
+  .field-pane{order:0;flex:1 1 auto;height:100%;min-height:0;border-bottom:none}
+}
 
 /* CONCEPT TRACK — shows the whole campaign path: done · current · upcoming */
 .track{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;padding-bottom:3px}
@@ -91,7 +98,9 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 .feedback.ok{color:var(--green)}
 .feedback.warn{color:var(--yellow)}
 .feedback.err{color:var(--red)}
+#result{max-height:200px;overflow:auto;margin-top:2px}
 .result-tbl{margin-top:8px;width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
+.result-tbl th{position:sticky;top:0}
 .result-tbl th,.result-tbl td{border:1px solid var(--border);padding:4px 8px;text-align:left}
 .result-tbl th{background:var(--surf2);color:var(--accent2)}
 .result-meta{margin-top:5px;font-size:11px;color:var(--muted)}
@@ -106,7 +115,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 .field-status{position:absolute;top:10px;left:0;right:0;text-align:center;font-size:12px;color:var(--muted);pointer-events:none}
 
 /* WAVE OVERLAY (win/lose) */
-.overlay{position:absolute;inset:0;background:rgba(23,21,19,.86);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;z-index:30}
+.overlay{position:absolute;inset:0;background:rgba(23,21,19,.86);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;z-index:30;overflow-y:auto}
 .overlay.show{display:flex}
 .overlay h2{font-size:1.5rem;margin-bottom:6px}
 .overlay p{color:var(--muted);margin-bottom:16px;max-width:340px}
