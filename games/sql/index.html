@@ -748,7 +748,11 @@ function overlayAction(){
 
 /* ─── AUDIO (focus hum + chimes) ─────────────────────────────────────────── */
 let actx = null, hum = null;
-function audioCtx(){ if(!actx) actx = new (window.AudioContext||window.webkitAudioContext)(); return actx; }
+function audioCtx(){
+  if(!actx) actx = new (window.AudioContext||window.webkitAudioContext)();
+  if(actx.state === 'suspended') actx.resume();   // iOS/Safari start suspended until a gesture
+  return actx;
+}
 function beep(freq, ms){
   if(!state.audio) return;
   const c = audioCtx(); const o = c.createOscillator(); const g = c.createGain();
