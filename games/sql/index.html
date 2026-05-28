@@ -124,6 +124,18 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 .confetti{position:absolute;top:-12px;width:9px;height:9px;border-radius:2px;animation:fall linear forwards}
 @keyframes fall{to{transform:translateY(105vh) rotate(540deg);opacity:.2}}
 
+/* IMPACT FX (SVG) */
+.boom{transform-box:fill-box;transform-origin:center;pointer-events:none}
+.boom-flash{animation:boom-flash .32s ease-out forwards}
+.boom-ring{animation:boom-ring .42s ease-out forwards}
+.boom-shard{animation:boom-shard .5s cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes boom-flash{0%{transform:scale(.35);opacity:1}100%{transform:scale(2.3);opacity:0}}
+@keyframes boom-ring{0%{transform:scale(.25);opacity:.95}100%{transform:scale(3);opacity:0}}
+@keyframes boom-shard{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+.enemy.hit{animation:enemy-die .26s ease-in forwards}
+@keyframes enemy-die{0%{opacity:.92}100%{opacity:0;transform:scale(.2)}}
+.enemy{transform-box:fill-box;transform-origin:center}
+
 /* BREAK NUDGE */
 .break-nudge{position:fixed;bottom:0;left:0;right:0;background:var(--surf);border-top:1px solid var(--accent);padding:12px 16px;display:none;align-items:center;gap:12px;z-index:180;font-size:13px}
 .break-nudge.show{display:flex}
@@ -493,29 +505,71 @@ function drawField(){
   svg.innerHTML = s;
 }
 
+const SVGNS = 'http://www.w3.org/2000/svg';
+function spawnBoom(svg, x, y){
+  const g = document.createElementNS(SVGNS,'g');
+  const ring = document.createElementNS(SVGNS,'circle');
+  ring.setAttribute('cx',x); ring.setAttribute('cy',y); ring.setAttribute('r',16);
+  ring.setAttribute('fill','none'); ring.setAttribute('stroke','var(--yellow)'); ring.setAttribute('stroke-width','3');
+  ring.setAttribute('class','boom boom-ring');
+  const flash = document.createElementNS(SVGNS,'circle');
+  flash.setAttribute('cx',x); flash.setAttribute('cy',y); flash.setAttribute('r',15);
+  flash.setAttribute('fill','#ffd9a0'); flash.setAttribute('class','boom boom-flash');
+  g.appendChild(ring); g.appendChild(flash);
+  const N = 7;
+  for(let k=0;k<N;k++){
+    const a = (Math.PI*2*k)/N + Math.random()*0.5;
+    const dist = 22 + Math.random()*18;
+    const sh = document.createElementNS(SVGNS,'circle');
+    sh.setAttribute('cx',x); sh.setAttribute('cy',y); sh.setAttribute('r',(2 + Math.random()*1.6).toFixed(1));
+    sh.setAttribute('fill', k%2 ? 'var(--red)' : 'var(--accent2)');
+    sh.setAttribute('class','boom boom-shard');
+    sh.style.setProperty('--dx', (Math.cos(a)*dist).toFixed(1)+'px');
+    sh.style.setProperty('--dy', (Math.sin(a)*dist).toFixed(1)+'px');
+    g.appendChild(sh);
+  }
+  svg.appendChild(g);
+  setTimeout(()=>g.remove(), 620);
+}
+
 function fireAndClear(){
   busy = true;
   const svg = document.getElementById('field');
-  // draw beams from base to each living enemy, then explode
+  const targets = [];
   enemiesLive.forEach((en,i)=>{
     if(!en.alive) return;
     const y = laneY(i % Math.max(1,Math.min(enemiesLive.length,5)));
-    const x = enemyX(en.advance);
-    const beam = document.createElementNS('http://www.w3.org/2000/svg','line');
-    beam.setAttribute('x1', BASE_X); beam.setAttribute('y1', FIELD_H/2);
-    beam.setAttribute('x2', x); beam.setAttribute('y2', y);
-    beam.setAttribute('stroke', 'var(--accent2)'); beam.setAttribute('stroke-width','3');
-    beam.setAttribute('opacity','0.9');
-    svg.appendChild(beam);
-    setTimeout(()=>beam.remove(), 360);
+    targets.push({ i, x: enemyX(en.advance), y });
   });
   beep(660, 70); setTimeout(()=>beep(880,90),90);
+  const STEP = 70, FLIGHT = 170;
+  targets.forEach((t, idx)=>{
+    const delay = idx * STEP;
+    // beam from base to this enemy
+    setTimeout(()=>{
+      const beam = document.createElementNS(SVGNS,'line');
+      beam.setAttribute('x1', BASE_X); beam.setAttribute('y1', FIELD_H/2);
+      beam.setAttribute('x2', t.x); beam.setAttribute('y2', t.y);
+      beam.setAttribute('stroke', 'var(--accent2)'); beam.setAttribute('stroke-width','3');
+      beam.setAttribute('opacity','0.9');
+      svg.appendChild(beam);
+      setTimeout(()=>beam.remove(), FLIGHT + 40);
+    }, delay);
+    // impact: detonate the enemy
+    setTimeout(()=>{
+      const node = svg.querySelector(`.enemy[data-i="${t.i}"]`);
+      if(node) node.classList.add('hit');
+      spawnBoom(svg, t.x, t.y);
+      beep(200 + Math.random()*140, 70);
+    }, delay + FLIGHT);
+  });
+  const total = (targets.length ? (targets.length-1)*STEP : 0) + FLIGHT + 300;
   setTimeout(()=>{
     enemiesLive.forEach(en=>en.alive=false);
     drawField();
     busy = false;
     waveCleared();
-  }, 420);
+  }, total);
 }
 
 function enemyAdvance(){
