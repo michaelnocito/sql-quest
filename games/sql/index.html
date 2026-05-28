@@ -114,7 +114,26 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 .hint pre{font-family:var(--mono);font-size:12px;color:var(--text);margin-top:5px;white-space:pre-wrap}
 
 /* BATTLEFIELD */
-#field{width:100%;height:100%;display:block}
+/* Two stacked SVG layers: #field-bg is built ONCE and holds the slow ambient
+   psychedelic-celestial motion (so it never restarts on a turn redraw);
+   #field is the gameplay layer, rebuilt each turn, transparent over the bg. */
+#field-bg,#field{position:absolute;inset:0;width:100%;height:100%;display:block}
+#field-bg{pointer-events:none;animation:bg-hue 44s ease-in-out infinite}
+@keyframes bg-hue{0%{filter:hue-rotate(0deg)}50%{filter:hue-rotate(20deg)}100%{filter:hue-rotate(0deg)}}
+/* psychedelic-celestial ambient motion (CSS, runs persistently on #field-bg) */
+.neb-a{animation:neb-drift-a 40s ease-in-out infinite}
+.neb-b{animation:neb-drift-b 46s ease-in-out infinite}
+@keyframes neb-drift-a{0%{transform:translate(0,0)}50%{transform:translate(70px,28px)}100%{transform:translate(0,0)}}
+@keyframes neb-drift-b{0%{transform:translate(0,0)}50%{transform:translate(-66px,-26px)}100%{transform:translate(0,0)}}
+.mandala{transform-box:view-box;transform-origin:400px 160px}
+.mandala.spin{animation:spin-cw 140s linear infinite}
+.mandala.spin-rev{animation:spin-ccw 110s linear infinite}
+.mandala.spin-fast{animation:spin-cw 90s linear infinite}
+@keyframes spin-cw{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes spin-ccw{from{transform:rotate(360deg)}to{transform:rotate(0deg)}}
+.tw{animation-name:twinkle;animation-iteration-count:infinite;animation-timing-function:ease-in-out}
+@keyframes twinkle{0%,100%{opacity:var(--o,0.5)}50%{opacity:calc(var(--o,0.5)*0.25)}}
+@media (prefers-reduced-motion:reduce){#field-bg,.neb-a,.neb-b,.mandala,.tw{animation:none}}
 .field-status{position:absolute;top:10px;left:0;right:0;text-align:center;font-size:12px;color:var(--muted);pointer-events:none}
 
 /* START SPLASH */
@@ -246,6 +265,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 
   <section class="field-pane">
     <div class="field-status" id="field-status">Void-motes in the lane — weave the right query to scatter them.</div>
+    <svg id="field-bg" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
     <svg id="field" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid meet"></svg>
     <div class="overlay" id="overlay">
       <div class="big" id="ov-big">🏆</div>
@@ -271,7 +291,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 28, 2026 · 7:40 PM ET";
+const BUILD_TS = "May 28, 2026 · 7:48 PM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, audio: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -562,26 +582,14 @@ function enemyX(adv){ return 90 + adv * (BASE_X - 150) / 4; } // 4 steps to reac
 // Celestial Cartographer theme: the field is a window into a twilight sky.
 // Star positions are generated once so they stay put across the frequent
 // redraws (no flicker). Stars = data points; you weave them into constellations.
-const STARS = Array.from({length: 64}, ()=>({
+const STARS = Array.from({length: 70}, ()=>({
   x: Math.random()*800, y: Math.random()*320,
-  r: +(Math.random()*1.2 + 0.3).toFixed(2), o: +(Math.random()*0.55 + 0.2).toFixed(2)
+  r: +(Math.random()*1.2 + 0.3).toFixed(2), o: +(Math.random()*0.55 + 0.2).toFixed(2),
+  tw: +(Math.random()*6 + 4).toFixed(1)   // twinkle period (s)
 }));
+// Gameplay-layer gradients only (the animated sky/nebula live in #field-bg).
 function fieldDefs(){
   return `<defs>`
-    + `<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">`
-    +   `<stop offset="0" stop-color="#0b1130"/>`
-    +   `<stop offset="0.55" stop-color="#101d38"/>`
-    +   `<stop offset="1" stop-color="#0e2a2c"/>`
-    + `</linearGradient>`
-    + `<radialGradient id="nebula" cx="0.3" cy="0.25" r="0.55">`
-    +   `<stop offset="0" stop-color="rgba(124,191,184,0.22)"/>`
-    +   `<stop offset="0.5" stop-color="rgba(120,110,200,0.12)"/>`
-    +   `<stop offset="1" stop-color="rgba(124,191,184,0)"/>`
-    + `</radialGradient>`
-    + `<radialGradient id="nebula2" cx="0.72" cy="0.7" r="0.5">`
-    +   `<stop offset="0" stop-color="rgba(152,122,205,0.14)"/>`
-    +   `<stop offset="1" stop-color="rgba(152,122,205,0)"/>`
-    + `</radialGradient>`
     + `<radialGradient id="voidHalo" cx="0.5" cy="0.5" r="0.5">`
     +   `<stop offset="0" stop-color="rgba(224,92,92,0.40)"/>`
     +   `<stop offset="1" stop-color="rgba(224,92,92,0)"/>`
@@ -592,14 +600,56 @@ function fieldDefs(){
     + `</radialGradient>`
     + `</defs>`;
 }
+/* Persistent psychedelic-celestial backdrop — built ONCE so its slow SMIL
+   motion (drifting nebulae, a rotating sacred-geometry mandala, twinkling
+   stars, a slow hue drift) runs uninterrupted. Everything is slow + low-
+   contrast on purpose: art-first, hypnotic, low cognitive load. */
+function buildFieldBg(){
+  const bg = document.getElementById('field-bg');
+  if(!bg || bg.dataset.built) return;
+  const cx = 400, cy = 160;
+  // mandala — concentric rings + radial spokes + a rotating polygon, faint
+  let spokes = '';
+  for(let i=0;i<12;i++){
+    const a = (i/12)*Math.PI*2;
+    spokes += `<line x1="${cx}" y1="${cy}" x2="${(cx+Math.cos(a)*300).toFixed(1)}" y2="${(cy+Math.sin(a)*300).toFixed(1)}" stroke="rgba(150,190,255,0.05)" stroke-width="1"/>`;
+  }
+  let rings = '';
+  [40,80,120,170,230].forEach(r=>{ rings += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(130,200,210,0.06)" stroke-width="1"/>`; });
+  const hexPts = Array.from({length:6},(_,i)=>{ const a=(i/6)*Math.PI*2; return `${(cx+Math.cos(a)*150).toFixed(1)},${(cy+Math.sin(a)*150).toFixed(1)}`; }).join(' ');
+  const triPts = Array.from({length:3},(_,i)=>{ const a=(i/3)*Math.PI*2 - Math.PI/2; return `${(cx+Math.cos(a)*110).toFixed(1)},${(cy+Math.sin(a)*110).toFixed(1)}`; }).join(' ');
+  let stars = '';
+  STARS.forEach(st=>{
+    stars += `<circle class="tw" cx="${st.x.toFixed(1)}" cy="${st.y.toFixed(1)}" r="${st.r}" fill="#dfe8ff" opacity="${st.o}" style="--o:${st.o};animation-duration:${st.tw}s;animation-delay:-${(st.tw*Math.random()).toFixed(1)}s"/>`;
+  });
+  bg.innerHTML = `<defs>`
+    + `<linearGradient id="bgsky" x1="0" y1="0" x2="0" y2="1">`
+    +   `<stop offset="0" stop-color="#0b1130"/><stop offset="0.55" stop-color="#101d38"/><stop offset="1" stop-color="#0e2a2c"/>`
+    + `</linearGradient>`
+    + `<radialGradient id="bgneb" cx="0.5" cy="0.5" r="0.5">`
+    +   `<stop offset="0" stop-color="rgba(124,191,184,0.20)"/><stop offset="0.5" stop-color="rgba(120,110,200,0.10)"/><stop offset="1" stop-color="rgba(124,191,184,0)"/>`
+    + `</radialGradient>`
+    + `<radialGradient id="bgneb2" cx="0.5" cy="0.5" r="0.5">`
+    +   `<stop offset="0" stop-color="rgba(168,120,210,0.16)"/><stop offset="1" stop-color="rgba(168,120,210,0)"/>`
+    + `</radialGradient>`
+    + `</defs>`
+    + `<rect x="0" y="0" width="800" height="320" fill="url(#bgsky)"/>`
+    // drifting nebula blobs (slow position drift, CSS)
+    + `<ellipse class="neb-a" cx="240" cy="95" rx="360" ry="200" fill="url(#bgneb)"/>`
+    + `<ellipse class="neb-b" cx="580" cy="230" rx="300" ry="170" fill="url(#bgneb2)"/>`
+    + stars
+    // rotating sacred-geometry mandala (very faint, slow, hypnotic)
+    + `<g opacity="0.9">`
+    +   `<g class="mandala spin">${rings}${spokes}</g>`
+    +   `<polygon class="mandala spin-rev" points="${hexPts}" fill="none" stroke="rgba(125,191,184,0.10)" stroke-width="1"/>`
+    +   `<polygon class="mandala spin-fast" points="${triPts}" fill="none" stroke="rgba(168,120,210,0.12)" stroke-width="1"/>`
+    + `</g>`;
+  bg.dataset.built = '1';
+}
 function drawField(){
   const svg = document.getElementById('field');
+  buildFieldBg();   // ensure the persistent animated backdrop exists
   let s = fieldDefs();
-  // backdrop — twilight sky, nebulae, starfield
-  s += `<rect x="0" y="0" width="800" height="320" fill="url(#sky)"/>`;
-  s += `<ellipse cx="240" cy="78" rx="380" ry="190" fill="url(#nebula)"/>`;
-  s += `<ellipse cx="560" cy="240" rx="300" ry="160" fill="url(#nebula2)"/>`;
-  STARS.forEach(st=>{ s += `<circle cx="${st.x.toFixed(1)}" cy="${st.y.toFixed(1)}" r="${st.r}" fill="#dfe8ff" opacity="${st.o}"/>`; });
   // the Spire — your star-anchor / observatory on the right
   s += `<ellipse cx="${BASE_X+23}" cy="${FIELD_H/2}" rx="42" ry="64" fill="url(#spireGlow)"/>`;
   s += `<polygon points="${BASE_X+23},34 ${BASE_X+45},${FIELD_H/2} ${BASE_X+23},${FIELD_H-34} ${BASE_X+1},${FIELD_H/2}" fill="var(--surf2)" stroke="var(--accent)" stroke-width="2"/>`;
