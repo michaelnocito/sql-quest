@@ -13,9 +13,11 @@ _Nothing in flight._
 
 ## Next (queued, agreed)
 - **[P1] Spaced-retrieval scheduled review waves** — foundation shipped (`reinforces` field + Recall-drill chip + layered solutions). Next: as Waves 4–7 land, author dedicated "Recon" review beats on expanding gaps (~1, 3, 7 waves after a concept is introduced) that re-test an earlier verb in a *fresh* schema. Truly works retrieval into combat.
-- **[P2] Music → ~10 min + layered texture** — through-composed ~5 min track shipped (12-section SONG). Extend the SONG toward ~10 min, add a counter-melody/percussion layer, and consider per-difficulty intensity.
 - **[P2] Turret muzzle flash + recoil** — make the base feel like it fires, not just the enemies exploding.
 - **[P2] Per-wave combat tuning pass** — once Mike plays it, dial `rounds`/`creep` per wave so each fight reinforces without going stale.
+
+## Parked — revisit before prototype ships
+- **[P2] Music → ~10 min + layered texture** — ~5 min through-composed track is good enough for now (Mike: "audio can be shelved for now, revisit before prototype is done", 2026-05-28). Before the prototype is done: extend the SONG toward ~10 min, add a counter-melody/percussion layer, consider per-difficulty intensity.
 
 ## Later (good ideas, not scheduled)
 - **[P2] Waves 4–7** — GROUP BY + HAVING, subqueries, CTEs, window functions (each authored to layer + carry `reinforces`).
