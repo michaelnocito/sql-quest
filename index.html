@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SQL Quest — Learn SQL by Playing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#171513;--surf:#201d1a;--surf2:#292520;
+  --accent:#58aaa2;--accent2:#7dbfb8;
+  --text:#e8e0d4;--muted:#9a8f82;--border:#363028;
+  --font:'Hanken Grotesk',sans-serif;--mono:'JetBrains Mono',monospace;
+  --r:12px;--r2:7px;--shadow:0 4px 18px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.55;min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+.wrap{max-width:780px;margin:0 auto;padding:54px 22px 70px}
+.hero{text-align:center;margin-bottom:40px}
+.hero h1{font-size:2.5rem;font-weight:700;letter-spacing:-.5px}
+.hero h1 .q{color:var(--accent)}
+.hero .tag{color:var(--muted);font-size:1.05rem;margin-top:8px}
+.hero .sub{color:var(--muted);font-size:.95rem;margin-top:14px;max-width:520px;margin-left:auto;margin-right:auto}
+
+.play-card{background:linear-gradient(135deg,var(--accent) 8%,var(--accent2));border-radius:var(--r);padding:28px 30px;margin-bottom:34px;color:#0e1f1e;box-shadow:var(--shadow)}
+.play-card h2{color:#0e1f1e;font-size:1.4rem;margin-bottom:4px}
+.play-card p{color:rgba(14,31,30,.78);margin-bottom:18px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:var(--r2);font:700 15px var(--font);cursor:pointer;border:none;transition:.15s}
+.play-card .btn{background:rgba(14,31,30,.2);color:#0e1f1e}
+.play-card .btn:hover{background:rgba(14,31,30,.32)}
+
+h3.section{font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:0 0 14px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:34px}
+.tile{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px}
+.tile .ic{font-size:1.6rem;margin-bottom:8px}
+.tile h4{font-size:1rem;margin-bottom:4px}
+.tile p{font-size:.85rem;color:var(--muted)}
+.tile.soon{opacity:.6}
+.pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;background:var(--surf2);color:var(--muted);margin-top:8px}
+.pill.live{background:#1a3d2e;color:var(--green)}
+.foot{text-align:center;color:var(--muted);font-size:.85rem;border-top:1px solid var(--border);padding-top:22px}
+@media(max-width:560px){.grid{grid-template-columns:1fr}.hero h1{font-size:2rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <h1>SQL <span class="q">Quest</span></h1>
+    <div class="tag">Learn SQL by defending your base.</div>
+    <div class="sub">A roguelike tower-defense game where real SQL queries control your turret. Built for aspiring data analysts — practice the queries you'll actually run in your first month on the job.</div>
+  </div>
+
+  <div class="play-card">
+    <h2>▶ Play the SQL campaign</h2>
+    <p>Survive each wave by writing the right query. Real SQLite runs in your browser — nothing to install.</p>
+    <a class="btn" href="games/sql/">Start Wave 1 →</a>
+  </div>
+
+  <h3 class="section">Expansion packs</h3>
+  <div class="grid">
+    <div class="tile">
+      <div class="ic">🗃️</div><h4>SQL</h4>
+      <p>SELECT → WHERE → JOIN → GROUP BY → subqueries → CTEs → window functions.</p>
+      <span class="pill live">Playable now</span>
+    </div>
+    <div class="tile soon">
+      <div class="ic">🐍</div><h4>Python</h4>
+      <p>Pandas, data cleaning, and scripting drills in the same battle format.</p>
+      <span class="pill">Planned</span>
+    </div>
+    <div class="tile soon">
+      <div class="ic">📊</div><h4>Excel</h4>
+      <p>Formulas, lookups, and pivots under pressure.</p>
+      <span class="pill">Planned</span>
+    </div>
+    <div class="tile soon">
+      <div class="ic">📈</div><h4>Viz / BI</h4>
+      <p>Tableau & Power BI thinking — turn data into the right chart.</p>
+      <span class="pill">Planned</span>
+    </div>
+  </div>
+
+  <div class="foot">
+    Free &amp; open source · Built by <a href="https://michaelnocito.github.io">Michael Nocito</a><br>
+    Part of the <a href="https://michaelnocito.github.io/analyst-prep-kit/">Analyst Prep Kit</a> family.
+  </div>
+</div>
+</body>
+</html>

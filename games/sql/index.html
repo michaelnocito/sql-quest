@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SQL Quest — SQL Tower Defense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#171513;--surf:#201d1a;--surf2:#292520;
+  --accent:#58aaa2;--accent2:#7dbfb8;
+  --text:#e8e0d4;--muted:#9a8f82;--border:#363028;
+  --red:#e05c5c;--green:#5cba8a;--yellow:#d4a849;
+  --font:'Hanken Grotesk',sans-serif;--mono:'JetBrains Mono',monospace;
+  --r:10px;--r2:6px;--shadow:0 2px 12px rgba(0,0,0,.4);
+}
+.light{
+  --bg:#ddd6c8;--surf:#ffffff;--surf2:#f0ece4;
+  --text:#1a1714;--muted:#6b5f52;--border:#c8bfb0;
+  --shadow:0 2px 12px rgba(0,0,0,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.5;display:flex;flex-direction:column;overflow:hidden}
+a{color:var(--accent);text-decoration:none}
+code{font-family:var(--mono);background:var(--surf2);padding:1px 5px;border-radius:4px;font-size:.85em;color:var(--accent2)}
+
+/* TOP BAR */
+header{background:var(--surf);border-bottom:1px solid var(--border);padding:8px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap}
+.brand{font-weight:700;font-size:15px;white-space:nowrap}
+.brand .q{color:var(--accent)}
+.wave-chip{font-size:12px;color:var(--muted);background:var(--surf2);padding:3px 10px;border-radius:20px;white-space:nowrap}
+.wave-chip b{color:var(--text)}
+.spacer{flex:1}
+.hp-wrap{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}
+.hp-bar{width:90px;height:8px;background:var(--surf2);border-radius:4px;overflow:hidden}
+.hp-fill{height:100%;width:100%;background:var(--green);border-radius:4px;transition:width .5s,background .5s}
+.icon-btn{background:none;border:1px solid var(--border);color:var(--muted);font:inherit;font-size:16px;width:32px;height:32px;border-radius:var(--r2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+.icon-btn:hover{color:var(--text);border-color:var(--text)}
+.icon-btn.on{color:var(--accent);border-color:var(--accent)}
+
+/* LAYOUT — editor top, battlefield bottom */
+main{flex:1;display:flex;flex-direction:column;min-height:0}
+.editor-pane{flex:0 0 auto;padding:12px 14px;overflow-y:auto;border-bottom:1px solid var(--border);background:var(--bg)}
+.field-pane{flex:1;min-height:0;position:relative;background:radial-gradient(circle at 70% 30%,rgba(88,170,162,.06),transparent 60%),var(--surf)}
+
+/* BRIEFING */
+.briefing{background:var(--surf);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--r2);padding:11px 14px;margin-bottom:10px;font-size:13.5px}
+.briefing .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--accent);background:var(--surf2);padding:2px 8px;border-radius:4px;margin-right:8px}
+.briefing .ttl{font-weight:700}
+.briefing p{margin-top:6px;color:var(--text)}
+.briefing .obj{margin-top:7px;font-size:12.5px;color:var(--muted)}
+.briefing .obj b{color:var(--yellow)}
+
+/* SCHEMA chips */
+.schema-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px}
+.schema-tbl{font-family:var(--mono);font-size:11px;background:var(--surf2);border:1px solid var(--border);border-radius:var(--r2);padding:5px 9px;color:var(--muted)}
+.schema-tbl b{color:var(--accent2)}
+
+/* EDITOR */
+.ed-wrap{position:relative}
+#sql{width:100%;min-height:62px;resize:vertical;font-family:var(--mono);font-size:14px;line-height:1.5;color:var(--text);background:var(--surf);border:1px solid var(--border);border-radius:var(--r2);padding:11px 12px;outline:none}
+#sql:focus{border-color:var(--accent)}
+.ed-ghost{position:absolute;top:11px;left:12px;right:12px;font-family:var(--mono);font-size:14px;line-height:1.5;color:var(--muted);opacity:.45;pointer-events:none;white-space:pre-wrap;display:none}
+.ed-row{display:flex;gap:8px;align-items:center;margin-top:9px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--r2);font:600 14px var(--font);cursor:pointer;border:none;transition:.15s}
+.btn-primary{background:var(--accent);color:#0e1f1e}
+.btn-primary:hover{background:var(--accent2)}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+.btn-ghost:hover{color:var(--text);border-color:var(--text)}
+.btn-sm{padding:7px 13px;font-size:13px}
+.kbd{font-family:var(--mono);font-size:10px;background:var(--surf2);border:1px solid var(--border);border-radius:4px;padding:1px 5px;color:var(--muted)}
+.dev-note{font-size:11px;color:var(--muted)}
+
+/* RESULT / FEEDBACK */
+.feedback{margin-top:9px;font-size:13px;min-height:18px}
+.feedback.ok{color:var(--green)}
+.feedback.warn{color:var(--yellow)}
+.feedback.err{color:var(--red)}
+.result-tbl{margin-top:8px;width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
+.result-tbl th,.result-tbl td{border:1px solid var(--border);padding:4px 8px;text-align:left}
+.result-tbl th{background:var(--surf2);color:var(--accent2)}
+.result-meta{margin-top:5px;font-size:11px;color:var(--muted)}
+
+/* HINT */
+.hint{margin-top:8px;font-size:12.5px;color:var(--yellow);background:rgba(212,168,73,.08);border-left:3px solid var(--yellow);border-radius:0 6px 6px 0;padding:7px 11px;display:none}
+.hint.show{display:block}
+.hint pre{font-family:var(--mono);font-size:12px;color:var(--text);margin-top:5px;white-space:pre-wrap}
+
+/* BATTLEFIELD */
+#field{width:100%;height:100%;display:block}
+.field-status{position:absolute;top:10px;left:0;right:0;text-align:center;font-size:12px;color:var(--muted);pointer-events:none}
+
+/* WAVE OVERLAY (win/lose) */
+.overlay{position:absolute;inset:0;background:rgba(23,21,19,.86);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;z-index:30}
+.overlay.show{display:flex}
+.overlay h2{font-size:1.5rem;margin-bottom:6px}
+.overlay p{color:var(--muted);margin-bottom:16px;max-width:340px}
+.overlay .big{font-size:2.4rem;margin-bottom:8px}
+
+/* TOAST + CONFETTI */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surf);border:1px solid var(--accent);color:var(--text);padding:10px 20px;border-radius:24px;font-weight:600;font-size:14px;opacity:0;pointer-events:none;transition:.3s;z-index:200;box-shadow:var(--shadow)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:190;overflow:hidden}
+.confetti{position:absolute;top:-12px;width:9px;height:9px;border-radius:2px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(105vh) rotate(540deg);opacity:.2}}
+
+/* BREAK NUDGE */
+.break-nudge{position:fixed;bottom:0;left:0;right:0;background:var(--surf);border-top:1px solid var(--accent);padding:12px 16px;display:none;align-items:center;gap:12px;z-index:180;font-size:13px}
+.break-nudge.show{display:flex}
+.break-nudge .x{margin-left:auto}
+
+@media (max-width:520px){
+  .brand{font-size:14px}
+  .editor-pane{padding:10px}
+  header{gap:7px}
+  .hp-wrap{font-size:11px;gap:5px}
+  .hp-bar{width:54px}
+  .icon-btn{width:30px;height:30px;font-size:15px}
+  .wave-chip{font-size:11px;padding:3px 8px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">SQL <span class="q">Quest</span></div>
+  <div class="wave-chip">Wave <b id="wave-num">1</b> · <span id="wave-concept">SELECT</span></div>
+  <div class="spacer"></div>
+  <div class="hp-wrap" title="Base integrity">
+    <span>BASE</span>
+    <div class="hp-bar"><div class="hp-fill" id="hp-fill"></div></div>
+    <span id="hp-num">100</span>
+  </div>
+  <button class="icon-btn on" id="dev-btn" title="Dev mode: pre-fills the answer (Tab to insert)" onclick="toggleDev()">⚡</button>
+  <button class="icon-btn" id="audio-btn" title="Focus audio" onclick="toggleAudio()">🔇</button>
+  <button class="icon-btn" id="theme-btn" title="Theme" onclick="toggleTheme()">◐</button>
+</header>
+
+<main>
+  <section class="editor-pane">
+    <div class="briefing">
+      <span class="tag" id="b-tag">SELECT</span><span class="ttl" id="b-title">First Contact</span>
+      <p id="b-text"></p>
+      <div class="obj">🎯 <b id="b-obj"></b></div>
+    </div>
+
+    <div class="schema-row" id="schema-row"></div>
+
+    <div class="ed-wrap">
+      <textarea id="sql" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="Write your SQL here…"></textarea>
+      <div class="ed-ghost" id="ghost"></div>
+    </div>
+
+    <div class="ed-row">
+      <button class="btn btn-primary" onclick="runQuery()">Execute Query <span class="kbd">Ctrl+↵</span></button>
+      <button class="btn btn-ghost btn-sm" onclick="cycleHint()" id="hint-btn">Show hint</button>
+      <span class="spacer"></span>
+      <span class="dev-note" id="dev-hint">Dev mode on — press <span class="kbd">Tab</span> to insert the answer</span>
+    </div>
+
+    <div class="feedback" id="feedback"></div>
+    <div id="result"></div>
+    <div class="hint" id="hint"></div>
+  </section>
+
+  <section class="field-pane">
+    <div class="field-status" id="field-status">Targets in the lane — clear them with the right query.</div>
+    <svg id="field" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="overlay" id="overlay">
+      <div class="big" id="ov-big">🏆</div>
+      <h2 id="ov-title">Wave Cleared</h2>
+      <p id="ov-text"></p>
+      <button class="btn btn-primary" id="ov-btn" onclick="overlayAction()">Next Wave →</button>
+    </div>
+  </section>
+</main>
+
+<div id="toast"></div>
+<div id="confetti"></div>
+<div class="break-nudge" id="break-nudge">
+  <span>🧠 You've been locked in a while. A 5–10 min break now keeps your focus sharp — that's how analysts last a full day.</span>
+  <button class="btn btn-ghost btn-sm x" onclick="dismissBreak()">Got it</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.js"></script>
+<script src="waves.js"></script>
+<script>
+/* ─── STATE ──────────────────────────────────────────────────────────────── */
+const LS = 'sqlquest';
+const state = {
+  wave: 0, baseHP: 100, devMode: true, audio: false, theme: 'dark',
+  cleared: [], attempts: 0, correct: 0, started: Date.now()
+};
+let SQLjs = null;          // initSqlJs module
+let enemiesLive = [];      // live battlefield enemies for current wave
+let hintLevel = 0;
+let busy = false;          // lock during animations
+
+function load(){
+  try{ Object.assign(state, JSON.parse(localStorage.getItem(LS)) || {}); }catch(e){}
+  state.started = Date.now();
+}
+function save(){
+  localStorage.setItem(LS, JSON.stringify({
+    wave: state.wave, baseHP: state.baseHP, devMode: state.devMode,
+    audio: state.audio, theme: state.theme, cleared: state.cleared,
+    attempts: state.attempts, correct: state.correct
+  }));
+}
+
+/* ─── SQL ENGINE ─────────────────────────────────────────────────────────── */
+async function bootSQL(){
+  SQLjs = await initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/${f}` });
+}
+function freshDB(schema){
+  const db = new SQLjs.Database();
+  db.run(schema);
+  return db;
+}
+// Run a query, return {columns, rows} or throw.
+function execQuery(db, sql){
+  const res = db.exec(sql);
+  if(!res.length) return { columns: [], rows: [] };
+  return { columns: res[0].columns, rows: res[0].values };
+}
+// Order-insensitive result-set comparison.
+function sameResult(a, b){
+  if(a.columns.length !== b.columns.length) return false;
+  if(a.rows.length !== b.rows.length) return false;
+  const norm = rows => rows.map(row => JSON.stringify(row)).sort();
+  const na = norm(a.rows), nb = norm(b.rows);
+  return na.every((v,i) => v === nb[i]);
+}
+
+/* Security: allow only read-only query verbs. */
+function isSafe(sql){
+  const banned = /\b(DROP|DELETE|UPDATE|INSERT|ALTER|CREATE|REPLACE|ATTACH|DETACH|PRAGMA|VACUUM)\b/i;
+  return !banned.test(sql);
+}
+
+/* ─── WAVE LOADING ───────────────────────────────────────────────────────── */
+function currentWave(){ return WAVES[state.wave]; }
+
+function loadWave(){
+  const w = currentWave();
+  hintLevel = 0;
+  document.getElementById('wave-num').textContent = w.id;
+  document.getElementById('wave-concept').textContent = w.concept;
+  document.getElementById('b-tag').textContent = w.concept;
+  document.getElementById('b-title').textContent = w.title;
+  document.getElementById('b-text').innerHTML = w.briefing;
+  document.getElementById('b-obj').textContent = w.objective;
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('result').innerHTML = '';
+  const hintEl = document.getElementById('hint'); hintEl.className = 'hint'; hintEl.innerHTML = '';
+  document.getElementById('hint-btn').textContent = 'Show hint';
+
+  // Editor: in dev mode show solution as a tab-to-insert ghost; otherwise the starter scaffold.
+  const ed = document.getElementById('sql');
+  ed.value = state.devMode ? '' : w.starter;
+  updateGhost();
+
+  // Schema chips
+  renderSchema(w.schema);
+
+  // Build the lane = solution's result rows.
+  const db = freshDB(w.schema);
+  const sol = execQuery(db, w.solution);
+  db.close();
+  enemiesLive = sol.rows.map((row, i) => {
+    const obj = {}; sol.columns.forEach((c,j)=>obj[c]=row[j]);
+    return {
+      name: obj.name || obj.id || ('Target '+(i+1)),
+      hp: obj.health || 40, advance: 0, alive: true
+    };
+  });
+  document.getElementById('field-status').textContent =
+    `${enemiesLive.length} target${enemiesLive.length!==1?'s':''} in the lane — clear them with the right query.`;
+  drawField();
+  hideOverlay();
+}
+
+function renderSchema(schema){
+  // Parse "CREATE TABLE name (col type, ...)" blocks into chips.
+  const row = document.getElementById('schema-row');
+  row.innerHTML = '';
+  const re = /CREATE TABLE (\w+)\s*\(([^;]+)\)/gi;
+  let m;
+  while((m = re.exec(schema))){
+    const tbl = m[1];
+    const cols = m[2].split(',').map(c => c.trim().split(/\s+/)[0]).join(', ');
+    const chip = document.createElement('div');
+    chip.className = 'schema-tbl';
+    chip.innerHTML = `<b>${tbl}</b> (${cols})`;
+    row.appendChild(chip);
+  }
+}
+
+/* ─── EDITOR / DEV MODE ──────────────────────────────────────────────────── */
+function updateGhost(){
+  const ghost = document.getElementById('ghost');
+  const ed = document.getElementById('sql');
+  if(state.devMode && !ed.value){
+    ghost.textContent = currentWave().solution;
+    ghost.style.display = 'block';
+    ed.placeholder = '';                 // avoid overlap with the ghost answer
+  } else {
+    ghost.style.display = 'none';
+    ed.placeholder = 'Write your SQL here…';
+  }
+}
+document.getElementById('sql').addEventListener('input', updateGhost);
+document.getElementById('sql').addEventListener('keydown', e => {
+  if(e.key === 'Tab' && state.devMode && !e.target.value){
+    e.preventDefault();
+    e.target.value = currentWave().solution;
+    updateGhost();
+  } else if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){
+    e.preventDefault();
+    runQuery();
+  }
+});
+
+function toggleDev(){
+  state.devMode = !state.devMode;
+  document.getElementById('dev-btn').classList.toggle('on', state.devMode);
+  document.getElementById('dev-hint').style.visibility = state.devMode ? 'visible' : 'hidden';
+  const ed = document.getElementById('sql');
+  if(!state.devMode && !ed.value) ed.value = currentWave().starter;
+  if(state.devMode) ed.value = '';
+  updateGhost(); save();
+}
+
+/* ─── HINTS (progressive) ────────────────────────────────────────────────── */
+function cycleHint(){
+  const w = currentWave();
+  const el = document.getElementById('hint');
+  const btn = document.getElementById('hint-btn');
+  if(hintLevel >= w.hints.length){ return; }
+  const txt = w.hints[hintLevel];
+  const isAnswer = hintLevel === w.hints.length - 1;
+  el.innerHTML = isAnswer
+    ? `💡 Full answer:<pre>${esc(txt)}</pre>`
+    : `💡 ${esc(txt)}`;
+  el.classList.add('show');
+  hintLevel++;
+  btn.textContent = hintLevel >= w.hints.length ? 'No more hints' : 'Next hint';
+  if(hintLevel >= w.hints.length) btn.disabled = true;
+}
+function esc(s){ return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ─── RUN QUERY ──────────────────────────────────────────────────────────── */
+function runQuery(){
+  if(busy || !SQLjs) return;
+  const w = currentWave();
+  const sql = document.getElementById('sql').value.trim();
+  const fb = document.getElementById('feedback');
+  const resEl = document.getElementById('result');
+  resEl.innerHTML = '';
+  if(!sql){ setFb('warn', 'Write a query first — or press Tab to borrow the answer in dev mode.'); return; }
+
+  // Tier 1: security / banned verbs
+  if(!isSafe(sql)){ setFb('err', 'Only read queries are allowed here (SELECT, WHERE, JOIN…). No table changes.'); return; }
+
+  state.attempts++;
+  let player, expected;
+  const db = freshDB(w.schema);
+  try{
+    player = execQuery(db, sql);
+    expected = execQuery(db, w.solution);
+  }catch(e){
+    db.close();
+    // Tier 2: syntax error
+    setFb('err', `Syntax error — check your spelling and punctuation. (${e.message})`);
+    save();
+    return;
+  }
+  db.close();
+
+  showResult(player);
+
+  if(sameResult(player, expected)){
+    // Tier: correct → tower clears the lane
+    state.correct++;
+    setFb('ok', `Direct hit — ${player.rows.length} target${player.rows.length!==1?'s':''} locked.`);
+    fireAndClear();
+  } else {
+    // Tier 3: valid but wrong result set
+    setFb('warn', `Query ran, but it targeted ${player.rows.length} row${player.rows.length!==1?'s':''} — the lane has ${expected.rows.length}. The swarm advances. Adjust and fire again.`);
+    enemyAdvance();
+  }
+  save();
+}
+
+function setFb(kind, msg){
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback ' + kind;
+  fb.textContent = msg;
+}
+function showResult(r){
+  const el = document.getElementById('result');
+  if(!r.columns.length){ el.innerHTML = '<div class="result-meta">Query ran — no rows returned.</div>'; return; }
+  const thead = `<tr>${r.columns.map(c=>`<th>${esc(c)}</th>`).join('')}</tr>`;
+  const tbody = r.rows.map(row=>`<tr>${row.map(v=>`<td>${v==null?'NULL':esc(v)}</td>`).join('')}</tr>`).join('');
+  el.innerHTML = `<table class="result-tbl"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`
+    + `<div class="result-meta">${r.rows.length} row${r.rows.length!==1?'s':''} returned</div>`;
+}
+
+/* ─── BATTLEFIELD (SVG) ──────────────────────────────────────────────────── */
+const FIELD_W = 800, FIELD_H = 320, BASE_X = 720, LANE_TOP = 60, LANE_GAP = 52;
+function laneY(i){ return LANE_TOP + i * LANE_GAP; }
+function enemyX(adv){ return 90 + adv * (BASE_X - 150) / 4; } // 4 steps to reach base
+
+function drawField(){
+  const svg = document.getElementById('field');
+  let s = '';
+  // base / turret on the right
+  s += `<rect x="${BASE_X}" y="40" width="46" height="${FIELD_H-80}" rx="8" fill="var(--surf2)" stroke="var(--accent)" stroke-width="2"/>`;
+  s += `<circle cx="${BASE_X+23}" cy="${FIELD_H/2}" r="15" fill="var(--accent)"/>`;
+  s += `<text x="${BASE_X+23}" y="${FIELD_H-18}" fill="var(--muted)" font-size="11" text-anchor="middle" font-family="var(--mono)">BASE</text>`;
+  // lane guides
+  enemiesLive.forEach((en,i)=>{
+    const y = laneY(i % Math.max(1,Math.min(enemiesLive.length,5)));
+    s += `<line x1="70" y1="${y}" x2="${BASE_X}" y2="${y}" stroke="var(--border)" stroke-dasharray="4 6" stroke-width="1"/>`;
+  });
+  // enemies
+  enemiesLive.forEach((en,i)=>{
+    if(!en.alive) return;
+    const y = laneY(i % Math.max(1,Math.min(enemiesLive.length,5)));
+    const x = enemyX(en.advance);
+    s += `<g class="enemy" data-i="${i}">`
+      + `<circle cx="${x}" cy="${y}" r="16" fill="var(--red)" opacity="0.92"/>`
+      + `<circle cx="${x}" cy="${y}" r="16" fill="none" stroke="#fff" stroke-opacity="0.25" stroke-width="1.5"/>`
+      + `<text x="${x}" y="${y+4}" fill="#fff" font-size="11" text-anchor="middle" font-family="var(--mono)">${esc(String(en.name)).slice(0,7)}</text>`
+      + `</g>`;
+  });
+  svg.innerHTML = s;
+}
+
+function fireAndClear(){
+  busy = true;
+  const svg = document.getElementById('field');
+  // draw beams from base to each living enemy, then explode
+  enemiesLive.forEach((en,i)=>{
+    if(!en.alive) return;
+    const y = laneY(i % Math.max(1,Math.min(enemiesLive.length,5)));
+    const x = enemyX(en.advance);
+    const beam = document.createElementNS('http://www.w3.org/2000/svg','line');
+    beam.setAttribute('x1', BASE_X); beam.setAttribute('y1', FIELD_H/2);
+    beam.setAttribute('x2', x); beam.setAttribute('y2', y);
+    beam.setAttribute('stroke', 'var(--accent2)'); beam.setAttribute('stroke-width','3');
+    beam.setAttribute('opacity','0.9');
+    svg.appendChild(beam);
+    setTimeout(()=>beam.remove(), 360);
+  });
+  beep(660, 70); setTimeout(()=>beep(880,90),90);
+  setTimeout(()=>{
+    enemiesLive.forEach(en=>en.alive=false);
+    drawField();
+    busy = false;
+    waveCleared();
+  }, 420);
+}
+
+function enemyAdvance(){
+  busy = true;
+  enemiesLive.forEach(en=>{ if(en.alive) en.advance = Math.min(4, en.advance + 1); });
+  drawField();
+  // any enemy reaching the base damages it
+  let dmg = 0;
+  enemiesLive.forEach(en=>{
+    if(en.alive && en.advance >= 4){ dmg += 12; en.advance = 4; }
+  });
+  if(dmg){
+    state.baseHP = Math.max(0, state.baseHP - dmg);
+    updateHP();
+    beep(160, 140);
+  }
+  setTimeout(()=>{
+    busy = false;
+    if(state.baseHP <= 0) waveLost();
+  }, 350);
+}
+
+function updateHP(){
+  document.getElementById('hp-num').textContent = state.baseHP;
+  const fill = document.getElementById('hp-fill');
+  fill.style.width = state.baseHP + '%';
+  fill.style.background = state.baseHP > 50 ? 'var(--green)' : state.baseHP > 25 ? 'var(--yellow)' : 'var(--red)';
+}
+
+/* ─── WIN / LOSE ─────────────────────────────────────────────────────────── */
+function waveCleared(){
+  if(!state.cleared.includes(currentWave().id)) state.cleared.push(currentWave().id);
+  save();
+  celebrate();
+  const last = state.wave >= WAVES.length - 1;
+  showOverlay('🏆', last ? 'Campaign Clear!' : 'Wave Cleared',
+    last ? `You cleared every wave. Accuracy: ${accuracy()}%. More waves and the Python pack are coming.`
+         : `Concept locked in: ${currentWave().concept}. Accuracy so far: ${accuracy()}%.`,
+    last ? 'Replay from Wave 1' : 'Next Wave →');
+  maybeBreak();
+}
+function waveLost(){
+  showOverlay('💥', 'Base Overrun',
+    `The swarm broke through. Reset your base and try this query again — every analyst debugs.`,
+    'Retry Wave');
+}
+function accuracy(){ return state.attempts ? Math.round(100*state.correct/state.attempts) : 100; }
+
+function showOverlay(big, title, text, btn){
+  document.getElementById('ov-big').textContent = big;
+  document.getElementById('ov-title').textContent = title;
+  document.getElementById('ov-text').textContent = text;
+  document.getElementById('ov-btn').textContent = btn;
+  document.getElementById('overlay').classList.add('show');
+}
+function hideOverlay(){ document.getElementById('overlay').classList.remove('show'); }
+
+function overlayAction(){
+  const title = document.getElementById('ov-title').textContent;
+  if(title === 'Base Overrun'){
+    state.baseHP = 100; updateHP(); loadWave(); return;
+  }
+  // advance (or wrap on campaign clear)
+  state.wave = (state.wave + 1) % WAVES.length;
+  if(state.wave === 0){ state.baseHP = 100; updateHP(); }
+  loadWave();
+}
+
+/* ─── AUDIO (focus hum + chimes) ─────────────────────────────────────────── */
+let actx = null, hum = null;
+function audioCtx(){ if(!actx) actx = new (window.AudioContext||window.webkitAudioContext)(); return actx; }
+function beep(freq, ms){
+  if(!state.audio) return;
+  const c = audioCtx(); const o = c.createOscillator(); const g = c.createGain();
+  o.frequency.value = freq; o.type = 'sine'; g.gain.value = 0.06;
+  o.connect(g); g.connect(c.destination); o.start();
+  g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + ms/1000);
+  o.stop(c.currentTime + ms/1000);
+}
+function toggleAudio(){
+  state.audio = !state.audio;
+  document.getElementById('audio-btn').textContent = state.audio ? '🔊' : '🔇';
+  document.getElementById('audio-btn').classList.toggle('on', state.audio);
+  if(state.audio){ startHum(); } else { stopHum(); }
+  save();
+}
+// Endel-style: a soft adaptive drone that gets a touch brighter on harder waves.
+function startHum(){
+  const c = audioCtx();
+  stopHum();
+  hum = c.createOscillator(); const g = c.createGain();
+  hum.type = 'sine';
+  hum.frequency.value = 110 + state.wave * 8;   // adapts to wave difficulty
+  g.gain.value = 0.018;
+  hum.connect(g); g.connect(c.destination); hum.start();
+  hum._g = g;
+}
+function stopHum(){ if(hum){ try{hum.stop();}catch(e){} hum = null; } }
+
+/* ─── CELEBRATE (confetti + toast) ───────────────────────────────────────── */
+function celebrate(){
+  const overlay = document.getElementById('confetti');
+  const colors = ['#58aaa2','#7dbfb8','#d4a849','#5cba8a','#e8e0d4'];
+  overlay.innerHTML = '';
+  for(let i=0;i<30;i++){
+    const d = document.createElement('div');
+    d.className = 'confetti';
+    d.style.cssText = `left:${Math.random()*100}%;background:${colors[i%colors.length]};animation-delay:${Math.random()*.4}s;animation-duration:${.9+Math.random()*.6}s`;
+    overlay.appendChild(d);
+  }
+  showToast('✓ Wave cleared!');
+  setTimeout(()=>overlay.innerHTML='', 1800);
+  beep(523,120); setTimeout(()=>beep(659,120),120); setTimeout(()=>beep(784,160),240);
+}
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2000);
+}
+
+/* ─── BREAK NUDGE (ultradian) ────────────────────────────────────────────── */
+let breakShown = false;
+function maybeBreak(){
+  const mins = (Date.now() - state.started) / 60000;
+  if(mins >= 25 && !breakShown){      // ~Pomodoro/ultradian nudge
+    breakShown = true;
+    document.getElementById('break-nudge').classList.add('show');
+  }
+}
+function dismissBreak(){
+  document.getElementById('break-nudge').classList.remove('show');
+  state.started = Date.now();        // reset the focus timer after the break
+  breakShown = false;
+}
+
+/* ─── THEME ──────────────────────────────────────────────────────────────── */
+function applyTheme(){ document.body.classList.toggle('light', state.theme === 'light'); }
+function toggleTheme(){ state.theme = state.theme === 'light' ? 'dark' : 'light'; applyTheme(); save(); }
+
+/* ─── INIT ───────────────────────────────────────────────────────────────── */
+async function init(){
+  load();
+  applyTheme();
+  document.getElementById('dev-btn').classList.toggle('on', state.devMode);
+  document.getElementById('dev-hint').style.visibility = state.devMode ? 'visible' : 'hidden';
+  updateHP();
+  setFb('warn', 'Loading SQL engine…');
+  try{
+    await bootSQL();
+  }catch(e){
+    setFb('err', 'Could not load the SQL engine. Check your connection and reload.');
+    return;
+  }
+  if(state.wave >= WAVES.length) state.wave = 0;
+  loadWave();
+  setFb('', '');
+}
+init();
+</script>
+</body>
+</html>
