@@ -12,6 +12,7 @@ then moves into **Now / Next / Later / Icebox**. Done items drop to **Shipped**.
 _Nothing in flight._
 
 ## Next (queued, agreed)
+- **[P1] Advanced enemy mechanic** — Mike wants something richer than "wrong = you take a little damage" eventually (the simplified version shipped). TBD — e.g. enemy types with different attacks, telegraphed big hits, status effects, or escalating damage as they creep closer.
 - **[P1] Spaced-retrieval scheduled review waves** — foundation shipped (`reinforces` field + Recall-drill chip + layered solutions). Next: as Waves 4–7 land, author dedicated "Recon" review beats on expanding gaps (~1, 3, 7 waves after a concept is introduced) that re-test an earlier verb in a *fresh* schema. Truly works retrieval into combat.
 - **[P2] Turret muzzle flash + recoil** — make the base feel like it fires, not just the enemies exploding.
 - **[P2] Per-wave combat tuning pass** — once Mike plays it, dial `rounds`/`creep` per wave so each fight reinforces without going stale.
@@ -33,6 +34,7 @@ _Nothing in flight._
 ---
 
 ## Shipped
+- **[P1] Enemy counterattack — FF turn exchange** (2026-05-28) — pushing toward the FF4/FF7 vibe: a **wrong (valid-but-wrong) query now lets the swarm hit back**. The frontmost living enemy lunges and fires a red bolt at the base, the base core flashes, a floating "-6" pops, and base HP drops (`ENEMY_HIT_DMG=6`, per-wave overridable via `enemyDmg`). Correct queries still only damage enemies; **syntax errors / banned verbs stay damage-free** (deliberate — don't punish typos while learning). Over-broad queries take the counterattack + friendly fire. Next, more advanced enemy mechanics (TBD by Mike).
 - **[P1] Spaced-retrieval foundation** (2026-05-28) — learning-science request: bring earlier concepts back after a gap, interleaved, so the player *recalls* them. Two data-driven levers: (1) solutions are layered so later waves reuse earlier verbs; (2) a `reinforces: [...]` field per wave drives a yellow **"🔁 Recall drill — this wave makes you reuse: …"** chip in the briefing. W1 none, W2 SELECT, W3 SELECT+WHERE. Expanding-gap review schedule (~1/3/7 waves) documented in waves.js for when 4–7 are authored. Chose this over Training-Ground-only (voluntary review is weak) and adaptive (overkill for prototype) — both roadmapped.
 - **[P2] Music variety — ~5 min through-composed track** (2026-05-28) — replaced the 4-bar Am–F–C–G loop with a 12-section `SONG` (~88 bars / 4.99 min before repeat): varied progressions, arpeggio shapes (up/down/updown/sparse/none), dynamics, and optional bass pulse. Still 100% procedural Web Audio, no assets. Goal is ~10 min — extension roadmapped.
 - **[P1] Start splash + build timestamp + background music** (2026-05-28) — start screen (title, tagline, "Start Campaign", build stamp in Eastern 12-hour time, e.g. `May 28, 2026 · 6:54 PM ET` via `BUILD_TS` const — update each build). Starting the campaign is the audio-unlock gesture and kicks off a looping procedural ambient track (Am–F–C–G pad + bass + arpeggio, synthesised in Web Audio, no asset files). Speaker button mutes/unmutes. Also resumes AudioContext for iOS/Safari.
@@ -49,6 +51,7 @@ Raw incoming notes from Mike. Newest first. Triaged into the lists above.
 
 | Date | Feedback | Priority | Status | Where it went |
 |------|----------|----------|--------|----------------|
+| 2026-05-28 | "Push toward the Final Fantasy (FF4/FF7) vibe — give the enemy a chance to attack. Simplified for now: correct command = you hit the enemy; incorrect command = the enemy hits you for a little damage. More advanced enemy mechanic TBD later." | P1 | done | Shipped (kept syntax errors damage-free, only wrong *answers* draw a counterattack) |
 | 2026-05-28 | "Learning science says revisit topics after a short break — work spaced retrieval into combat. SELECT (and earlier verbs) need to come back later, layered as we progress. Per-level and/or a clickable feature — weigh pros/cons and recommend." | P1 | partial | Foundation shipped (`reinforces` + Recall chip + layered solutions); scheduled review waves queued in Next |
 | 2026-05-28 | "Loving the music but it needs more variety — it's repetitive. Players go 15–20 min blocks. Goal ~10 min of decent music; for now build 5 min of non-looped music, roadmap the rest." | P2 | done | Shipped (~5 min through-composed); ~10 min in Next |
 | 2026-05-28 | "No background music, and I think we need a start splash screen that timestamps the build in Eastern time, standard (not military) — and the audio can start after clearing the start screen." | P1 | done | Shipped |

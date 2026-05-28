@@ -164,6 +164,14 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 .dmg-hit{fill:#ffd9a0}
 .dmg-ff{fill:var(--red)}
 @keyframes dmgfloat{0%{opacity:0;transform:translateY(5px)}20%{opacity:1}100%{opacity:0;transform:translateY(-16px)}}
+/* enemy turn: a wrong command lets the swarm strike back */
+.enemy.lunge{animation:enemy-lunge .34s ease-in-out}
+@keyframes enemy-lunge{0%{transform:translateX(0)}45%{transform:translateX(20px)}100%{transform:translateX(0)}}
+.enemy-bolt{pointer-events:none;animation:bolt-fade .26s linear forwards}
+@keyframes bolt-fade{0%{opacity:.95}100%{opacity:0}}
+.base-core{transform-box:fill-box;transform-origin:center}
+.base-core.base-hit{animation:base-hit .34s ease-out}
+@keyframes base-hit{0%{fill:#fff}40%{fill:var(--red)}100%{fill:var(--accent)}}
 
 /* BREAK NUDGE */
 .break-nudge{position:fixed;bottom:0;left:0;right:0;background:var(--surf);border-top:1px solid var(--accent);padding:12px 16px;display:none;align-items:center;gap:12px;z-index:180;font-size:13px}
@@ -263,7 +271,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 28, 2026 · 7:10 PM ET";
+const BUILD_TS = "May 28, 2026 · 7:18 PM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, audio: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -516,8 +524,8 @@ function runQuery(){
     const fp = falsePositives(player, expected);
     const nudge = waveTries >= 2 ? ' Stuck? Tap “Show hint”.' : '';
     setFb('warn', fp > 0
-      ? `Over-broad — ${fp} stray row${fp!==1?'s':''} hit your own base (friendly fire). Tighten the filter; the swarm edges closer.${nudge}`
-      : `Query ran, but it didn't lock the right ${expected.rows.length} target${expected.rows.length!==1?'s':''} — you hit ${player.rows.length}. The swarm edges closer. Adjust and fire again.${nudge}`);
+      ? `Over-broad — ${fp} stray row${fp!==1?'s':''} hit your own base (friendly fire), and the swarm strikes back for ${enemyHit()}. Tighten the filter and fire again.${nudge}`
+      : `Wrong lock — you targeted ${player.rows.length}, not the right ${expected.rows.length}. The swarm strikes back for ${enemyHit()} and edges closer. Adjust and fire again.${nudge}`);
     if(waveTries >= 2) pulseHint();
     missTurn(fp);
   }
@@ -543,10 +551,12 @@ const FIELD_W = 800, FIELD_H = 320, BASE_X = 720, LANE_TOP = 60, LANE_GAP = 52;
 const ENEMY_MAXHP = 100;   // every enemy starts here; a correct volley chips maxHp/rounds
 const FF_DMG = 4;          // friendly-fire: base HP lost per over-broad (false-positive) row
 const BASE_REACH_DMG = 14; // base HP lost for each enemy that creeps all the way in
+const ENEMY_HIT_DMG = 6;   // FF-style counterattack: a wrong command lets the swarm hit you
 function laneY(i){ return LANE_TOP + i * LANE_GAP; }
 function waveRounds(){ const r = currentWave().rounds; return (r && r > 0) ? r : 3; }
 function waveCreep(){ const c = currentWave().creep; return (c != null) ? c : 0.12; }
 function correctHit(){ return Math.ceil(ENEMY_MAXHP / waveRounds()); }
+function enemyHit(){ const d = currentWave().enemyDmg; return (d != null) ? d : ENEMY_HIT_DMG; }
 function enemyX(adv){ return 90 + adv * (BASE_X - 150) / 4; } // 4 steps to reach base
 
 function drawField(){
@@ -554,7 +564,7 @@ function drawField(){
   let s = '';
   // base / turret on the right
   s += `<rect x="${BASE_X}" y="40" width="46" height="${FIELD_H-80}" rx="8" fill="var(--surf2)" stroke="var(--accent)" stroke-width="2"/>`;
-  s += `<circle cx="${BASE_X+23}" cy="${FIELD_H/2}" r="15" fill="var(--accent)"/>`;
+  s += `<circle id="base-core" class="base-core" cx="${BASE_X+23}" cy="${FIELD_H/2}" r="15" fill="var(--accent)"/>`;
   s += `<text x="${BASE_X+23}" y="${FIELD_H-18}" fill="var(--muted)" font-size="11" text-anchor="middle" font-family="var(--mono)">BASE</text>`;
   // lane guides
   enemiesLive.forEach((en,i)=>{
@@ -697,23 +707,50 @@ function volley(){
   }, settle);
 }
 
-// VALID-but-WRONG query → wasted turn. No enemy damage; the swarm creeps a
-// free step, and any over-broad (false-positive) rows cost base HP: friendly fire.
+// The swarm's turn: the frontmost living enemy lunges and fires a bolt at the
+// base, flashing it and chipping base HP — the Final-Fantasy-style counterattack.
+function enemyAttack(dmg){
+  const svg = document.getElementById('field');
+  const living = enemiesLive.map((en,i)=>({en,i})).filter(o=>o.en.alive);
+  if(!living.length){ applyBaseDmg(dmg); return; }
+  const atk = living.reduce((a,b)=> b.en.advance > a.en.advance ? b : a);
+  const y = laneY(atk.i % Math.max(1,Math.min(enemiesLive.length,5)));
+  const x = enemyX(atk.en.advance);
+  const node = svg.querySelector(`.enemy[data-i="${atk.i}"]`);
+  if(node) node.classList.add('lunge');
+  const bolt = document.createElementNS(SVGNS,'line');
+  bolt.setAttribute('x1', x); bolt.setAttribute('y1', y);
+  bolt.setAttribute('x2', BASE_X); bolt.setAttribute('y2', FIELD_H/2);
+  bolt.setAttribute('stroke','var(--red)'); bolt.setAttribute('stroke-width','3');
+  bolt.setAttribute('class','enemy-bolt');
+  svg.appendChild(bolt);
+  beep(140, 120);
+  setTimeout(()=>{
+    bolt.remove();
+    const core = document.getElementById('base-core');
+    if(core){ core.classList.add('base-hit'); setTimeout(()=>core.classList.remove('base-hit'), 360); }
+    spawnDmg(svg, BASE_X + 23, FIELD_H/2, '-' + dmg, 'dmg-ff');
+    applyBaseDmg(dmg);
+  }, 220);
+}
+
+// VALID-but-WRONG query → the enemy gets its turn and strikes you for a little
+// damage. Over-broad (false-positive) rows add friendly-fire on top, and the
+// swarm still creeps a free step.
 function missTurn(falsePos){
   busy = true;
-  const svg = document.getElementById('field');
-  const ffDmg = Math.min(falsePos, 6) * FF_DMG;
-  if(ffDmg > 0){
-    spawnDmg(svg, BASE_X, FIELD_H/2, '-' + ffDmg + ' FF', 'dmg-ff');
-    beep(120, 160);
-  }
   const reach = creepEnemies();
   drawField();
+  enemyAttack(enemyHit());                       // the swarm hits back
+  const ffDmg = Math.min(falsePos, 6) * FF_DMG;  // extra self-inflicted hits if over-broad
+  if(ffDmg > 0){
+    setTimeout(()=>{ spawnDmg(document.getElementById('field'), BASE_X, FIELD_H/2 + 24, '-' + ffDmg + ' FF', 'dmg-ff'); }, 300);
+  }
   applyBaseDmg(reach + ffDmg);
   setTimeout(()=>{
     busy = false;
     if(state.baseHP <= 0) waveLost();
-  }, 350);
+  }, 600);
 }
 
 function updateHP(){
