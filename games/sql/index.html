@@ -271,7 +271,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 28, 2026 · 7:32 PM ET";
+const BUILD_TS = "May 28, 2026 · 7:40 PM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, audio: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -886,31 +886,37 @@ function toggleAudio(){
    add up to ~5 minutes before it repeats, so it doesn't feel repetitive over a
    15–20 min session. Roadmap: extend the SONG toward ~10 min + layered texture.
    All chords stay in A-minor's orbit so the mood reads calm/focused. */
+/* pad = sustained chord tones; bass = root; seventh = the soulful color tone
+   (added on groove bars only, so ambient bars stay pure/calm). */
 const CH = {
-  Am: { pad:[220.00, 261.63, 329.63], bass:110.00 },
-  F:  { pad:[174.61, 220.00, 261.63], bass:87.31  },
-  C:  { pad:[196.00, 261.63, 329.63], bass:130.81 },
-  G:  { pad:[196.00, 246.94, 293.66], bass:98.00  },
-  Dm: { pad:[220.00, 293.66, 349.23], bass:146.83 },
-  E:  { pad:[207.65, 246.94, 329.63], bass:82.41  },  // E major (harmonic-minor color)
-  Bb: { pad:[233.08, 293.66, 349.23], bass:116.54 },
+  Am: { pad:[220.00, 261.63, 329.63], bass:110.00, seventh:392.00 }, // +G (m7)
+  F:  { pad:[174.61, 220.00, 261.63], bass:87.31,  seventh:329.63 }, // +E (maj7)
+  C:  { pad:[196.00, 261.63, 329.63], bass:130.81, seventh:493.88 }, // +B (maj7)
+  G:  { pad:[196.00, 246.94, 293.66], bass:98.00,  seventh:349.23 }, // +F (dom7)
+  Dm: { pad:[220.00, 293.66, 349.23], bass:146.83, seventh:261.63 }, // +C (m7)
+  E:  { pad:[207.65, 246.94, 329.63], bass:82.41,  seventh:293.66 }, // +D (dom7)
+  Bb: { pad:[233.08, 293.66, 349.23], bass:116.54, seventh:415.30 }, // +Ab (dom7)
 };
 /* Each section: chords (one per bar), reps, and a texture style.
    arp: 'up' | 'down' | 'updown' | 'sparse' | 'none'; padGain/arpGain set the
    dynamics; bassPulse gives a section a gentle two-beat pulse. */
+/* groove:true → the section gets the funk layer (syncopated bass riff, off-beat
+   clav stab, soft shaker/hi-hat) + 7th color. Left OFF on the intro/bridge/calm
+   reprise (arp 'none'/'sparse') so those keep the pure ambient/spatial feel
+   Mike likes — the funk rides the energetic sections and we drop back to calm. */
 const MUSIC_SONG = [
-  { chords:['Am','F','C','G'],  reps:1, arp:'none',   padGain:0.045 },               // intro — pad only
-  { chords:['Am','F','C','G'],  reps:2, arp:'up',     padGain:0.050 },               // main theme A
-  { chords:['Dm','Am','Bb','F'],reps:2, arp:'down',   padGain:0.048 },               // theme B
-  { chords:['F','C','E','Am'],  reps:1, arp:'sparse', padGain:0.036, bassPulse:true },// bridge — sparse
-  { chords:['Am','G','F','E'],  reps:2, arp:'updown', padGain:0.050 },               // descending variation
-  { chords:['Am','Am','Dm','E'],reps:2, arp:'up',     padGain:0.050, bassPulse:true },// drive
-  { chords:['C','G','Dm','Am'], reps:2, arp:'down',   padGain:0.048 },               // theme C
-  { chords:['F','G','C','Am'],  reps:2, arp:'updown', padGain:0.055 },               // lift
-  { chords:['Am','F','C','G'],  reps:2, arp:'sparse', padGain:0.040 },               // calm reprise
-  { chords:['Dm','Am','Bb','F'],reps:2, arp:'up',     padGain:0.050 },               // theme B reprise
-  { chords:['Am','G','F','E'],  reps:2, arp:'updown', padGain:0.052, bassPulse:true },// build
-  { chords:['F','C','G','Am'],  reps:2, arp:'up',     padGain:0.050 },               // resolve → top
+  { chords:['Am','F','C','G'],  reps:1, arp:'none',   padGain:0.045 },                            // intro — pad only (ambient)
+  { chords:['Am','F','C','G'],  reps:2, arp:'up',     padGain:0.050, groove:true },               // main theme A
+  { chords:['Dm','Am','Bb','F'],reps:2, arp:'down',   padGain:0.048, groove:true },               // theme B
+  { chords:['F','C','E','Am'],  reps:1, arp:'sparse', padGain:0.036, bassPulse:true },            // bridge — sparse (ambient breather)
+  { chords:['Am','G','F','E'],  reps:2, arp:'updown', padGain:0.050, groove:true },               // descending variation
+  { chords:['Am','Am','Dm','E'],reps:2, arp:'up',     padGain:0.050, groove:true },               // drive
+  { chords:['C','G','Dm','Am'], reps:2, arp:'down',   padGain:0.048, groove:true },               // theme C
+  { chords:['F','G','C','Am'],  reps:2, arp:'updown', padGain:0.055, groove:true },               // lift
+  { chords:['Am','F','C','G'],  reps:2, arp:'sparse', padGain:0.040 },                            // calm reprise (ambient)
+  { chords:['Dm','Am','Bb','F'],reps:2, arp:'up',     padGain:0.050, groove:true },               // theme B reprise
+  { chords:['Am','G','F','E'],  reps:2, arp:'updown', padGain:0.052, groove:true },               // build
+  { chords:['F','C','G','Am'],  reps:2, arp:'up',     padGain:0.050, groove:true },               // resolve → top
 ];
 let musicSchedule = null;
 function buildSchedule(){
@@ -923,10 +929,33 @@ function buildSchedule(){
   return out;
 }
 const ARP_ORDER = { up:[0,1,2], down:[2,1,0], updown:[0,1,2,1], sparse:[0,2], none:[] };
+// One-time white-noise buffer reused for the shaker/hi-hat on groove bars.
+let noiseBuf = null;
+function getNoiseBuf(c){
+  if(noiseBuf) return noiseBuf;
+  const len = Math.floor(c.sampleRate * 0.2);
+  noiseBuf = c.createBuffer(1, len, c.sampleRate);
+  const d = noiseBuf.getChannelData(0);
+  for(let i=0;i<len;i++) d[i] = Math.random()*2 - 1;
+  return noiseBuf;
+}
+// A short noise tick (shaker/hi-hat), band-passed bright, soft.
+function noiseTick(c, at, peak, hp){
+  const src = c.createBufferSource(); src.buffer = getNoiseBuf(c);
+  const bp = c.createBiquadFilter(); bp.type='highpass'; bp.frequency.value = hp||6000;
+  const g = c.createGain();
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.exponentialRampToValueAtTime(peak, at + 0.005);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + 0.09);
+  src.connect(bp); bp.connect(g); g.connect(musicGain);
+  src.start(at); src.stop(at + 0.12);
+}
 function playBar(chord, dur, style){
   style = style || {};
   const padPk = style.padGain ?? 0.05, arpPk = style.arpGain ?? 0.035;
+  const groove = !!style.groove;
   const c = audioCtx(), t = c.currentTime;
+  const beat = dur / 4; // 4 beats per bar
   // pad — slow swell and fade
   chord.pad.forEach(f=>{
     const o = c.createOscillator(), g = c.createGain();
@@ -936,17 +965,67 @@ function playBar(chord, dur, style){
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(g); g.connect(musicGain); o.start(t); o.stop(t + dur + 0.1);
   });
-  // bass — soft root, sustained or a gentle two-beat pulse
-  const bassHits = style.bassPulse ? [0, dur/2] : [0];
-  bassHits.forEach(off=>{
-    const bo = c.createOscillator(), bg = c.createGain();
-    bo.type = 'triangle'; bo.frequency.value = chord.bass;
-    const bt = t + off, blen = style.bassPulse ? dur/2 : dur;
-    bg.gain.setValueAtTime(0.0001, bt);
-    bg.gain.exponentialRampToValueAtTime(0.07, bt + 0.25);
-    bg.gain.exponentialRampToValueAtTime(0.0001, bt + blen);
-    bo.connect(bg); bg.connect(musicGain); bo.start(bt); bo.stop(bt + blen + 0.1);
-  });
+  // 7th color tone — only on groove bars, soft, for the soulful jazz/funk color
+  if(groove && chord.seventh){
+    const so = c.createOscillator(), sg = c.createGain();
+    so.type = 'sine'; so.frequency.value = chord.seventh;
+    sg.gain.setValueAtTime(0.0001, t);
+    sg.gain.exponentialRampToValueAtTime(padPk * 0.55, t + 1.1);
+    sg.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    so.connect(sg); sg.connect(musicGain); so.start(t); so.stop(t + dur + 0.1);
+  }
+  if(!groove){
+    // ── AMBIENT BAR ── soft root, sustained or a gentle two-beat pulse
+    const bassHits = style.bassPulse ? [0, dur/2] : [0];
+    bassHits.forEach(off=>{
+      const bo = c.createOscillator(), bg = c.createGain();
+      bo.type = 'triangle'; bo.frequency.value = chord.bass;
+      const bt = t + off, blen = style.bassPulse ? dur/2 : dur;
+      bg.gain.setValueAtTime(0.0001, bt);
+      bg.gain.exponentialRampToValueAtTime(0.07, bt + 0.25);
+      bg.gain.exponentialRampToValueAtTime(0.0001, bt + blen);
+      bo.connect(bg); bg.connect(musicGain); bo.start(bt); bo.stop(bt + blen + 0.1);
+    });
+  } else {
+    // ── GROOVE BAR ── 70s-soul funk layer: syncopated plucky bass, off-beat
+    // clav stab, soft shaker. Tempo stays laid-back (~70 BPM) so it reads
+    // funky-but-mellow, not frantic — preserving the calm/spatial feel.
+    // Funk bass riff: root on 1, root again pushed on the "and" of 2, octave
+    // ghost on 4 — that pocket sit-back groove.
+    const bassPattern = [
+      { off:0,        f:chord.bass,     len:beat*0.9, pk:0.085 },
+      { off:beat*1.5, f:chord.bass,     len:beat*0.5, pk:0.075 },
+      { off:beat*2.75,f:chord.bass*1.5, len:beat*0.4, pk:0.060 }, // 5th ghost
+      { off:beat*3,   f:chord.bass*2,   len:beat*0.6, pk:0.070 }, // octave
+    ];
+    bassPattern.forEach(p=>{
+      const bo = c.createOscillator(), bg = c.createGain();
+      bo.type = 'triangle'; bo.frequency.value = p.f;
+      const bt = t + p.off;
+      bg.gain.setValueAtTime(0.0001, bt);
+      bg.gain.exponentialRampToValueAtTime(p.pk, bt + 0.02);
+      bg.gain.exponentialRampToValueAtTime(0.0001, bt + p.len);
+      bo.connect(bg); bg.connect(musicGain); bo.start(bt); bo.stop(bt + p.len + 0.05);
+    });
+    // Clav stab: short bright square chord on the off-beats (the "& of 2" and 4).
+    [beat*1.5, beat*3.5].forEach(off=>{
+      chord.pad.forEach(f=>{
+        const co = c.createOscillator(), cg = c.createGain();
+        co.type = 'square'; co.frequency.value = f;
+        const ct = t + off;
+        cg.gain.setValueAtTime(0.0001, ct);
+        cg.gain.exponentialRampToValueAtTime(0.018, ct + 0.01);
+        cg.gain.exponentialRampToValueAtTime(0.0001, ct + 0.16);
+        co.connect(cg); cg.connect(musicGain); co.start(ct); co.stop(ct + 0.2);
+      });
+    });
+    // Shaker / hi-hat: steady eighth-note pulse, accented off-beats.
+    for(let i=0;i<8;i++){
+      const off = i * (beat/2);
+      const accent = (i % 2 === 1); // off-beats brighter (funk feel)
+      noiseTick(c, t + off, accent ? 0.020 : 0.011, accent ? 7000 : 5500);
+    }
+  }
   // arpeggio — chord tones an octave up, shape varies by section
   const order = ARP_ORDER[style.arp || 'up'];
   const tones = chord.pad.map(f=> f * 2);
