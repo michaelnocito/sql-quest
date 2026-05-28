@@ -70,6 +70,9 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 .briefing .obj b{color:var(--yellow)}
 .briefing .onjob{margin-top:7px;font-size:12px;color:var(--accent2);background:rgba(88,170,162,.08);border-radius:6px;padding:6px 10px}
 .briefing .onjob b{color:var(--accent2)}
+.briefing .recall{margin-top:7px;font-size:12px;color:var(--yellow);background:rgba(212,168,73,.08);border-radius:6px;padding:6px 10px}
+.briefing .recall b{color:var(--yellow)}
+.briefing .recall .rk{display:inline-block;font-family:var(--mono);font-size:11px;background:var(--surf2);color:var(--yellow);padding:1px 7px;border-radius:4px;margin:0 2px}
 
 /* SCHEMA chips */
 .schema-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px}
@@ -210,6 +213,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
       <span class="tag" id="b-tag">SELECT</span><span class="ttl" id="b-title">First Contact</span>
       <p id="b-text"></p>
       <div class="obj">🎯 <b id="b-obj"></b></div>
+      <div class="recall" id="b-recall"><b>🔁 Recall drill —</b> this wave makes you reuse: <span id="b-recall-text"></span></div>
       <div class="onjob" id="b-job"><b>On the job:</b> <span id="b-job-text"></span></div>
     </div>
 
@@ -259,7 +263,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 28, 2026 · 6:54 PM ET";
+const BUILD_TS = "May 28, 2026 · 7:10 PM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, audio: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -336,6 +340,13 @@ function loadWave(){
   document.getElementById('b-obj').textContent = w.objective;
   document.getElementById('b-job-text').textContent = w.realWorld || '';
   document.getElementById('b-job').style.display = w.realWorld ? 'block' : 'none';
+  // Spaced retrieval: surface which earlier concepts this wave forces you to recall.
+  const rec = w.reinforces || [];
+  const recEl = document.getElementById('b-recall');
+  if(rec.length){
+    document.getElementById('b-recall-text').innerHTML = rec.map(c=>`<span class="rk">${esc(c)}</span>`).join('');
+    recEl.style.display = 'block';
+  } else { recEl.style.display = 'none'; }
   renderTrack();
   document.getElementById('feedback').textContent = '';
   document.getElementById('feedback').className = 'feedback';
@@ -791,41 +802,83 @@ function toggleAudio(){
   save();
 }
 
-/* ─── BACKGROUND MUSIC (procedural, looping ambient) ─────────────────────────
-   A calm A-minor progression — soft pad + bass + a sparkly arpeggio each bar.
-   Kept quiet so it sets a mood without fighting the player's focus. No assets:
-   everything is synthesised with Web Audio so it ships in one file. */
-const MUSIC_CHORDS = [
-  { pad:[220.00, 261.63, 329.63], bass:110.00 },  // Am
-  { pad:[174.61, 220.00, 261.63], bass:87.31  },  // F
-  { pad:[261.63, 329.63, 392.00], bass:130.81 },  // C
-  { pad:[196.00, 246.94, 293.66], bass:98.00  },  // G
+/* ─── BACKGROUND MUSIC (procedural, ~5 min through-composed) ─────────────────
+   No asset files — everything is synthesised in Web Audio so it ships in one
+   HTML file. Instead of a 4-bar loop, the track walks a SONG of distinct
+   sections (different chord progressions, arpeggio shapes, and dynamics) that
+   add up to ~5 minutes before it repeats, so it doesn't feel repetitive over a
+   15–20 min session. Roadmap: extend the SONG toward ~10 min + layered texture.
+   All chords stay in A-minor's orbit so the mood reads calm/focused. */
+const CH = {
+  Am: { pad:[220.00, 261.63, 329.63], bass:110.00 },
+  F:  { pad:[174.61, 220.00, 261.63], bass:87.31  },
+  C:  { pad:[196.00, 261.63, 329.63], bass:130.81 },
+  G:  { pad:[196.00, 246.94, 293.66], bass:98.00  },
+  Dm: { pad:[220.00, 293.66, 349.23], bass:146.83 },
+  E:  { pad:[207.65, 246.94, 329.63], bass:82.41  },  // E major (harmonic-minor color)
+  Bb: { pad:[233.08, 293.66, 349.23], bass:116.54 },
+};
+/* Each section: chords (one per bar), reps, and a texture style.
+   arp: 'up' | 'down' | 'updown' | 'sparse' | 'none'; padGain/arpGain set the
+   dynamics; bassPulse gives a section a gentle two-beat pulse. */
+const MUSIC_SONG = [
+  { chords:['Am','F','C','G'],  reps:1, arp:'none',   padGain:0.045 },               // intro — pad only
+  { chords:['Am','F','C','G'],  reps:2, arp:'up',     padGain:0.050 },               // main theme A
+  { chords:['Dm','Am','Bb','F'],reps:2, arp:'down',   padGain:0.048 },               // theme B
+  { chords:['F','C','E','Am'],  reps:1, arp:'sparse', padGain:0.036, bassPulse:true },// bridge — sparse
+  { chords:['Am','G','F','E'],  reps:2, arp:'updown', padGain:0.050 },               // descending variation
+  { chords:['Am','Am','Dm','E'],reps:2, arp:'up',     padGain:0.050, bassPulse:true },// drive
+  { chords:['C','G','Dm','Am'], reps:2, arp:'down',   padGain:0.048 },               // theme C
+  { chords:['F','G','C','Am'],  reps:2, arp:'updown', padGain:0.055 },               // lift
+  { chords:['Am','F','C','G'],  reps:2, arp:'sparse', padGain:0.040 },               // calm reprise
+  { chords:['Dm','Am','Bb','F'],reps:2, arp:'up',     padGain:0.050 },               // theme B reprise
+  { chords:['Am','G','F','E'],  reps:2, arp:'updown', padGain:0.052, bassPulse:true },// build
+  { chords:['F','C','G','Am'],  reps:2, arp:'up',     padGain:0.050 },               // resolve → top
 ];
-function playBar(chord, dur){
+let musicSchedule = null;
+function buildSchedule(){
+  const out = [];
+  MUSIC_SONG.forEach(sec=>{
+    for(let r=0; r<(sec.reps||1); r++){
+      sec.chords.forEach(name=> out.push({ chord: CH[name], style: sec }));
+    }
+  });
+  return out;
+}
+const ARP_ORDER = { up:[0,1,2], down:[2,1,0], updown:[0,1,2,1], sparse:[0,2], none:[] };
+function playBar(chord, dur, style){
+  style = style || {};
+  const padPk = style.padGain ?? 0.05, arpPk = style.arpGain ?? 0.035;
   const c = audioCtx(), t = c.currentTime;
   // pad — slow swell and fade
   chord.pad.forEach(f=>{
     const o = c.createOscillator(), g = c.createGain();
     o.type = 'sine'; o.frequency.value = f;
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.05, t + 0.9);
+    g.gain.exponentialRampToValueAtTime(padPk, t + 0.9);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(g); g.connect(musicGain); o.start(t); o.stop(t + dur + 0.1);
   });
-  // bass — soft root
-  const bo = c.createOscillator(), bg = c.createGain();
-  bo.type = 'triangle'; bo.frequency.value = chord.bass;
-  bg.gain.setValueAtTime(0.0001, t);
-  bg.gain.exponentialRampToValueAtTime(0.07, t + 0.25);
-  bg.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  bo.connect(bg); bg.connect(musicGain); bo.start(t); bo.stop(t + dur + 0.1);
-  // arpeggio — chord tones an octave up, sprinkled across the bar
-  chord.pad.forEach((f,i)=>{
+  // bass — soft root, sustained or a gentle two-beat pulse
+  const bassHits = style.bassPulse ? [0, dur/2] : [0];
+  bassHits.forEach(off=>{
+    const bo = c.createOscillator(), bg = c.createGain();
+    bo.type = 'triangle'; bo.frequency.value = chord.bass;
+    const bt = t + off, blen = style.bassPulse ? dur/2 : dur;
+    bg.gain.setValueAtTime(0.0001, bt);
+    bg.gain.exponentialRampToValueAtTime(0.07, bt + 0.25);
+    bg.gain.exponentialRampToValueAtTime(0.0001, bt + blen);
+    bo.connect(bg); bg.connect(musicGain); bo.start(bt); bo.stop(bt + blen + 0.1);
+  });
+  // arpeggio — chord tones an octave up, shape varies by section
+  const order = ARP_ORDER[style.arp || 'up'];
+  const tones = chord.pad.map(f=> f * 2);
+  order.forEach((idx, i)=>{
     const ao = c.createOscillator(), ag = c.createGain();
-    ao.type = 'triangle'; ao.frequency.value = f * 2;
-    const at = t + (i + 1) * (dur / 4);
+    ao.type = 'triangle'; ao.frequency.value = tones[idx];
+    const at = t + (i + 1) * (dur / (order.length + 1));
     ag.gain.setValueAtTime(0.0001, at);
-    ag.gain.exponentialRampToValueAtTime(0.035, at + 0.04);
+    ag.gain.exponentialRampToValueAtTime(arpPk, at + 0.04);
     ag.gain.exponentialRampToValueAtTime(0.0001, at + 0.6);
     ao.connect(ag); ag.connect(musicGain); ao.start(at); ao.stop(at + 0.7);
   });
@@ -834,8 +887,9 @@ function startMusic(){
   if(!state.audio || musicTimer) return;
   const c = audioCtx();
   if(!musicGain){ musicGain = c.createGain(); musicGain.gain.value = 0.9; musicGain.connect(c.destination); }
+  if(!musicSchedule) musicSchedule = buildSchedule();
   const BAR = 3.4;
-  const tick = ()=>{ playBar(MUSIC_CHORDS[musicStep % MUSIC_CHORDS.length], BAR); musicStep++; };
+  const tick = ()=>{ const b = musicSchedule[musicStep % musicSchedule.length]; playBar(b.chord, BAR, b.style); musicStep++; };
   tick();
   musicTimer = setInterval(tick, BAR * 1000);
 }

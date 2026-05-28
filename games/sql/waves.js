@@ -8,6 +8,16 @@
 
    The enemies shown in the battlefield lane ARE the solution's result set.
    So "write the query that returns exactly these targets" is the puzzle.
+
+   SPACED RETRIEVAL (learning science): concepts must come back AFTER A GAP,
+   interleaved with newer material, so the player has to *recall* them, not just
+   repeat them in a block. Two levers, both pure data here:
+     1. Layering — author each wave's `solution` so it necessarily reuses earlier
+        verbs (every query is still a SELECT; later ones fold in WHERE/JOIN/…).
+     2. `reinforces: [...]` — names the earlier concepts a wave drills again, so
+        the briefing shows a "Recall drill" chip and the schedule is explicit.
+   Target schedule as waves are added (expanding gaps, Leitner-style): revisit a
+   concept ~1, then ~3, then ~7 waves after it's introduced, in a fresh context.
    ──────────────────────────────────────────────────────────────────────── */
 window.WAVES = [
   {
@@ -25,6 +35,7 @@ window.WAVES = [
     // forward per turn (0..4 reaches the base). Early waves creep slowly.
     rounds: 3,
     creep: 0.10,
+    reinforces: [],               // first concept — nothing to recall yet
     starter: "SELECT * FROM enemies;",
     solution: "SELECT * FROM enemies;",
     schema: `
@@ -54,6 +65,7 @@ window.WAVES = [
     layer: "modify",
     rounds: 3,
     creep: 0.14,
+    reinforces: ["SELECT"],       // still pulling rows with SELECT before you filter
     starter: "SELECT * FROM enemies WHERE type = '____';",
     solution: "SELECT * FROM enemies WHERE type = 'Raider';",
     schema: `
@@ -83,6 +95,7 @@ window.WAVES = [
     layer: "scratch",
     rounds: 4,
     creep: 0.18,
+    reinforces: ["SELECT", "WHERE"], // re-type SELECT + columns; the ON match is WHERE's "match on a condition" muscle
     starter: "SELECT e.id, e.name, e.type, e.health\nFROM enemies e\nJOIN bounties b ON ____ = ____;",
     solution: "SELECT e.id, e.name, e.type, e.health FROM enemies e JOIN bounties b ON e.id = b.enemy_id;",
     schema: `

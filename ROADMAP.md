@@ -12,13 +12,16 @@ then moves into **Now / Next / Later / Icebox**. Done items drop to **Shipped**.
 _Nothing in flight._
 
 ## Next (queued, agreed)
+- **[P1] Spaced-retrieval scheduled review waves** — foundation shipped (`reinforces` field + Recall-drill chip + layered solutions). Next: as Waves 4–7 land, author dedicated "Recon" review beats on expanding gaps (~1, 3, 7 waves after a concept is introduced) that re-test an earlier verb in a *fresh* schema. Truly works retrieval into combat.
+- **[P2] Music → ~10 min + layered texture** — through-composed ~5 min track shipped (12-section SONG). Extend the SONG toward ~10 min, add a counter-melody/percussion layer, and consider per-difficulty intensity.
 - **[P2] Turret muzzle flash + recoil** — make the base feel like it fires, not just the enemies exploding.
 - **[P2] Per-wave combat tuning pass** — once Mike plays it, dial `rounds`/`creep` per wave so each fight reinforces without going stale.
 
 ## Later (good ideas, not scheduled)
-- **[P2] Waves 4–7** — GROUP BY + HAVING, subqueries, CTEs, window functions.
+- **[P2] Waves 4–7** — GROUP BY + HAVING, subqueries, CTEs, window functions (each authored to layer + carry `reinforces`).
 - **[P2] Per-concept codex cards** — revisit unlocked vocab.
-- **[P3] Training Ground** — replay any cleared wave.
+- **[P3] Training Ground** — replay any cleared wave (supplement to scheduled review, not the primary retention driver — learners under-review when it's voluntary).
+- **[P3] Adaptive resurfacing** — track fumbled concepts (hints used, wrong tries) and bias later waves to bring them back.
 - **[P3] Adaptive audio** tied to difficulty + circadian toggle.
 
 ## Icebox (parked / maybe never)
@@ -28,6 +31,8 @@ _Nothing in flight._
 ---
 
 ## Shipped
+- **[P1] Spaced-retrieval foundation** (2026-05-28) — learning-science request: bring earlier concepts back after a gap, interleaved, so the player *recalls* them. Two data-driven levers: (1) solutions are layered so later waves reuse earlier verbs; (2) a `reinforces: [...]` field per wave drives a yellow **"🔁 Recall drill — this wave makes you reuse: …"** chip in the briefing. W1 none, W2 SELECT, W3 SELECT+WHERE. Expanding-gap review schedule (~1/3/7 waves) documented in waves.js for when 4–7 are authored. Chose this over Training-Ground-only (voluntary review is weak) and adaptive (overkill for prototype) — both roadmapped.
+- **[P2] Music variety — ~5 min through-composed track** (2026-05-28) — replaced the 4-bar Am–F–C–G loop with a 12-section `SONG` (~88 bars / 4.99 min before repeat): varied progressions, arpeggio shapes (up/down/updown/sparse/none), dynamics, and optional bass pulse. Still 100% procedural Web Audio, no assets. Goal is ~10 min — extension roadmapped.
 - **[P1] Start splash + build timestamp + background music** (2026-05-28) — start screen (title, tagline, "Start Campaign", build stamp in Eastern 12-hour time, e.g. `May 28, 2026 · 6:54 PM ET` via `BUILD_TS` const — update each build). Starting the campaign is the audio-unlock gesture and kicks off a looping procedural ambient track (Am–F–C–G pad + bass + arpeggio, synthesised in Web Audio, no asset files). Speaker button mutes/unmutes. Also resumes AudioContext for iOS/Safari.
 - **[P0] Layout: keep the action always visible** (2026-05-28) — the result table was shoving the battlefield below the fold. Reworked to a turn-based-combat layout: battlefield pinned on top (mobile) / full-height right panel (desktop ≥900px) with the command console scrolling independently. Result table capped + scrolls inside the console; the fight is never covered.
 - **[P1] FF-style HP-whittle combat exchange** (2026-05-28) — enemies have HP bars; a correct query is a volley chipping `maxHp/rounds` per turn, so you re-fire the right query a few times to clear (drilling the syntax). All living enemies creep forward slowly (visible, near-harmless early). Wrong query = wasted turn + free creep; over-broad query = friendly-fire base damage. Floating damage numbers + non-lethal hit flash. Tuning is data-driven per wave (`rounds`, `creep` in waves.js).
@@ -42,6 +47,8 @@ Raw incoming notes from Mike. Newest first. Triaged into the lists above.
 
 | Date | Feedback | Priority | Status | Where it went |
 |------|----------|----------|--------|----------------|
+| 2026-05-28 | "Learning science says revisit topics after a short break — work spaced retrieval into combat. SELECT (and earlier verbs) need to come back later, layered as we progress. Per-level and/or a clickable feature — weigh pros/cons and recommend." | P1 | partial | Foundation shipped (`reinforces` + Recall chip + layered solutions); scheduled review waves queued in Next |
+| 2026-05-28 | "Loving the music but it needs more variety — it's repetitive. Players go 15–20 min blocks. Goal ~10 min of decent music; for now build 5 min of non-looped music, roadmap the rest." | P2 | done | Shipped (~5 min through-composed); ~10 min in Next |
 | 2026-05-28 | "No background music, and I think we need a start splash screen that timestamps the build in Eastern time, standard (not military) — and the audio can start after clearing the start screen." | P1 | done | Shipped |
 | 2026-05-28 | "The result table appears after the first command and totally covers up the action. Reconsider the layout so the action is visible — think Final Fantasy / turn-based combat." | P0 | done | Shipped |
 | 2026-05-28 | "Back-and-forth with enemies — they creep closer, we attack with SQL, takes some HP off, exchange continues, Final Fantasy style." Chose HP-whittle: slow visible creep early, re-type the attack each round, tuned so a wave lasts long enough to learn but not get stale; friendly fire on over-broad queries. | P1 | done | Shipped |
