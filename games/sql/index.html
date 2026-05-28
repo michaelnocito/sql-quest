@@ -114,6 +114,17 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 #field{width:100%;height:100%;display:block}
 .field-status{position:absolute;top:10px;left:0;right:0;text-align:center;font-size:12px;color:var(--muted);pointer-events:none}
 
+/* START SPLASH */
+#splash{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;padding:24px;
+  background:radial-gradient(circle at 50% 30%,rgba(88,170,162,.14),transparent 60%),var(--bg)}
+#splash.show{display:flex}
+.splash-card{text-align:center;max-width:440px}
+.splash-logo{font-weight:800;font-size:2.8rem;letter-spacing:-1px;margin-bottom:14px}
+.splash-logo .q{color:var(--accent)}
+.splash-tag{color:var(--muted);font-size:15px;line-height:1.6;margin-bottom:26px}
+.splash-start{font-size:16px;padding:12px 26px}
+.splash-build{margin-top:22px;font-family:var(--mono);font-size:11px;color:var(--muted);opacity:.8}
+
 /* WAVE OVERLAY (win/lose) */
 .overlay{position:absolute;inset:0;background:rgba(23,21,19,.86);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;z-index:30;overflow-y:auto}
 .overlay.show{display:flex}
@@ -168,6 +179,15 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 </style>
 </head>
 <body>
+
+<div id="splash" class="show">
+  <div class="splash-card">
+    <div class="splash-logo">SQL <span class="q">Quest</span></div>
+    <p class="splash-tag">Command your turret with real SQL. Each query is an attack — clear the swarm, learn the language analysts get hired for.</p>
+    <button class="btn btn-primary splash-start" onclick="startGame()">▶ Start Campaign</button>
+    <div class="splash-build">Build · <span id="build-ts">—</span></div>
+  </div>
+</div>
 
 <header>
   <div class="brand">SQL <span class="q">Quest</span></div>
@@ -238,8 +258,10 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 <script>
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
+// Stamped at build time (Eastern, 12-hour). Update on each build.
+const BUILD_TS = "May 28, 2026 · 6:54 PM ET";
 const state = {
-  wave: 0, baseHP: 100, devMode: true, audio: false, theme: 'dark',
+  wave: 0, baseHP: 100, devMode: true, audio: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
 };
 let SQLjs = null;          // initSqlJs module
@@ -747,7 +769,7 @@ function overlayAction(){
 }
 
 /* ─── AUDIO (focus hum + chimes) ─────────────────────────────────────────── */
-let actx = null, hum = null;
+let actx = null, musicGain = null, musicTimer = null, musicStep = 0;
 function audioCtx(){
   if(!actx) actx = new (window.AudioContext||window.webkitAudioContext)();
   if(actx.state === 'suspended') actx.resume();   // iOS/Safari start suspended until a gesture
@@ -765,21 +787,71 @@ function toggleAudio(){
   state.audio = !state.audio;
   document.getElementById('audio-btn').textContent = state.audio ? '🔊' : '🔇';
   document.getElementById('audio-btn').classList.toggle('on', state.audio);
-  if(state.audio){ startHum(); } else { stopHum(); }
+  if(state.audio){ startMusic(); } else { stopMusic(); }
   save();
 }
-// Endel-style: a soft adaptive drone that gets a touch brighter on harder waves.
-function startHum(){
-  const c = audioCtx();
-  stopHum();
-  hum = c.createOscillator(); const g = c.createGain();
-  hum.type = 'sine';
-  hum.frequency.value = 110 + state.wave * 8;   // adapts to wave difficulty
-  g.gain.value = 0.018;
-  hum.connect(g); g.connect(c.destination); hum.start();
-  hum._g = g;
+
+/* ─── BACKGROUND MUSIC (procedural, looping ambient) ─────────────────────────
+   A calm A-minor progression — soft pad + bass + a sparkly arpeggio each bar.
+   Kept quiet so it sets a mood without fighting the player's focus. No assets:
+   everything is synthesised with Web Audio so it ships in one file. */
+const MUSIC_CHORDS = [
+  { pad:[220.00, 261.63, 329.63], bass:110.00 },  // Am
+  { pad:[174.61, 220.00, 261.63], bass:87.31  },  // F
+  { pad:[261.63, 329.63, 392.00], bass:130.81 },  // C
+  { pad:[196.00, 246.94, 293.66], bass:98.00  },  // G
+];
+function playBar(chord, dur){
+  const c = audioCtx(), t = c.currentTime;
+  // pad — slow swell and fade
+  chord.pad.forEach(f=>{
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.05, t + 0.9);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(musicGain); o.start(t); o.stop(t + dur + 0.1);
+  });
+  // bass — soft root
+  const bo = c.createOscillator(), bg = c.createGain();
+  bo.type = 'triangle'; bo.frequency.value = chord.bass;
+  bg.gain.setValueAtTime(0.0001, t);
+  bg.gain.exponentialRampToValueAtTime(0.07, t + 0.25);
+  bg.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  bo.connect(bg); bg.connect(musicGain); bo.start(t); bo.stop(t + dur + 0.1);
+  // arpeggio — chord tones an octave up, sprinkled across the bar
+  chord.pad.forEach((f,i)=>{
+    const ao = c.createOscillator(), ag = c.createGain();
+    ao.type = 'triangle'; ao.frequency.value = f * 2;
+    const at = t + (i + 1) * (dur / 4);
+    ag.gain.setValueAtTime(0.0001, at);
+    ag.gain.exponentialRampToValueAtTime(0.035, at + 0.04);
+    ag.gain.exponentialRampToValueAtTime(0.0001, at + 0.6);
+    ao.connect(ag); ag.connect(musicGain); ao.start(at); ao.stop(at + 0.7);
+  });
 }
-function stopHum(){ if(hum){ try{hum.stop();}catch(e){} hum = null; } }
+function startMusic(){
+  if(!state.audio || musicTimer) return;
+  const c = audioCtx();
+  if(!musicGain){ musicGain = c.createGain(); musicGain.gain.value = 0.9; musicGain.connect(c.destination); }
+  const BAR = 3.4;
+  const tick = ()=>{ playBar(MUSIC_CHORDS[musicStep % MUSIC_CHORDS.length], BAR); musicStep++; };
+  tick();
+  musicTimer = setInterval(tick, BAR * 1000);
+}
+function stopMusic(){ if(musicTimer){ clearInterval(musicTimer); musicTimer = null; } }
+
+/* Start screen → first user gesture, so the AudioContext is allowed to play.
+   Starting the campaign opts you into music; tap the speaker to mute. */
+function startGame(){
+  document.getElementById('splash').classList.remove('show');
+  state.audio = true;
+  const ab = document.getElementById('audio-btn');
+  ab.textContent = '🔊'; ab.classList.add('on');
+  audioCtx();                 // create/resume inside the click gesture
+  startMusic();
+  save();
+}
 
 /* ─── CELEBRATE (confetti + toast) ───────────────────────────────────────── */
 function celebrate(){
@@ -825,6 +897,10 @@ function toggleTheme(){ state.theme = state.theme === 'light' ? 'dark' : 'light'
 async function init(){
   load();
   applyTheme();
+  document.getElementById('build-ts').textContent = BUILD_TS;
+  const ab = document.getElementById('audio-btn');
+  ab.textContent = state.audio ? '🔊' : '🔇';
+  ab.classList.toggle('on', state.audio);
   document.getElementById('wave-total').textContent = WAVES.length;
   document.getElementById('dev-btn').classList.toggle('on', state.devMode);
   document.getElementById('dev-hint').style.visibility = state.devMode ? 'visible' : 'hidden';

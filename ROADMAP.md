@@ -28,6 +28,7 @@ _Nothing in flight._
 ---
 
 ## Shipped
+- **[P1] Start splash + build timestamp + background music** (2026-05-28) — start screen (title, tagline, "Start Campaign", build stamp in Eastern 12-hour time, e.g. `May 28, 2026 · 6:54 PM ET` via `BUILD_TS` const — update each build). Starting the campaign is the audio-unlock gesture and kicks off a looping procedural ambient track (Am–F–C–G pad + bass + arpeggio, synthesised in Web Audio, no asset files). Speaker button mutes/unmutes. Also resumes AudioContext for iOS/Safari.
 - **[P0] Layout: keep the action always visible** (2026-05-28) — the result table was shoving the battlefield below the fold. Reworked to a turn-based-combat layout: battlefield pinned on top (mobile) / full-height right panel (desktop ≥900px) with the command console scrolling independently. Result table capped + scrolls inside the console; the fight is never covered.
 - **[P1] FF-style HP-whittle combat exchange** (2026-05-28) — enemies have HP bars; a correct query is a volley chipping `maxHp/rounds` per turn, so you re-fire the right query a few times to clear (drilling the syntax). All living enemies creep forward slowly (visible, near-harmless early). Wrong query = wasted turn + free creep; over-broad query = friendly-fire base damage. Floating damage numbers + non-lethal hit flash. Tuning is data-driven per wave (`rounds`, `creep` in waves.js).
 - **[P1] Explosion/attack animation on correct query** (2026-05-28) — staggered beams from the base, per-enemy detonation (flash + expanding ring + 7 shards), enemy death fade. Real visual payoff before the Wave Cleared card.
@@ -41,6 +42,7 @@ Raw incoming notes from Mike. Newest first. Triaged into the lists above.
 
 | Date | Feedback | Priority | Status | Where it went |
 |------|----------|----------|--------|----------------|
+| 2026-05-28 | "No background music, and I think we need a start splash screen that timestamps the build in Eastern time, standard (not military) — and the audio can start after clearing the start screen." | P1 | done | Shipped |
 | 2026-05-28 | "The result table appears after the first command and totally covers up the action. Reconsider the layout so the action is visible — think Final Fantasy / turn-based combat." | P0 | done | Shipped |
 | 2026-05-28 | "Back-and-forth with enemies — they creep closer, we attack with SQL, takes some HP off, exchange continues, Final Fantasy style." Chose HP-whittle: slow visible creep early, re-type the attack each round, tuned so a wave lasts long enough to learn but not get stale; friendly fire on over-broad queries. | P1 | done | Shipped |
 | 2026-05-28 | "Need animation when the query executes — an attack/explosion of each enemy. Right now it congratulates you but there's no visual payoff." | P1 | done | Shipped |
