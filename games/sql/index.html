@@ -45,6 +45,15 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 .editor-pane{flex:0 0 auto;padding:12px 14px;overflow-y:auto;border-bottom:1px solid var(--border);background:var(--bg)}
 .field-pane{flex:1;min-height:0;position:relative;background:radial-gradient(circle at 70% 30%,rgba(88,170,162,.06),transparent 60%),var(--surf)}
 
+/* CONCEPT TRACK — shows the whole campaign path: done · current · upcoming */
+.track{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;padding-bottom:3px}
+.track-step{flex:0 0 auto;display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;padding:4px 10px 4px 5px;border-radius:20px;border:1px solid var(--border);background:var(--surf);color:var(--muted);white-space:nowrap}
+.track-step .dot{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;background:var(--surf2);color:var(--muted)}
+.track-step.done{border-color:var(--green);color:var(--green)}
+.track-step.done .dot{background:var(--green);color:#0e1f1e}
+.track-step.current{border-color:var(--accent);color:var(--text);background:rgba(88,170,162,.12)}
+.track-step.current .dot{background:var(--accent);color:#0e1f1e}
+
 /* BRIEFING */
 .briefing{background:var(--surf);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--r2);padding:11px 14px;margin-bottom:10px;font-size:13.5px}
 .briefing .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--accent);background:var(--surf2);padding:2px 8px;border-radius:4px;margin-right:8px}
@@ -73,6 +82,8 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 .btn-ghost:hover{color:var(--text);border-color:var(--text)}
 .btn-sm{padding:7px 13px;font-size:13px}
 .kbd{font-family:var(--mono);font-size:10px;background:var(--surf2);border:1px solid var(--border);border-radius:4px;padding:1px 5px;color:var(--muted)}
+.btn.pulse{animation:hintpulse 1.6s ease-out 2}
+@keyframes hintpulse{0%{box-shadow:0 0 0 0 rgba(212,168,73,.5);border-color:var(--yellow);color:var(--yellow)}70%{box-shadow:0 0 0 8px rgba(212,168,73,0)}100%{box-shadow:0 0 0 0 rgba(212,168,73,0)}}
 .dev-note{font-size:11px;color:var(--muted)}
 
 /* RESULT / FEEDBACK */
@@ -133,7 +144,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 
 <header>
   <div class="brand">SQL <span class="q">Quest</span></div>
-  <div class="wave-chip">Wave <b id="wave-num">1</b> · <span id="wave-concept">SELECT</span></div>
+  <div class="wave-chip">Wave <b id="wave-num">1</b> / <span id="wave-total">3</span> · <span id="wave-concept">SELECT</span></div>
   <div class="spacer"></div>
   <div class="hp-wrap" title="Base integrity">
     <span>BASE</span>
@@ -147,6 +158,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 
 <main>
   <section class="editor-pane">
+    <div class="track" id="track"></div>
     <div class="briefing">
       <span class="tag" id="b-tag">SELECT</span><span class="ttl" id="b-title">First Contact</span>
       <p id="b-text"></p>
@@ -266,6 +278,7 @@ function loadWave(){
   document.getElementById('b-obj').textContent = w.objective;
   document.getElementById('b-job-text').textContent = w.realWorld || '';
   document.getElementById('b-job').style.display = w.realWorld ? 'block' : 'none';
+  renderTrack();
   document.getElementById('feedback').textContent = '';
   document.getElementById('feedback').className = 'feedback';
   document.getElementById('result').innerHTML = '';
@@ -295,6 +308,21 @@ function loadWave(){
     `${enemiesLive.length} target${enemiesLive.length!==1?'s':''} in the lane — clear them with the right query.`;
   drawField();
   hideOverlay();
+}
+
+// Campaign path: where you've been, where you are, where you're going.
+function renderTrack(){
+  const el = document.getElementById('track');
+  el.innerHTML = WAVES.map((w,i)=>{
+    const done = state.cleared.includes(w.id);
+    const cur = i === state.wave;
+    const cls = cur ? 'current' : (done ? 'done' : '');
+    const mark = done && !cur ? '✓' : w.id;
+    return `<div class="track-step ${cls}"><span class="dot">${mark}</span>${esc(w.concept)}</div>`;
+  }).join('');
+  // keep the current step scrolled into view
+  const curEl = el.querySelector('.current');
+  if(curEl) curEl.scrollIntoView({inline:'center', block:'nearest'});
 }
 
 function renderSchema(schema){
@@ -365,6 +393,11 @@ function cycleHint(){
   if(hintLevel >= w.hints.length) btn.disabled = true;
 }
 function esc(s){ return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function pulseHint(){
+  const btn = document.getElementById('hint-btn');
+  if(btn.disabled) return;
+  btn.classList.remove('pulse'); void btn.offsetWidth; btn.classList.add('pulse');
+}
 
 /* ─── RUN QUERY ──────────────────────────────────────────────────────────── */
 function runQuery(){
@@ -389,7 +422,9 @@ function runQuery(){
     db.close();
     // Tier 2: syntax error
     waveTries++;
-    setFb('err', `Syntax error — check your spelling and punctuation. (${e.message})`);
+    const nudge = waveTries >= 2 ? ' Stuck? Tap “Show hint”.' : '';
+    setFb('err', `Syntax error — check your spelling and punctuation.${nudge} (${e.message})`);
+    if(waveTries >= 2) pulseHint();
     save();
     return;
   }
@@ -405,7 +440,9 @@ function runQuery(){
   } else {
     // Tier 3: valid but wrong result set
     waveTries++;
-    setFb('warn', `Query ran, but it targeted ${player.rows.length} row${player.rows.length!==1?'s':''} — the lane has ${expected.rows.length}. The swarm advances. Adjust and fire again.`);
+    const nudge = waveTries >= 2 ? ' Stuck? Tap “Show hint”.' : '';
+    setFb('warn', `Query ran, but it targeted ${player.rows.length} row${player.rows.length!==1?'s':''} — the lane has ${expected.rows.length}. The swarm advances. Adjust and fire again.${nudge}`);
+    if(waveTries >= 2) pulseHint();
     enemyAdvance();
   }
   save();
@@ -516,10 +553,13 @@ function waveCleared(){
   save();
   celebrate();
   const last = state.wave >= WAVES.length - 1;
-  showOverlay('🏆', last ? 'Campaign Clear!' : 'Wave Cleared',
-    last ? `You cleared every wave. Accuracy: ${accuracy()}%. More waves and the Python pack are coming.`
-         : `Concept locked in: ${w.concept}. Accuracy so far: ${accuracy()}%.`,
-    last ? 'Replay from Wave 1' : 'Next Wave →');
+  const next = last ? null : WAVES[state.wave + 1];
+  const body = last
+    ? `You cleared all ${WAVES.length} waves. Accuracy: ${accuracy()}%. More waves and the Python pack are coming.`
+    : `Concept locked in: <b style="color:var(--accent2)">${esc(w.concept)}</b>. Accuracy: ${accuracy()}%.`
+      + `<br><span style="color:var(--muted);font-size:13px">Next up — Wave ${next.id}: <b style="color:var(--text)">${esc(next.concept)}</b> · ${esc(next.title)}</span>`;
+  showOverlay('🏆', last ? 'Campaign Clear!' : 'Wave Cleared', body,
+    last ? 'Replay from Wave 1' : `Start Wave ${next.id}: ${next.concept} →`);
   // First-try bonus rewards real recall (no hints / no peeking).
   document.getElementById('ov-firsttry').classList.toggle('show', firstTry);
   // Vocab chips reinforce the analyst terminology this wave introduced.
@@ -543,7 +583,7 @@ function showOverlay(big, title, text, btn){
   document.getElementById('ov-terms').innerHTML = '';
   document.getElementById('ov-big').textContent = big;
   document.getElementById('ov-title').textContent = title;
-  document.getElementById('ov-text').textContent = text;
+  document.getElementById('ov-text').innerHTML = text;
   document.getElementById('ov-btn').textContent = btn;
   document.getElementById('overlay').classList.add('show');
 }
@@ -636,6 +676,7 @@ function toggleTheme(){ state.theme = state.theme === 'light' ? 'dark' : 'light'
 async function init(){
   load();
   applyTheme();
+  document.getElementById('wave-total').textContent = WAVES.length;
   document.getElementById('dev-btn').classList.toggle('on', state.devMode);
   document.getElementById('dev-hint').style.visibility = state.devMode ? 'visible' : 'hidden';
   updateHP();
