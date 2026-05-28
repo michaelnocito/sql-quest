@@ -52,6 +52,8 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 .briefing p{margin-top:6px;color:var(--text)}
 .briefing .obj{margin-top:7px;font-size:12.5px;color:var(--muted)}
 .briefing .obj b{color:var(--yellow)}
+.briefing .onjob{margin-top:7px;font-size:12px;color:var(--accent2);background:rgba(88,170,162,.08);border-radius:6px;padding:6px 10px}
+.briefing .onjob b{color:var(--accent2)}
 
 /* SCHEMA chips */
 .schema-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px}
@@ -98,6 +100,11 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 .overlay h2{font-size:1.5rem;margin-bottom:6px}
 .overlay p{color:var(--muted);margin-bottom:16px;max-width:340px}
 .overlay .big{font-size:2.4rem;margin-bottom:8px}
+.first-try{font-size:13px;font-weight:700;color:#0e1f1e;background:var(--yellow);padding:3px 12px;border-radius:20px;margin-bottom:12px;display:none}
+.first-try.show{display:inline-block}
+.terms-wrap{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:18px;max-width:360px}
+.term-chip{font-family:var(--mono);font-size:11px;background:var(--surf2);border:1px solid var(--accent);color:var(--accent2);padding:3px 10px;border-radius:20px}
+.terms-label{font-size:11px;color:var(--muted);width:100%;margin-bottom:2px}
 
 /* TOAST + CONFETTI */
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surf);border:1px solid var(--accent);color:var(--text);padding:10px 20px;border-radius:24px;font-weight:600;font-size:14px;opacity:0;pointer-events:none;transition:.3s;z-index:200;box-shadow:var(--shadow)}
@@ -144,6 +151,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
       <span class="tag" id="b-tag">SELECT</span><span class="ttl" id="b-title">First Contact</span>
       <p id="b-text"></p>
       <div class="obj">🎯 <b id="b-obj"></b></div>
+      <div class="onjob" id="b-job"><b>On the job:</b> <span id="b-job-text"></span></div>
     </div>
 
     <div class="schema-row" id="schema-row"></div>
@@ -170,8 +178,10 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
     <svg id="field" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid meet"></svg>
     <div class="overlay" id="overlay">
       <div class="big" id="ov-big">🏆</div>
+      <div class="first-try" id="ov-firsttry">🎯 First try — no peeking!</div>
       <h2 id="ov-title">Wave Cleared</h2>
       <p id="ov-text"></p>
+      <div class="terms-wrap" id="ov-terms"></div>
       <button class="btn btn-primary" id="ov-btn" onclick="overlayAction()">Next Wave →</button>
     </div>
   </section>
@@ -197,6 +207,7 @@ let SQLjs = null;          // initSqlJs module
 let enemiesLive = [];      // live battlefield enemies for current wave
 let hintLevel = 0;
 let busy = false;          // lock during animations
+let waveTries = 0;         // wrong/error attempts on the current wave (for first-try bonus)
 
 function load(){
   try{ Object.assign(state, JSON.parse(localStorage.getItem(LS)) || {}); }catch(e){}
@@ -246,17 +257,20 @@ function currentWave(){ return WAVES[state.wave]; }
 function loadWave(){
   const w = currentWave();
   hintLevel = 0;
+  waveTries = 0;
   document.getElementById('wave-num').textContent = w.id;
   document.getElementById('wave-concept').textContent = w.concept;
   document.getElementById('b-tag').textContent = w.concept;
   document.getElementById('b-title').textContent = w.title;
   document.getElementById('b-text').innerHTML = w.briefing;
   document.getElementById('b-obj').textContent = w.objective;
+  document.getElementById('b-job-text').textContent = w.realWorld || '';
+  document.getElementById('b-job').style.display = w.realWorld ? 'block' : 'none';
   document.getElementById('feedback').textContent = '';
   document.getElementById('feedback').className = 'feedback';
   document.getElementById('result').innerHTML = '';
   const hintEl = document.getElementById('hint'); hintEl.className = 'hint'; hintEl.innerHTML = '';
-  document.getElementById('hint-btn').textContent = 'Show hint';
+  const hb = document.getElementById('hint-btn'); hb.textContent = 'Show hint'; hb.disabled = false;
 
   // Editor: in dev mode show solution as a tab-to-insert ghost; otherwise the starter scaffold.
   const ed = document.getElementById('sql');
@@ -374,6 +388,7 @@ function runQuery(){
   }catch(e){
     db.close();
     // Tier 2: syntax error
+    waveTries++;
     setFb('err', `Syntax error — check your spelling and punctuation. (${e.message})`);
     save();
     return;
@@ -389,6 +404,7 @@ function runQuery(){
     fireAndClear();
   } else {
     // Tier 3: valid but wrong result set
+    waveTries++;
     setFb('warn', `Query ran, but it targeted ${player.rows.length} row${player.rows.length!==1?'s':''} — the lane has ${expected.rows.length}. The swarm advances. Adjust and fire again.`);
     enemyAdvance();
   }
@@ -494,14 +510,24 @@ function updateHP(){
 
 /* ─── WIN / LOSE ─────────────────────────────────────────────────────────── */
 function waveCleared(){
-  if(!state.cleared.includes(currentWave().id)) state.cleared.push(currentWave().id);
+  const w = currentWave();
+  const firstTry = waveTries === 0;
+  if(!state.cleared.includes(w.id)) state.cleared.push(w.id);
   save();
   celebrate();
   const last = state.wave >= WAVES.length - 1;
   showOverlay('🏆', last ? 'Campaign Clear!' : 'Wave Cleared',
     last ? `You cleared every wave. Accuracy: ${accuracy()}%. More waves and the Python pack are coming.`
-         : `Concept locked in: ${currentWave().concept}. Accuracy so far: ${accuracy()}%.`,
+         : `Concept locked in: ${w.concept}. Accuracy so far: ${accuracy()}%.`,
     last ? 'Replay from Wave 1' : 'Next Wave →');
+  // First-try bonus rewards real recall (no hints / no peeking).
+  document.getElementById('ov-firsttry').classList.toggle('show', firstTry);
+  // Vocab chips reinforce the analyst terminology this wave introduced.
+  const tw = document.getElementById('ov-terms');
+  tw.innerHTML = (w.terms && w.terms.length)
+    ? `<div class="terms-label">Terms unlocked</div>` + w.terms.map(t=>`<span class="term-chip">${esc(t)}</span>`).join('')
+    : '';
+  if(firstTry){ setTimeout(()=>beep(988,130),360); }   // extra sparkle chime
   maybeBreak();
 }
 function waveLost(){
@@ -512,6 +538,9 @@ function waveLost(){
 function accuracy(){ return state.attempts ? Math.round(100*state.correct/state.attempts) : 100; }
 
 function showOverlay(big, title, text, btn){
+  // reset reward decorations; waveCleared() re-enables them as needed
+  document.getElementById('ov-firsttry').classList.remove('show');
+  document.getElementById('ov-terms').innerHTML = '';
   document.getElementById('ov-big').textContent = big;
   document.getElementById('ov-title').textContent = title;
   document.getElementById('ov-text').textContent = text;
@@ -523,11 +552,12 @@ function hideOverlay(){ document.getElementById('overlay').classList.remove('sho
 function overlayAction(){
   const title = document.getElementById('ov-title').textContent;
   if(title === 'Base Overrun'){
-    state.baseHP = 100; updateHP(); loadWave(); return;
+    state.baseHP = 100; updateHP(); save(); loadWave(); return;
   }
   // advance (or wrap on campaign clear)
   state.wave = (state.wave + 1) % WAVES.length;
   if(state.wave === 0){ state.baseHP = 100; updateHP(); }
+  save();
   loadWave();
 }
 

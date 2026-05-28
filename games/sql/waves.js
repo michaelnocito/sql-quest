@@ -17,6 +17,7 @@ window.WAVES = [
     // Plain-language briefing — analyst vocab introduced gently.
     briefing: "A scout swarm broke through the perimeter. Your turret targets whatever your query returns. Pull <b>every row</b> out of the <code>enemies</code> table to lock onto the whole swarm.",
     objective: "Return all enemies so the turret targets every one.",
+    realWorld: "SELECT is the first thing an analyst writes — it pulls raw rows out of a table so you can see what you're working with.",
     // Learning layer: copy/modify. Starter query is shown pre-filled.
     layer: "copy",                // copy → modify → scratch
     starter: "SELECT * FROM enemies;",
@@ -44,6 +45,7 @@ window.WAVES = [
     title: "Hold Your Fire",
     briefing: "Allied scouts are mixed into the lane — don't shred your own people. Only the <b>hostiles</b> (type <code>'Raider'</code>) should be targeted. Filter the swarm with a <code>WHERE</code> clause.",
     objective: "Return only the Raiders. Spare everyone else.",
+    realWorld: "WHERE zooms a whole table down to just the rows a question is about — one date range, one region, one customer.",
     layer: "modify",
     starter: "SELECT * FROM enemies WHERE type = '____';",
     solution: "SELECT * FROM enemies WHERE type = 'Raider';",
@@ -70,6 +72,7 @@ window.WAVES = [
     title: "Mark the Bounties",
     briefing: "Command only authorizes fire on enemies with an active <b>bounty</b>. The bounty list lives in a separate table. <code>JOIN</code> <code>enemies</code> to <code>bounties</code> so the turret only locks the wanted ones.",
     objective: "Return the enemies that have a matching bounty.",
+    realWorld: "Real data lives across many tables. JOIN stitches them together — orders to customers, users to events — to answer almost any question.",
     layer: "scratch",
     starter: "SELECT e.id, e.name, e.type, e.health\nFROM enemies e\nJOIN bounties b ON ____ = ____;",
     solution: "SELECT e.id, e.name, e.type, e.health FROM enemies e JOIN bounties b ON e.id = b.enemy_id;",
