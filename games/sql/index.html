@@ -329,9 +329,9 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 29, 2026 · 3:22 PM ET";
+const BUILD_TS = "May 29, 2026 · 3:50 PM ET";
 const state = {
-  wave: 0, baseHP: 100, devMode: true, music: true, sfx: true, theme: 'dark',
+  wave: 0, baseHP: 100, devMode: true, music: false, sfx: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
 };
 let SQLjs = null;          // initSqlJs module
@@ -584,6 +584,7 @@ function cycleHint(){
   const btn = document.getElementById('hint-btn');
   if(hintLevel >= w.hints.length){ return; }
   waveFriction = true;   // peeking at a hint disqualifies a clean fatality
+  waveTries++;           // hint clicks count toward the 3-attempt autopilot threshold
   const txt = w.hints[hintLevel];
   const isAnswer = hintLevel === w.hints.length - 1;
   el.innerHTML = isAnswer
@@ -593,6 +594,10 @@ function cycleHint(){
   hintLevel++;
   btn.textContent = hintLevel >= w.hints.length ? 'No more hints' : 'Next hint';
   if(hintLevel >= w.hints.length) btn.disabled = true;
+  // After incrementing the counter, see if 3 friction events have piled up
+  // (any combo of misses + hints). Don't touch the editor or the miss-reveal
+  // scaffold — the user just clicked for HELP, not made a wrong attempt.
+  if(!state.devMode && waveTries >= AUTOPILOT_AT) autopilot();
 }
 function esc(s){ return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 /* On-the-job panel: where this concept gets used in a real analyst role + a
@@ -1423,10 +1428,12 @@ window.addEventListener('pagehide', suspendAudio);
    Starting the campaign opts you into music; tap the speaker to mute. */
 function startGame(){
   document.getElementById('splash').classList.remove('show');
-  state.music = true; state.sfx = true;
+  // SFX defaults on (the celebration / hit chimes need it); music respects the
+  // saved/default pref (off for new players — they opt in via the 🎵 button).
+  state.sfx = true;
   updateAudioBtns();
-  audioCtx();                 // create/resume inside the click gesture
-  startMusic();
+  audioCtx();                 // create/resume inside the click gesture (audio unlock)
+  if(state.music) startMusic();
   save();
 }
 
