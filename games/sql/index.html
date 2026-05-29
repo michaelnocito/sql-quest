@@ -40,6 +40,10 @@ header{background:var(--surf);border-bottom:1px solid var(--border);padding:8px 
 .icon-btn:hover{color:var(--text);border-color:var(--text)}
 .icon-btn.on{color:var(--accent);border-color:var(--accent)}
 .icon-btn.off{opacity:.4}
+/* Dev-only wave picker — only visible when DEV is on. */
+.dev-jump{height:32px;background:var(--surf);color:var(--text);border:1px solid var(--border);border-radius:var(--r2);padding:0 8px;font:600 11px var(--mono);cursor:pointer;display:none}
+.dev-jump:hover{border-color:var(--accent)}
+.dev-jump:focus{outline:none;border-color:var(--accent)}
 .dev-toggle{width:auto;padding:0 10px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.5px}
 .dev-toggle::after{content:' OFF';opacity:.7}
 .dev-toggle.on::after{content:' ON'}
@@ -258,6 +262,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
     <span id="hp-num">100</span>
   </div>
   <button class="icon-btn dev-toggle on" id="dev-btn" title="Dev mode — ON: full answer shown (Tab inserts). OFF: player mode — the answer is uncovered over 3 misses, then autopilot." onclick="toggleDev()">DEV</button>
+  <select class="dev-jump" id="dev-jump" aria-label="Jump to wave (dev mode)" title="Jump to any wave (dev)" onchange="jumpToWave(this.value)"></select>
   <button class="icon-btn" id="music-btn" title="Background music on/off" onclick="toggleMusic()">🎵</button>
   <button class="icon-btn" id="sfx-btn" title="Sound effects on/off" onclick="toggleSfx()">🔔</button>
   <button class="icon-btn" id="theme-btn" title="Theme" onclick="toggleTheme()">◐</button>
@@ -323,7 +328,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 28, 2026 · 10:10 PM ET";
+const BUILD_TS = "May 29, 2026 · 7:32 AM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, music: true, sfx: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -427,10 +432,12 @@ function loadWave(){
   const hintEl = document.getElementById('hint'); hintEl.className = 'hint'; hintEl.innerHTML = '';
   const hb = document.getElementById('hint-btn'); hb.textContent = 'Show hint'; hb.disabled = false;
 
-  // Editor: in dev mode show solution as a tab-to-insert ghost; otherwise the starter scaffold.
+  // Editor starts empty in both modes. In DEV the solution ghost shows behind
+  // (Tab to insert); in player mode the editor is clean until misses reveal it.
   const ed = document.getElementById('sql');
-  ed.value = state.devMode ? '' : w.starter;
+  ed.value = '';
   updateGhost();
+  syncDevJump();
 
   // Schema chips
   renderSchema(w.schema);
@@ -536,10 +543,31 @@ function toggleDev(){
   state.devMode = !state.devMode;
   document.getElementById('dev-btn').classList.toggle('on', state.devMode);
   document.getElementById('dev-hint').style.visibility = state.devMode ? 'visible' : 'hidden';
-  const ed = document.getElementById('sql');
-  if(!state.devMode && !ed.value) ed.value = currentWave().starter;
-  if(state.devMode) ed.value = '';
+  document.getElementById('dev-jump').style.display = state.devMode ? 'inline-block' : 'none';
+  // Fresh slate when switching modes — clear the editor and reset the miss
+  // counters so the new mode starts cleanly (no stale reveal carrying over).
+  document.getElementById('sql').value = '';
+  waveTries = 0; revealFrac = 0; autopiloted = false;
   updateGhost(); save();
+}
+
+// Dev-only wave picker — populates a <select> with every wave and jumps to it.
+function populateDevJump(){
+  const sel = document.getElementById('dev-jump');
+  sel.innerHTML = WAVES.map((w,i) => `<option value="${i}">${w.id}. ${w.concept}</option>`).join('');
+  syncDevJump();
+}
+function syncDevJump(){
+  const sel = document.getElementById('dev-jump');
+  if(sel) sel.value = String(state.wave);
+}
+function jumpToWave(idx){
+  const n = Number(idx);
+  if(!Number.isInteger(n) || n < 0 || n >= WAVES.length) return;
+  state.wave = n;
+  state.baseHP = 100; updateHP();   // full HP for a clean test of the wave
+  save();
+  loadWave();
 }
 
 /* ─── HINTS (progressive) ────────────────────────────────────────────────── */
@@ -1397,6 +1425,8 @@ async function init(){
   document.getElementById('wave-total').textContent = WAVES.length;
   document.getElementById('dev-btn').classList.toggle('on', state.devMode);
   document.getElementById('dev-hint').style.visibility = state.devMode ? 'visible' : 'hidden';
+  populateDevJump();
+  document.getElementById('dev-jump').style.display = state.devMode ? 'inline-block' : 'none';
   updateHP();
   setFb('warn', 'Loading SQL engine…');
   try{
