@@ -95,7 +95,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 .ed-wrap{position:relative}
 #sql{width:100%;min-height:156px;resize:vertical;font-family:var(--mono);font-size:15.5px;line-height:1.7;color:var(--text);background:var(--surf);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px;outline:none}
 #sql:focus{border-color:var(--accent)}
-.ed-ghost{position:absolute;top:14px;left:16px;right:16px;font-family:var(--mono);font-size:15.5px;line-height:1.7;color:var(--muted);opacity:.45;pointer-events:none;white-space:pre-wrap;display:none}
+.ed-ghost{position:absolute;top:14px;left:16px;right:16px;font-family:var(--mono);font-size:15.5px;line-height:1.7;color:var(--muted);pointer-events:none;white-space:pre-wrap;display:none}
 .ed-row{display:flex;gap:8px;align-items:center;margin-top:9px;flex-wrap:wrap}
 .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--r2);font:600 14px var(--font);cursor:pointer;border:none;transition:.15s}
 .btn-primary{background:var(--accent);color:#0e1f1e}
@@ -265,7 +265,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 
 <main>
   <section class="editor-pane">
-    <div class="track" id="track"></div>
+    <div class="track" id="track" tabindex="0" role="group" aria-label="Campaign progress"></div>
     <div class="briefing">
       <span class="tag" id="b-tag">SELECT</span><span class="ttl" id="b-title">First Contact</span>
       <p id="b-text"></p>
@@ -279,7 +279,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
     <div class="schema-row" id="schema-row"></div>
 
     <div class="ed-wrap">
-      <textarea id="sql" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="Write your SQL here…"></textarea>
+      <textarea id="sql" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="SQL query editor" placeholder="Write your SQL here…"></textarea>
       <div class="ed-ghost" id="ghost"></div>
     </div>
 
@@ -323,7 +323,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 28, 2026 · 9:11 PM ET";
+const BUILD_TS = "May 28, 2026 · 9:32 PM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, music: true, sfx: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()

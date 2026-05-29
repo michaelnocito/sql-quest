@@ -9,3 +9,13 @@ desktop.ini
 # Local notes / scratch
 *.local
 scratch/
+
+# Test tooling — installed locally, never shipped to GitHub Pages.
+node_modules/
+playwright-report/
+test-results/
+.playwright/
+
+# Local-only test fixture: the list of private design-notes the leak guard
+# scans shipped files for. Kept OUT of the (public) repo on purpose — see TESTING.md.
+tests/fixtures/private-terms.local.json

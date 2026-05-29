@@ -1,0 +1,16 @@
+{
+  "name": "sql-quest",
+  "version": "1.0.0",
+  "description": "SQL Quest — a browser SQL tower-defense game. Real SQL controls your turret.",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:report": "playwright show-report",
+    "setup": "playwright install chromium",
+    "serve": "node test/server.js"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
+    "@playwright/test": "^1.49.1"
+  }
+}
