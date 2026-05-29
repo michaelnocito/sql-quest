@@ -329,7 +329,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 29, 2026 · 3:17 PM ET";
+const BUILD_TS = "May 29, 2026 · 3:22 PM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, music: true, sfx: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -535,7 +535,10 @@ document.getElementById('sql').addEventListener('keydown', e => {
     // Dev mode inserts the whole answer; player mode inserts only the part
     // that's been uncovered so far, leaving the rest to recall.
     e.target.value = state.devMode ? currentWave().solution : revealedPrefix(revealFrac);
-    waveFriction = true;   // Tab-borrowing the answer disqualifies a clean fatality
+    // Tab-borrow does NOT flip waveFriction:
+    //   - DEV mode: it's the dev's convenience and should still earn fatality.
+    //   - Player mode: Tab is only available when revealFrac > 0, which can
+    //     only happen AFTER a miss has already flipped waveFriction.
     updateGhost();
   } else if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){
     e.preventDefault();
