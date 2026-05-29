@@ -14,7 +14,11 @@ _Nothing in flight._
 ## Next (queued, agreed)
 - **[P2] Starter helper text (lighter than dev text)** — Mike: "add helper text to start them off, just like the developer text but it gives less — just start them off." Dev mode shows the *full* solution as a ghost (Tab inserts it); for normal play, surface a lighter, always-available scaffold that gets a player moving without handing over the answer. Ideas: pre-seed the editor with the wave's `starter` skeleton (the `____`-blanked shell already in waves.js) on a fresh wave, or a "Give me a starting point" nudge that drops in just the opening clause (`SELECT … FROM …`) and leaves the player to finish. Keep it clearly less than the dev ghost.
 - **[P1] Celestial theme — deeper narrative pass** — battlefield reskin + psychedelic-celestial backdrop shipped; next carry the theme into wave briefings (swarm/turret → motes/Spire/constellations), the splash tagline, concept framing, and naming. Keep instructional text crisp (don't let flavor bury the SQL lesson).
-- **[P1] Spaced-retrieval scheduled review waves** — foundation shipped (`reinforces` field + Recall-drill chip + layered solutions). Next: as Waves 4–7 land, author dedicated "Recon" review beats on expanding gaps (~1, 3, 7 waves after a concept is introduced) that re-test an earlier verb in a *fresh* schema. Truly works retrieval into combat.
+- **[P1] Spaced-retrieval scheduled review waves** — foundation shipped (`reinforces` field + Recall-drill chip + layered solutions; the 9-wave beginner ramp already layers + recalls). Next: as the intermediate waves (10+) land, author dedicated "Recon" review beats on expanding gaps (~1, 3, 7 waves after a concept is introduced) that re-test an earlier verb in a *fresh* schema. Truly works retrieval into combat.
+- **[P1] Intermediate content — waves 10+ (one new idea per wave)** — continue the beginner ramp's pacing into the core analyst skill set. Proposed order (each layers earlier verbs + carries `reinforces`; all testable with the result-set engine, ORDER BY-aware compare already in place):
+  - **Tier 2 — refine filters & first aggregates:** 10 `IN` / `BETWEEN` (match a set or range) · 11 `LIKE` (text pattern, `%` wildcard) · 12 `COUNT(*)` (first aggregate — "how many?") · 13 `SUM` / `AVG` · 14 `MIN` / `MAX`.
+  - **Tier 3 — grouping:** 15 `GROUP BY` (one aggregate per category) · 16 `HAVING` (filter the groups; contrast with WHERE) · 17 column alias `AS` + ORDER BY an aggregate ("top category by count").
+  Build Tier 2–3 next (aggregation is the single most-used analyst skill after SELECT/WHERE/JOIN). See Later for Tier 4–5.
 - **[P2] Turret muzzle flash + recoil** — make the base feel like it fires, not just the enemies exploding.
 - **[P2] Per-wave combat tuning pass** — once Mike plays it, dial `rounds`/`creep` per wave so each fight reinforces without going stale.
 
@@ -22,7 +26,10 @@ _Nothing in flight._
 - **[P2] Music → ~10 min** — ~5 min through-composed track is good enough for now. Before the prototype is done: extend the SONG toward ~10 min, consider per-difficulty intensity. (Funk/oomph layer shipped 2026-05-28 — un-shelved at Mike's request and added; length still ~5 min.)
 
 ## Later (good ideas, not scheduled)
-- **[P2] Waves 4–7** — GROUP BY + HAVING, subqueries, CTEs, window functions (each authored to layer + carry `reinforces`).
+- **[P2] Advanced content — Tier 4–5 (continues waves 10+)** — after aggregation lands, keep the one-idea-per-wave pacing into deeper joins and advanced SQL:
+  - **Tier 4 — deeper joins & logic:** `LEFT JOIN` (keep unmatched rows → introduces NULLs) · `IS NULL` / handling missing data · `CASE` (conditional buckets/labels) · multi-table JOIN (3 tables).
+  - **Tier 5 — advanced:** subquery (a query inside a query) · CTE (`WITH` — name a subquery for readability) · window function `ROW_NUMBER` / `RANK` · window running total (`SUM(...) OVER (...)`).
+  Each authored to layer earlier verbs + carry `reinforces`; interleave review beats per the spaced-retrieval schedule. Possible later expansion packs reuse the same battle engine (Python / Excel / Viz-BI).
 - **[P2] Per-concept codex cards** — revisit unlocked vocab.
 - **[P3] Training Ground** — replay any cleared wave (supplement to scheduled review, not the primary retention driver — learners under-review when it's voluntary).
 - **[P3] Adaptive resurfacing** — track fumbled concepts (hints used, wrong tries) and bias later waves to bring them back.
