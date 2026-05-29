@@ -93,9 +93,9 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 
 /* EDITOR */
 .ed-wrap{position:relative}
-#sql{width:100%;min-height:62px;resize:vertical;font-family:var(--mono);font-size:14px;line-height:1.5;color:var(--text);background:var(--surf);border:1px solid var(--border);border-radius:var(--r2);padding:11px 12px;outline:none}
+#sql{width:100%;min-height:156px;resize:vertical;font-family:var(--mono);font-size:15.5px;line-height:1.7;color:var(--text);background:var(--surf);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px;outline:none}
 #sql:focus{border-color:var(--accent)}
-.ed-ghost{position:absolute;top:11px;left:12px;right:12px;font-family:var(--mono);font-size:14px;line-height:1.5;color:var(--muted);opacity:.45;pointer-events:none;white-space:pre-wrap;display:none}
+.ed-ghost{position:absolute;top:14px;left:16px;right:16px;font-family:var(--mono);font-size:15.5px;line-height:1.7;color:var(--muted);opacity:.45;pointer-events:none;white-space:pre-wrap;display:none}
 .ed-row{display:flex;gap:8px;align-items:center;margin-top:9px;flex-wrap:wrap}
 .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--r2);font:600 14px var(--font);cursor:pointer;border:none;transition:.15s}
 .btn-primary{background:var(--accent);color:#0e1f1e}
@@ -323,7 +323,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 28, 2026 · 9:03 PM ET";
+const BUILD_TS = "May 28, 2026 · 9:11 PM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, music: true, sfx: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -368,12 +368,15 @@ function execQuery(db, sql){
   if(!res.length) return { columns: [], rows: [] };
   return { columns: res[0].columns, rows: res[0].values };
 }
-// Order-insensitive result-set comparison.
-function sameResult(a, b){
+// Result-set comparison. Order-insensitive by default; when `ordered` is true
+// (the wave's solution uses ORDER BY), row order must match too — so sorting
+// waves are actually testable.
+function sameResult(a, b, ordered){
   if(a.columns.length !== b.columns.length) return false;
   if(a.rows.length !== b.rows.length) return false;
-  const norm = rows => rows.map(row => JSON.stringify(row)).sort();
-  const na = norm(a.rows), nb = norm(b.rows);
+  const seq = rows => rows.map(row => JSON.stringify(row));
+  let na = seq(a.rows), nb = seq(b.rows);
+  if(!ordered){ na = na.slice().sort(); nb = nb.slice().sort(); }
   return na.every((v,i) => v === nb[i]);
 }
 
@@ -615,7 +618,8 @@ function runQuery(){
 
   showResult(player);
 
-  if(sameResult(player, expected)){
+  const ordered = /\border\s+by\b/i.test(w.solution);
+  if(sameResult(player, expected, ordered)){
     // Correct → a volley. It may take several correct volleys to drop the lane.
     state.correct++;
     const hit = correctHit();
