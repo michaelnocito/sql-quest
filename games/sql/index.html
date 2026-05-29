@@ -285,13 +285,14 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
     <div class="schema-row" id="schema-row"></div>
 
     <div class="ed-wrap">
-      <textarea id="sql" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="SQL query editor" placeholder="Write your SQL here…"></textarea>
+      <textarea id="sql" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="SQL query editor" placeholder="Write your SQL here… (case-insensitive — lowercase is fine)"></textarea>
       <div class="ed-ghost" id="ghost"></div>
     </div>
 
     <div class="ed-row">
       <button class="btn btn-primary" onclick="runQuery()">Execute Query <span class="kbd">Ctrl+↵</span></button>
       <button class="btn btn-ghost btn-sm" onclick="cycleHint()" id="hint-btn">Show hint</button>
+      <button class="btn btn-ghost btn-sm" onclick="formatSQL()" id="format-btn" title="Uppercase SQL keywords (Alt+Shift+F). SQL is case-insensitive — type lowercase, click Format.">Format <span class="kbd">⌥⇧F</span></button>
       <span class="spacer"></span>
       <span class="dev-note" id="dev-hint">Dev mode on — press <span class="kbd">Tab</span> to insert the answer</span>
     </div>
@@ -329,7 +330,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 29, 2026 · 3:50 PM ET";
+const BUILD_TS = "May 29, 2026 · 4:41 PM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, music: false, sfx: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -543,6 +544,9 @@ document.getElementById('sql').addEventListener('keydown', e => {
   } else if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){
     e.preventDefault();
     runQuery();
+  } else if((e.key === 'F' || e.key === 'f') && e.altKey && e.shiftKey){
+    e.preventDefault();
+    formatSQL();
   }
 });
 
@@ -600,6 +604,31 @@ function cycleHint(){
   if(!state.devMode && waveTries >= AUTOPILOT_AT) autopilot();
 }
 function esc(s){ return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+/* SQL keywords we recognise in our wave set. Used by formatSQL() to uppercase
+   them in place — pure presentation, the engine accepts any case. */
+const SQL_KEYWORDS = [
+  'SELECT','FROM','WHERE','AND','OR','NOT','IN','BETWEEN','LIKE','IS','NULL',
+  'ORDER','BY','ASC','DESC','LIMIT','OFFSET','GROUP','HAVING','AS','DISTINCT',
+  'JOIN','ON','LEFT','RIGHT','INNER','OUTER','FULL','CROSS','UNION','ALL',
+  'COUNT','SUM','AVG','MIN','MAX','CASE','WHEN','THEN','ELSE','END','EXISTS','WITH'
+];
+function formatSQL(){
+  const ed = document.getElementById('sql');
+  if(!ed.value) return;
+  // Split on quoted string literals so we don't mangle data values like
+  // 'Raider' — odd-indexed segments are the strings and stay untouched.
+  const parts = ed.value.split(/('(?:[^']|'')*')/g);
+  for(let i = 0; i < parts.length; i += 2){
+    let seg = parts[i];
+    SQL_KEYWORDS.forEach(kw => {
+      seg = seg.replace(new RegExp(`\\b${kw}\\b`, 'gi'), kw);
+    });
+    parts[i] = seg;
+  }
+  ed.value = parts.join('');
+  // No waveFriction flip — formatting is pure presentation, not borrowing.
+  updateGhost();
+}
 /* On-the-job panel: where this concept gets used in a real analyst role + a
    plain example of the ask. Names the concept/parts but never the full query. */
 function showJob(){
