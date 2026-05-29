@@ -21,12 +21,15 @@ test.describe('Functional correctness', () => {
         const ordered = /\border\s+by\b/i.test(w.solution);
         const pass = sameResult(sol, sol, ordered);
         db.close();
-        // Enemies render from a name (or id) column, so one must be present.
-        const renderable = sol.columns.includes('name') || sol.columns.includes('id');
+        // Row-result waves should have a name/id so enemies render with a label.
+        // Aggregate/grouped waves are summary readouts — the "target" is the
+        // number itself, so this check doesn't apply there.
+        const isSummary = /\b(COUNT|SUM|AVG|MIN|MAX)\s*\(/i.test(w.solution) || /\bgroup\s+by\b/i.test(w.solution);
+        const renderable = isSummary || sol.columns.includes('name') || sol.columns.includes('id');
         return { id: w.id, concept: w.concept, rows: sol.rows.length, renderable, pass };
       });
     });
-    expect(results.length).toBe(9);
+    expect(results.length).toBeGreaterThanOrEqual(9);
     for (const r of results) {
       expect(r.pass, `wave ${r.id} (${r.concept}) solution should match itself`).toBe(true);
       expect(r.rows, `wave ${r.id} should return at least one target`).toBeGreaterThan(0);

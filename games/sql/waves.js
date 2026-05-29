@@ -378,5 +378,371 @@ window.WAVES = [
       "SELECT e.id, e.name, e.type, e.health FROM enemies e JOIN bounties b ON e.id = b.enemy_id;"
     ],
     terms: ["JOIN", "key", "ON", "table alias"]
+  },
+
+  /* ── TIER 2 — refine filters & first aggregates ─────────────────────────── */
+
+  {
+    id: 10,
+    concept: "IN",
+    enemyArch: "raider",
+    title: "The Wanted Set",
+    briefing: "Two hostile classes again, but chaining <code>OR</code>s gets ugly fast. <code>IN</code> checks membership against a whole <b>set</b> at once. Match anything whose type is in (<code>'Raider'</code>, <code>'Warden'</code>).",
+    objective: "Return enemies whose type is in the set { Raider, Warden }.",
+    realWorld: "When a question has a list of acceptable values, IN keeps the WHERE tidy — no matter if the list is 2 things or 20.",
+    layer: "modify",
+    rounds: 3,
+    creep: 0.15,
+    reinforces: ["WHERE", "OR"],
+    starter: "SELECT * FROM enemies WHERE type ____ ('Raider', 'Warden');",
+    solution: "SELECT * FROM enemies WHERE type IN ('Raider', 'Warden');",
+    explain: {
+      simple: "IN tests if a value matches any item in a parenthesized list. `x IN (a, b, c)` is shorthand for `x = a OR x = b OR x = c`. Same result, way cleaner once the list grows.",
+      analogy: "Like a bouncer with a guest list — your name's either on it or it isn't; he doesn't recite the whole list out loud."
+    },
+    onTheJob: {
+      uses: "Matching against a known list — a handful of customer IDs, a set of allowed statuses, the regions you care about. IN keeps the filter readable as that list grows.",
+      example: "\"Pull orders for these five customer IDs\" — you'd use WHERE customer_id IN (the five ids) instead of five OR clauses."
+    },
+    schema: `
+      CREATE TABLE enemies (id INTEGER, name TEXT, type TEXT, health INTEGER);
+      INSERT INTO enemies VALUES
+        (1,'Vex','Raider',60),
+        (2,'Aegis','Warden',120),
+        (3,'Medic Owl','Ally',40),
+        (4,'Grist','Raider',55),
+        (5,'Bulwark','Warden',140),
+        (6,'Scout Fenn','Ally',30);
+    `,
+    hints: [
+      "You want a set of acceptable types, both should count.",
+      "IN takes a parenthesized list: WHERE type IN ('Raider', 'Warden')",
+      "SELECT * FROM enemies WHERE type IN ('Raider', 'Warden');"
+    ],
+    terms: ["IN", "set membership", "list of values"]
+  },
+
+  {
+    id: 11,
+    concept: "BETWEEN",
+    enemyArch: "warden",
+    title: "Threat Window",
+    briefing: "Only mid-tier threats this run — armor between <code>50</code> and <code>100</code>. You could write <code>health &gt;= 50 AND health &lt;= 100</code>… or use <code>BETWEEN</code>, the clean way to filter a <b>range</b>.",
+    objective: "Return enemies with health BETWEEN 50 AND 100 (inclusive).",
+    realWorld: "Range filters are everywhere — dates between two days, amounts within a band, ages in a bracket. BETWEEN is the readable shorthand.",
+    layer: "modify",
+    rounds: 3,
+    creep: 0.16,
+    reinforces: ["WHERE", "AND"],
+    starter: "SELECT * FROM enemies WHERE health ____ 50 AND 100;",
+    solution: "SELECT * FROM enemies WHERE health BETWEEN 50 AND 100;",
+    explain: {
+      simple: "BETWEEN x AND y matches values from x to y, including the endpoints. It's exactly the same as `>= x AND <= y`, just shorter and easier to read.",
+      analogy: "Like saying \"anything between 9 and 5\" instead of \"anything that's nine or later AND five or earlier\" — same window, half the words."
+    },
+    onTheJob: {
+      uses: "Date ranges are the classic case — \"orders between Jan 1 and Mar 31.\" Same shape for amounts, ages, scores, or any numeric band you need.",
+      example: "\"Show me transactions from last quarter\" — you'd use WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31'."
+    },
+    schema: `
+      CREATE TABLE enemies (id INTEGER, name TEXT, type TEXT, health INTEGER);
+      INSERT INTO enemies VALUES
+        (1,'Pip','Scout',25),
+        (2,'Vex','Raider',60),
+        (3,'Grist','Raider',95),
+        (4,'Aegis','Warden',140),
+        (5,'Husk','Raider',50),
+        (6,'Bulwark','Warden',100);
+    `,
+    hints: [
+      "You want a range of health values, including the edges.",
+      "BETWEEN 50 AND 100 covers both endpoints.",
+      "SELECT * FROM enemies WHERE health BETWEEN 50 AND 100;"
+    ],
+    terms: ["BETWEEN", "range filter", "inclusive bounds"]
+  },
+
+  {
+    id: 12,
+    concept: "LIKE",
+    enemyArch: "warden",
+    title: "Pattern Match",
+    briefing: "Intel pegs the next strike to anything starting with <code>V</code>. Use <code>LIKE</code> with the <code>%</code> wildcard to match by <b>pattern</b>: <code>name LIKE 'V%'</code>.",
+    objective: "Return enemies whose name starts with 'V'.",
+    realWorld: "Exact matching breaks the moment you need \"starts with,\" \"contains,\" or \"ends in\" — LIKE is how analysts search messy text.",
+    layer: "modify",
+    rounds: 3,
+    creep: 0.17,
+    reinforces: ["WHERE"],
+    starter: "SELECT * FROM enemies WHERE name ____ 'V%';",
+    solution: "SELECT * FROM enemies WHERE name LIKE 'V%';",
+    explain: {
+      simple: "LIKE compares text against a pattern. The `%` wildcard means \"anything, any length.\" So `'V%'` matches anything that starts with V; `'%son'` matches anything ending in son; `'%data%'` matches anything containing data.",
+      analogy: "Like asking the librarian for \"any book whose title starts with V\" — they don't need the rest, they grab whatever fits the front of the pattern."
+    },
+    onTheJob: {
+      uses: "Searching messy text is constant in analysis — names with inconsistent capitalization, emails from a domain, product codes with a prefix, free-form notes containing a keyword.",
+      example: "\"All customers with a gmail address\" — you'd use WHERE email LIKE '%@gmail.com'."
+    },
+    schema: `
+      CREATE TABLE enemies (id INTEGER, name TEXT, type TEXT, health INTEGER);
+      INSERT INTO enemies VALUES
+        (1,'Vex','Raider',60),
+        (2,'Grist','Raider',55),
+        (3,'Vanguard','Warden',130),
+        (4,'Husk','Raider',45),
+        (5,'Vortex','Warden',110),
+        (6,'Bulwark','Warden',140);
+    `,
+    hints: [
+      "You want every name beginning with V — that's a pattern, not an exact match.",
+      "LIKE with % matches any tail: WHERE name LIKE 'V%'",
+      "SELECT * FROM enemies WHERE name LIKE 'V%';"
+    ],
+    terms: ["LIKE", "% wildcard", "pattern matching"]
+  },
+
+  {
+    id: 13,
+    concept: "COUNT",
+    enemyArch: "warden",
+    title: "Body Count",
+    briefing: "Field command wants a number, not a list — <b>how many Raiders</b> are out there? <code>COUNT(*)</code> tallies the rows that match.",
+    objective: "Return the count of enemies whose type is 'Raider'.",
+    realWorld: "\"How many?\" is the single most common analyst question. COUNT is the first aggregate you'll reach for, every day.",
+    layer: "scratch",
+    rounds: 3,
+    creep: 0.16,
+    reinforces: ["WHERE"],
+    starter: "SELECT ____ FROM enemies WHERE type = 'Raider';",
+    solution: "SELECT COUNT(*) FROM enemies WHERE type = 'Raider';",
+    explain: {
+      simple: "An aggregate function collapses many rows into a single number. COUNT(*) counts how many rows match — combine it with WHERE to ask \"how many of THESE?\"",
+      analogy: "Like dumping a jar of marbles on the table and just answering \"thirty-seven\" instead of handing the marbles over one by one."
+    },
+    onTheJob: {
+      uses: "Volume questions are everywhere — \"how many sign-ups this week,\" \"how many failed payments,\" \"how many active accounts in the region.\" COUNT answers all of them.",
+      example: "\"How many orders did we ship yesterday?\" — you'd use SELECT COUNT(*) FROM orders WHERE shipped_date = yesterday."
+    },
+    schema: `
+      CREATE TABLE enemies (id INTEGER, name TEXT, type TEXT, health INTEGER);
+      INSERT INTO enemies VALUES
+        (1,'Vex','Raider',60),
+        (2,'Medic Owl','Ally',40),
+        (3,'Grist','Raider',55),
+        (4,'Scout Fenn','Ally',30),
+        (5,'Maul','Raider',70),
+        (6,'Aegis','Warden',120);
+    `,
+    hints: [
+      "You don't want the rows themselves — just how many there are.",
+      "COUNT(*) tallies matching rows. Keep your WHERE.",
+      "SELECT COUNT(*) FROM enemies WHERE type = 'Raider';"
+    ],
+    terms: ["COUNT", "aggregate function", "scalar result"]
+  },
+
+  {
+    id: 14,
+    concept: "SUM / AVG",
+    enemyArch: "warden",
+    title: "Total Threat",
+    briefing: "Sum up the armor in the sector — what's the <b>total health</b> across every enemy on the board? Add them all with <code>SUM(health)</code>.",
+    objective: "Return the total health summed across all enemies.",
+    realWorld: "After \"how many?\" comes \"how much?\" — SUM totals a column; AVG gives you its average. Both are everyday-analyst staples.",
+    layer: "modify",
+    rounds: 3,
+    creep: 0.16,
+    reinforces: ["COUNT"],
+    starter: "SELECT ____(health) FROM enemies;",
+    solution: "SELECT SUM(health) FROM enemies;",
+    explain: {
+      simple: "SUM adds up a numeric column across every row. AVG gives you the average instead. Both work just like COUNT — they collapse rows into a single number.",
+      analogy: "SUM is the cash-register total; AVG is the average ticket. Same receipts, different question."
+    },
+    onTheJob: {
+      uses: "Totals and averages are how a pile of rows becomes a headline number — total revenue, average order value, total time on site, average session length. Constant work.",
+      example: "\"What was our total revenue this month?\" — SUM(amount). \"What's our average order value?\" — AVG(amount)."
+    },
+    schema: `
+      CREATE TABLE enemies (id INTEGER, name TEXT, type TEXT, health INTEGER);
+      INSERT INTO enemies VALUES
+        (1,'Vex','Raider',60),
+        (2,'Aegis','Warden',120),
+        (3,'Grist','Raider',55),
+        (4,'Bulwark','Warden',140),
+        (5,'Pip','Scout',25);
+    `,
+    hints: [
+      "You don't want a count — you want the total of a numeric column.",
+      "SUM(column_name) adds the values. AVG(column_name) averages them.",
+      "SELECT SUM(health) FROM enemies;"
+    ],
+    terms: ["SUM", "AVG", "numeric aggregate"]
+  },
+
+  {
+    id: 15,
+    concept: "MIN / MAX",
+    enemyArch: "warden",
+    title: "Worst-Case Read",
+    briefing: "Brief the team on the <b>single deadliest</b> contact in range — the maximum health on the board. <code>MAX(column)</code> grabs the largest value.",
+    objective: "Return the maximum health among all enemies.",
+    realWorld: "MIN and MAX find the extremes — biggest order, smallest payment, earliest date, latest event. Constant in summary reporting.",
+    layer: "modify",
+    rounds: 3,
+    creep: 0.17,
+    reinforces: ["SUM / AVG"],
+    starter: "SELECT ____(health) FROM enemies;",
+    solution: "SELECT MAX(health) FROM enemies;",
+    explain: {
+      simple: "MAX returns the largest value in a column; MIN the smallest. Same family as SUM/AVG/COUNT — each one collapses many rows into a single answer.",
+      analogy: "Like skimming a stack of receipts for just the biggest one — MAX finds it. MIN does the same thing for the tiniest."
+    },
+    onTheJob: {
+      uses: "Extremes summarize a dataset fast — biggest customer by spend, slowest page by load time, latest activity timestamp, smallest non-zero balance.",
+      example: "\"When did this account last log in?\" — MAX(login_time). \"Smallest order we've ever shipped?\" — MIN(amount)."
+    },
+    schema: `
+      CREATE TABLE enemies (id INTEGER, name TEXT, type TEXT, health INTEGER);
+      INSERT INTO enemies VALUES
+        (1,'Pip','Scout',25),
+        (2,'Vex','Raider',60),
+        (3,'Grist','Raider',95),
+        (4,'Aegis','Warden',140),
+        (5,'Husk','Raider',50);
+    `,
+    hints: [
+      "You want a single value — the biggest one in the column.",
+      "MAX(column) returns the largest. MIN does the smallest.",
+      "SELECT MAX(health) FROM enemies;"
+    ],
+    terms: ["MIN", "MAX", "extremes"]
+  },
+
+  /* ── TIER 3 — grouping ──────────────────────────────────────────────────── */
+
+  {
+    id: 16,
+    concept: "GROUP BY",
+    enemyArch: "warden",
+    title: "Per-Class Census",
+    briefing: "One number for the whole board isn't enough — command wants the count <b>per class</b>. <code>GROUP BY</code> turns one aggregate into one-per-category.",
+    objective: "Return each type and how many enemies are in it.",
+    realWorld: "GROUP BY is the unlock for almost every analyst dashboard — sales by region, signups per day, errors per service. One row per group.",
+    layer: "scratch",
+    rounds: 3,
+    creep: 0.18,
+    reinforces: ["COUNT"],
+    starter: "SELECT type, COUNT(*) FROM enemies ____ ____ type;",
+    solution: "SELECT type, COUNT(*) FROM enemies GROUP BY type;",
+    explain: {
+      simple: "GROUP BY buckets the rows by a column's value, then runs the aggregate ONCE per bucket. You get one row per distinct value — exactly what \"X per category\" needs.",
+      analogy: "Like sorting laundry by color first, then counting each pile — instead of one total, you get a count for each color."
+    },
+    onTheJob: {
+      uses: "Almost every breakdown report — \"per region,\" \"per day,\" \"per product\" — is a GROUP BY with an aggregate. It's the bread-and-butter of analyst SQL.",
+      example: "\"How many orders per state?\" — SELECT state, COUNT(*) FROM orders GROUP BY state. One row per state, with its order count."
+    },
+    schema: `
+      CREATE TABLE enemies (id INTEGER, name TEXT, type TEXT, health INTEGER);
+      INSERT INTO enemies VALUES
+        (1,'Vex','Raider',60),
+        (2,'Aegis','Warden',120),
+        (3,'Grist','Raider',55),
+        (4,'Maul','Raider',70),
+        (5,'Bulwark','Warden',140),
+        (6,'Pip','Scout',25),
+        (7,'Skitter','Scout',30);
+    `,
+    hints: [
+      "You want one row per type, not one row total. Bucket by the type column first.",
+      "Combine SELECT type, COUNT(*) with GROUP BY type.",
+      "SELECT type, COUNT(*) FROM enemies GROUP BY type;"
+    ],
+    terms: ["GROUP BY", "bucketing", "one row per group"]
+  },
+
+  {
+    id: 17,
+    concept: "HAVING",
+    enemyArch: "warden",
+    title: "Squads Only",
+    briefing: "Only call in a strike on classes with a real <b>squad</b> — three or more units. Group by type, then filter the <i>groups</i> with <code>HAVING</code>.",
+    objective: "Return each type that has 3 or more enemies, with its count.",
+    realWorld: "WHERE filters rows BEFORE aggregating; HAVING filters groups AFTER. \"Customers who placed more than 5 orders\" needs HAVING.",
+    layer: "modify",
+    rounds: 4,
+    creep: 0.18,
+    reinforces: ["GROUP BY", "WHERE"],
+    starter: "SELECT type, COUNT(*) FROM enemies GROUP BY type ____ COUNT(*) >= 3;",
+    solution: "SELECT type, COUNT(*) FROM enemies GROUP BY type HAVING COUNT(*) >= 3;",
+    explain: {
+      simple: "HAVING is WHERE for groups. WHERE picks which rows go INTO the buckets; HAVING picks which BUCKETS come out. You can put aggregate conditions like COUNT(*) >= 3 in HAVING — you can't in WHERE.",
+      analogy: "Like sorting laundry into color piles, then keeping only the piles big enough to be worth folding — the filter happens AFTER the sort."
+    },
+    onTheJob: {
+      uses: "Anytime the question is \"which groups …\" — customers with more than N orders, days with revenue above a threshold, products that sold more than M times. WHERE can't do that; HAVING can.",
+      example: "\"Which customers placed more than five orders?\" — GROUP BY customer_id HAVING COUNT(*) > 5."
+    },
+    schema: `
+      CREATE TABLE enemies (id INTEGER, name TEXT, type TEXT, health INTEGER);
+      INSERT INTO enemies VALUES
+        (1,'Vex','Raider',60),
+        (2,'Grist','Raider',55),
+        (3,'Maul','Raider',70),
+        (4,'Husk','Raider',50),
+        (5,'Aegis','Warden',120),
+        (6,'Bulwark','Warden',140),
+        (7,'Pip','Scout',25);
+    `,
+    hints: [
+      "You can't put COUNT(*) inside WHERE — try HAVING instead.",
+      "GROUP BY first, then HAVING filters the groups.",
+      "SELECT type, COUNT(*) FROM enemies GROUP BY type HAVING COUNT(*) >= 3;"
+    ],
+    terms: ["HAVING", "filter groups", "post-aggregate filter"]
+  },
+
+  {
+    id: 18,
+    concept: "AS / alias + ORDER BY aggregate",
+    enemyArch: "warden",
+    title: "Top Class",
+    briefing: "Rank the classes — which one has the <b>most</b> units? Count per type, give the count a clean name with <code>AS</code>, then sort by it: most first.",
+    objective: "Return each type and its count, biggest count first.",
+    realWorld: "Aliases let you give a computed column a readable name; sorting on that alias is how you turn a breakdown into a ranked report.",
+    layer: "scratch",
+    rounds: 4,
+    creep: 0.20,
+    reinforces: ["GROUP BY", "ORDER BY"],
+    starter: "SELECT type, COUNT(*) ____ n FROM enemies GROUP BY type ORDER BY ____ DESC;",
+    solution: "SELECT type, COUNT(*) AS n FROM enemies GROUP BY type ORDER BY n DESC;",
+    explain: {
+      simple: "AS renames a column in the output — `COUNT(*) AS n` shows up as a column called n, which you can also ORDER BY. ORDER BY on the aggregate is how a breakdown becomes a ranking.",
+      analogy: "Like labelling each laundry pile (\"reds: 6, whites: 4, darks: 9\") and then lining the piles up biggest to smallest — same count, but now it's a ranking."
+    },
+    onTheJob: {
+      uses: "Almost every leaderboard or top-N report is GROUP BY + aggregate + AS + ORDER BY — top regions by revenue, busiest hours by traffic, slowest pages by load time.",
+      example: "\"Rank our regions by total sales, biggest first\" — SELECT region, SUM(amount) AS total FROM orders GROUP BY region ORDER BY total DESC."
+    },
+    schema: `
+      CREATE TABLE enemies (id INTEGER, name TEXT, type TEXT, health INTEGER);
+      INSERT INTO enemies VALUES
+        (1,'Vex','Raider',60),
+        (2,'Grist','Raider',55),
+        (3,'Maul','Raider',70),
+        (4,'Husk','Raider',50),
+        (5,'Aegis','Warden',120),
+        (6,'Bulwark','Warden',140),
+        (7,'Pip','Scout',25),
+        (8,'Skitter','Scout',30);
+    `,
+    hints: [
+      "Give COUNT(*) a name with AS, then sort by that name.",
+      "ORDER BY can sort by the alias you defined: ORDER BY n DESC.",
+      "SELECT type, COUNT(*) AS n FROM enemies GROUP BY type ORDER BY n DESC;"
+    ],
+    terms: ["AS", "alias", "ORDER BY aggregate"]
   }
 ];
