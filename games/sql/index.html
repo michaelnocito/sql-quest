@@ -39,6 +39,7 @@ header{background:var(--surf);border-bottom:1px solid var(--border);padding:8px 
 .icon-btn{background:none;border:1px solid var(--border);color:var(--muted);font:inherit;font-size:16px;width:32px;height:32px;border-radius:var(--r2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
 .icon-btn:hover{color:var(--text);border-color:var(--text)}
 .icon-btn.on{color:var(--accent);border-color:var(--accent)}
+.icon-btn.off{opacity:.4}
 .dev-toggle{width:auto;padding:0 10px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.5px}
 .dev-toggle::after{content:' OFF';opacity:.7}
 .dev-toggle.on::after{content:' ON'}
@@ -71,27 +72,19 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 .briefing p{margin-top:6px;color:var(--text)}
 .briefing .obj{margin-top:7px;font-size:12.5px;color:var(--muted)}
 .briefing .obj b{color:var(--yellow)}
-.briefing .onjob{margin-top:7px;font-size:12px;color:var(--accent2);background:rgba(88,170,162,.08);border-radius:6px;padding:6px 10px}
-.briefing .onjob b{color:var(--accent2)}
-.briefing .recall{margin-top:7px;font-size:12px;color:var(--yellow);background:rgba(212,168,73,.08);border-radius:6px;padding:6px 10px}
-.briefing .recall b{color:var(--yellow)}
-.briefing .recall .rk{display:inline-block;font-family:var(--mono);font-size:11px;background:var(--surf2);color:var(--yellow);padding:1px 7px;border-radius:4px;margin:0 2px}
-/* Read-aloud: a collapsible "say it in plain English" walkthrough of the
-   query pattern — ported from the analyst prep kit. Folded by default so the
-   briefing stays uncluttered; open it when you want the spoken breakdown. */
-.briefing .ral{margin-top:8px}
-.briefing .ral>summary{cursor:pointer;font-size:12px;color:var(--accent2);list-style:none;user-select:none}
-.briefing .ral>summary::-webkit-details-marker{display:none}
-.briefing .ral>summary::before{content:'▸ ';color:var(--accent2)}
-.briefing .ral[open]>summary::before{content:'▾ '}
-.ral-sql{font-family:var(--mono);font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r2);padding:9px 11px;margin:8px 0;white-space:pre;overflow-x:auto;color:var(--text)}
-.ral-say{font-size:12.5px;font-style:italic;color:var(--text);background:rgba(88,170,162,.07);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;padding:7px 11px;margin-bottom:9px;line-height:1.5}
-.ral-say::before{content:'🗣️ ';opacity:.85;font-style:normal;margin-right:3px}
-.ral-line{display:flex;align-items:baseline;gap:9px;padding:4px 0;border-bottom:1px solid var(--border)}
-.ral-line:last-child{border:none}
-.ral-chunk{font-family:var(--mono);font-size:12px;color:var(--accent);min-width:140px;flex-shrink:0}
-.ral-arrow{color:var(--muted);flex-shrink:0}
-.ral-desc{font-size:12px;color:var(--text)}
+/* Compact help row: secondary resources sit as small chips so the briefing
+   stays focused on the task. On-the-job opens a panel; recall is an inline
+   reminder of which earlier concepts this wave makes you reuse. */
+.help-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px;align-items:center}
+.help-chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;border-radius:20px;padding:4px 11px;border:1px solid var(--border);background:var(--surf2);color:var(--muted)}
+button.help-chip{font-family:var(--font);cursor:pointer;transition:.15s}
+button.help-chip:hover{color:var(--text);border-color:var(--accent)}
+.help-chip.recall{color:var(--yellow);border-color:rgba(212,168,73,.35)}
+.help-chip.recall .rk{display:inline-block;font-family:var(--mono);font-size:11px;background:var(--surf);color:var(--yellow);padding:1px 6px;border-radius:4px;margin:0 1px}
+/* On-the-job panel (rendered in the shared overlay) */
+.job-line{font-size:13.5px;line-height:1.55;margin-bottom:11px;text-align:left}
+.job-line .lbl{display:block;font-size:11px;font-family:var(--mono);letter-spacing:.5px;text-transform:uppercase;color:var(--accent2);margin-bottom:3px}
+.job-line.eg .lbl{color:var(--yellow)}
 
 /* SCHEMA chips */
 .schema-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px}
@@ -265,7 +258,8 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
     <span id="hp-num">100</span>
   </div>
   <button class="icon-btn dev-toggle on" id="dev-btn" title="Dev mode — ON: full answer shown (Tab inserts). OFF: player mode — the answer is uncovered over 3 misses, then autopilot." onclick="toggleDev()">DEV</button>
-  <button class="icon-btn" id="audio-btn" title="Focus audio" onclick="toggleAudio()">🔇</button>
+  <button class="icon-btn" id="music-btn" title="Background music on/off" onclick="toggleMusic()">🎵</button>
+  <button class="icon-btn" id="sfx-btn" title="Sound effects on/off" onclick="toggleSfx()">🔔</button>
   <button class="icon-btn" id="theme-btn" title="Theme" onclick="toggleTheme()">◐</button>
 </header>
 
@@ -276,9 +270,10 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
       <span class="tag" id="b-tag">SELECT</span><span class="ttl" id="b-title">First Contact</span>
       <p id="b-text"></p>
       <div class="obj">🎯 <b id="b-obj"></b></div>
-      <div class="recall" id="b-recall"><b>🔁 Recall drill —</b> this wave makes you reuse: <span id="b-recall-text"></span></div>
-      <div class="onjob" id="b-job"><b>On the job:</b> <span id="b-job-text"></span></div>
-      <details class="ral" id="b-ral"><summary>🗣️ Read it aloud — hear the query as a spoken sentence</summary><div id="b-ral-body"></div></details>
+      <div class="help-row">
+        <button class="help-chip" id="b-job-btn" onclick="showJob()" title="Where this concept gets used on the job">💼 On the job</button>
+        <span class="help-chip recall" id="b-recall" title="Earlier concepts this wave makes you reuse">🔁 Recall: <span id="b-recall-text"></span></span>
+      </div>
     </div>
 
     <div class="schema-row" id="schema-row"></div>
@@ -328,9 +323,9 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 28, 2026 · 8:45 PM ET";
+const BUILD_TS = "May 28, 2026 · 9:00 PM ET";
 const state = {
-  wave: 0, baseHP: 100, devMode: true, audio: true, theme: 'dark',
+  wave: 0, baseHP: 100, devMode: true, music: true, sfx: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
 };
 let SQLjs = null;          // initSqlJs module
@@ -344,12 +339,16 @@ const AUTOPILOT_AT = 3;    // failed attempts before autopilot fills the answer 
 
 function load(){
   try{ Object.assign(state, JSON.parse(localStorage.getItem(LS)) || {}); }catch(e){}
+  // Migrate the old single audio flag → separate music/sfx prefs.
+  const saved = (()=>{ try{ return JSON.parse(localStorage.getItem(LS)) || {}; }catch(e){ return {}; } })();
+  if(saved.music === undefined && saved.audio !== undefined) state.music = saved.audio;
+  if(saved.sfx === undefined && saved.audio !== undefined) state.sfx = saved.audio;
   state.started = Date.now();
 }
 function save(){
   localStorage.setItem(LS, JSON.stringify({
     wave: state.wave, baseHP: state.baseHP, devMode: state.devMode,
-    audio: state.audio, theme: state.theme, cleared: state.cleared,
+    music: state.music, sfx: state.sfx, theme: state.theme, cleared: state.cleared,
     attempts: state.attempts, correct: state.correct
   }));
 }
@@ -408,29 +407,16 @@ function loadWave(){
   document.getElementById('b-title').textContent = w.title;
   document.getElementById('b-text').innerHTML = w.briefing;
   document.getElementById('b-obj').textContent = w.objective;
-  document.getElementById('b-job-text').textContent = w.realWorld || '';
-  document.getElementById('b-job').style.display = w.realWorld ? 'block' : 'none';
+  // On-the-job context is shown on demand via the 💼 chip (see showJob); hide
+  // the chip if a wave has no career context authored.
+  document.getElementById('b-job-btn').style.display = (w.onTheJob || w.realWorld) ? 'inline-flex' : 'none';
   // Spaced retrieval: surface which earlier concepts this wave forces you to recall.
   const rec = w.reinforces || [];
   const recEl = document.getElementById('b-recall');
   if(rec.length){
     document.getElementById('b-recall-text').innerHTML = rec.map(c=>`<span class="rk">${esc(c)}</span>`).join('');
-    recEl.style.display = 'block';
+    recEl.style.display = 'inline-flex';
   } else { recEl.style.display = 'none'; }
-  // Read-aloud: a plain-English walkthrough of the query pattern (collapsible).
-  const ral = w.readAloud;
-  const ralEl = document.getElementById('b-ral');
-  if(ral){
-    let h = '';
-    if(ral.sql)  h += `<div class="ral-sql">${esc(ral.sql)}</div>`;
-    if(ral.say)  h += `<div class="ral-say">${esc(ral.say)}</div>`;
-    (ral.lines || []).forEach(([chunk, desc])=>{
-      h += `<div class="ral-line"><span class="ral-chunk">${esc(chunk)}</span><span class="ral-arrow">→</span><span class="ral-desc">${esc(desc)}</span></div>`;
-    });
-    document.getElementById('b-ral-body').innerHTML = h;
-    ralEl.open = false;
-    ralEl.style.display = 'block';
-  } else { ralEl.style.display = 'none'; }
   renderTrack();
   document.getElementById('feedback').textContent = '';
   document.getElementById('feedback').className = 'feedback';
@@ -570,6 +556,17 @@ function cycleHint(){
   if(hintLevel >= w.hints.length) btn.disabled = true;
 }
 function esc(s){ return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+/* On-the-job panel: where this concept gets used in a real analyst role + a
+   plain example of the ask. Names the concept/parts but never the full query. */
+function showJob(){
+  const w = currentWave();
+  const j = w.onTheJob || {};
+  const uses = j.uses || w.realWorld || '';
+  let body = '';
+  if(uses)      body += `<div class="job-line"><span class="lbl">Where you'll use ${esc(w.concept)}</span>${esc(uses)}</div>`;
+  if(j.example) body += `<div class="job-line eg"><span class="lbl">For example</span>${esc(j.example)}</div>`;
+  showOverlay('💼', 'On the job', body, 'Back to the query');
+}
 function pulseHint(){
   const btn = document.getElementById('hint-btn');
   if(btn.disabled) return;
@@ -1117,6 +1114,7 @@ function hideOverlay(){ document.getElementById('overlay').classList.remove('sho
 function overlayAction(){
   const title = document.getElementById('ov-title').textContent;
   if(title === 'Autopilot engaged'){ hideOverlay(); document.getElementById('sql').focus(); return; }
+  if(title === 'On the job'){ hideOverlay(); return; }
   if(title === 'Base Overrun'){
     state.baseHP = 100; updateHP(); save(); loadWave(); return;
   }
@@ -1135,18 +1133,29 @@ function audioCtx(){
   return actx;
 }
 function beep(freq, ms){
-  if(!state.audio) return;
+  if(!state.sfx) return;
   const c = audioCtx(); const o = c.createOscillator(); const g = c.createGain();
   o.frequency.value = freq; o.type = 'sine'; g.gain.value = 0.06;
   o.connect(g); g.connect(c.destination); o.start();
   g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + ms/1000);
   o.stop(c.currentTime + ms/1000);
 }
-function toggleAudio(){
-  state.audio = !state.audio;
-  document.getElementById('audio-btn').textContent = state.audio ? '🔊' : '🔇';
-  document.getElementById('audio-btn').classList.toggle('on', state.audio);
-  if(state.audio){ startMusic(); } else { stopMusic(); }
+function updateAudioBtns(){
+  const mb = document.getElementById('music-btn');
+  const sb = document.getElementById('sfx-btn');
+  if(mb){ mb.classList.toggle('on', state.music); mb.classList.toggle('off', !state.music); }
+  if(sb){ sb.textContent = state.sfx ? '🔔' : '🔕'; sb.classList.toggle('on', state.sfx); sb.classList.toggle('off', !state.sfx); }
+}
+function toggleMusic(){
+  state.music = !state.music;
+  if(state.music){ audioCtx(); startMusic(); } else { stopMusic(); }
+  updateAudioBtns();
+  save();
+}
+function toggleSfx(){
+  state.sfx = !state.sfx;
+  if(state.sfx){ audioCtx(); beep(660,90); }   // unlock + a tiny confirmation blip
+  updateAudioBtns();
   save();
 }
 
@@ -1311,7 +1320,7 @@ function playBar(chord, dur, style){
   });
 }
 function startMusic(){
-  if(!state.audio || musicTimer) return;
+  if(!state.music || musicTimer) return;
   const c = audioCtx();
   if(!musicGain){ musicGain = c.createGain(); musicGain.gain.value = 0.9; musicGain.connect(c.destination); }
   if(!musicSchedule) musicSchedule = buildSchedule();
@@ -1328,7 +1337,7 @@ function stopMusic(){ if(musicTimer){ clearInterval(musicTimer); musicTimer = nu
 function suspendAudio(){ stopMusic(); if(actx && actx.state === 'running') actx.suspend(); }
 function resumeAudioIfActive(){
   const onSplash = document.getElementById('splash').classList.contains('show');
-  if(state.audio && !onSplash){ if(actx) actx.resume(); startMusic(); }
+  if(state.music && !onSplash){ if(actx) actx.resume(); startMusic(); }
 }
 document.addEventListener('visibilitychange', ()=>{ document.hidden ? suspendAudio() : resumeAudioIfActive(); });
 window.addEventListener('pagehide', suspendAudio);
@@ -1337,9 +1346,8 @@ window.addEventListener('pagehide', suspendAudio);
    Starting the campaign opts you into music; tap the speaker to mute. */
 function startGame(){
   document.getElementById('splash').classList.remove('show');
-  state.audio = true;
-  const ab = document.getElementById('audio-btn');
-  ab.textContent = '🔊'; ab.classList.add('on');
+  state.music = true; state.sfx = true;
+  updateAudioBtns();
   audioCtx();                 // create/resume inside the click gesture
   startMusic();
   save();
@@ -1390,9 +1398,7 @@ async function init(){
   load();
   applyTheme();
   document.getElementById('build-ts').textContent = BUILD_TS;
-  const ab = document.getElementById('audio-btn');
-  ab.textContent = state.audio ? '🔊' : '🔇';
-  ab.classList.toggle('on', state.audio);
+  updateAudioBtns();
   document.getElementById('wave-total').textContent = WAVES.length;
   document.getElementById('dev-btn').classList.toggle('on', state.devMode);
   document.getElementById('dev-hint').style.visibility = state.devMode ? 'visible' : 'hidden';

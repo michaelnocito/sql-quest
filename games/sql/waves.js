@@ -43,14 +43,9 @@ window.WAVES = [
       simple: "SELECT pulls rows back out of a table. The * means “every column”, so SELECT * FROM enemies hands you the whole table, nothing left out.",
       analogy: "Like asking a librarian to wheel out an entire shelf — every book comes back, none held aside."
     },
-    readAloud: {
-      sql: "SELECT * FROM enemies;",
-      say: "Select everything from the enemies table — give me every column of every row.",
-      lines: [
-        ["SELECT", "tells the database you want to read data back"],
-        ["*", "the wildcard — every column, no need to name them one by one"],
-        ["FROM enemies", "which table to pull the rows from"]
-      ]
+    onTheJob: {
+      uses: "Reading rows back out of a table is the very first move in almost any analysis — an ad-hoc data pull, a sanity check before a report, or just seeing what columns a table even has.",
+      example: "A teammate says \"can you pull the customers table so we can take a look?\" — you'd reach for SELECT to read those rows back."
     },
     schema: `
       CREATE TABLE enemies (id INTEGER, name TEXT, type TEXT, health INTEGER);
@@ -87,14 +82,9 @@ window.WAVES = [
       simple: "WHERE keeps only the rows that meet a condition and drops the rest, so the query acts on just the slice you care about — here, the rows whose type is 'Raider'.",
       analogy: "Like telling that librarian “only the mystery novels, please” — you get back just the books that match, not the whole shelf."
     },
-    readAloud: {
-      sql: "SELECT * FROM enemies WHERE type = 'Raider';",
-      say: "Select everything from enemies, but only the rows where the type equals 'Raider'.",
-      lines: [
-        ["SELECT *", "read back every column…"],
-        ["FROM enemies", "…of the enemies table"],
-        ["WHERE type = 'Raider'", "keep only rows whose type is exactly 'Raider' (text must match in quotes)"]
-      ]
+    onTheJob: {
+      uses: "Almost no real question wants the whole table — you want one slice of it: one region, one date range, one status, one customer segment. WHERE is how you narrow down to just the rows the question is about.",
+      example: "Your manager asks \"how many orders came from California last month?\" — you'd use WHERE to keep only the California rows in that date range before you count them."
     },
     schema: `
       CREATE TABLE enemies (id INTEGER, name TEXT, type TEXT, health INTEGER);
@@ -131,15 +121,9 @@ window.WAVES = [
       simple: "JOIN links two tables on a value they share, so one query can use facts from both at once — here, only enemies whose id appears in the bounties table come back.",
       analogy: "Like matching coat-check tickets to coats: each ticket number lines up with exactly one coat, so you only pull the coats that have a ticket."
     },
-    readAloud: {
-      sql: "SELECT e.id, e.name, e.type, e.health\nFROM enemies e\nJOIN bounties b ON e.id = b.enemy_id;",
-      say: "Read four columns from enemies, and stitch in the bounties table where each enemy's id matches a bounty's enemy_id — so only enemies on the bounty list come back.",
-      lines: [
-        ["SELECT e.id, e.name, …", "the columns to return, each tagged with the enemies alias e"],
-        ["FROM enemies e", "the main table, nicknamed e"],
-        ["JOIN bounties b", "bring in the bounties table, nicknamed b"],
-        ["ON e.id = b.enemy_id", "match rows where the ids line up — the link between the two tables"]
-      ]
+    onTheJob: {
+      uses: "Real data is spread across many tables — orders in one, customers in another, products in a third. JOIN stitches them together on a shared id so a single query can answer questions that span them.",
+      example: "Someone asks \"which customers actually placed an order?\" — you'd JOIN the customers table to the orders table on their shared customer id, so only customers with a matching order come back."
     },
     schema: `
       CREATE TABLE enemies (id INTEGER, name TEXT, type TEXT, health INTEGER);
