@@ -39,6 +39,15 @@ window.WAVES = [
     reinforces: [],               // first concept — nothing to recall yet
     starter: "SELECT * FROM enemies;",
     solution: "SELECT * FROM enemies;",
+    readAloud: {
+      sql: "SELECT * FROM enemies;",
+      say: "Select everything from the enemies table — give me every column of every row.",
+      lines: [
+        ["SELECT", "tells the database you want to read data back"],
+        ["*", "the wildcard — every column, no need to name them one by one"],
+        ["FROM enemies", "which table to pull the rows from"]
+      ]
+    },
     schema: `
       CREATE TABLE enemies (id INTEGER, name TEXT, type TEXT, health INTEGER);
       INSERT INTO enemies VALUES
@@ -70,6 +79,15 @@ window.WAVES = [
     reinforces: ["SELECT"],       // still pulling rows with SELECT before you filter
     starter: "SELECT * FROM enemies WHERE type = '____';",
     solution: "SELECT * FROM enemies WHERE type = 'Raider';",
+    readAloud: {
+      sql: "SELECT * FROM enemies WHERE type = 'Raider';",
+      say: "Select everything from enemies, but only the rows where the type equals 'Raider'.",
+      lines: [
+        ["SELECT *", "read back every column…"],
+        ["FROM enemies", "…of the enemies table"],
+        ["WHERE type = 'Raider'", "keep only rows whose type is exactly 'Raider' (text must match in quotes)"]
+      ]
+    },
     schema: `
       CREATE TABLE enemies (id INTEGER, name TEXT, type TEXT, health INTEGER);
       INSERT INTO enemies VALUES
@@ -101,6 +119,16 @@ window.WAVES = [
     reinforces: ["SELECT", "WHERE"], // re-type SELECT + columns; the ON match is WHERE's "match on a condition" muscle
     starter: "SELECT e.id, e.name, e.type, e.health\nFROM enemies e\nJOIN bounties b ON ____ = ____;",
     solution: "SELECT e.id, e.name, e.type, e.health FROM enemies e JOIN bounties b ON e.id = b.enemy_id;",
+    readAloud: {
+      sql: "SELECT e.id, e.name, e.type, e.health\nFROM enemies e\nJOIN bounties b ON e.id = b.enemy_id;",
+      say: "Read four columns from enemies, and stitch in the bounties table where each enemy's id matches a bounty's enemy_id — so only enemies on the bounty list come back.",
+      lines: [
+        ["SELECT e.id, e.name, …", "the columns to return, each tagged with the enemies alias e"],
+        ["FROM enemies e", "the main table, nicknamed e"],
+        ["JOIN bounties b", "bring in the bounties table, nicknamed b"],
+        ["ON e.id = b.enemy_id", "match rows where the ids line up — the link between the two tables"]
+      ]
+    },
     schema: `
       CREATE TABLE enemies (id INTEGER, name TEXT, type TEXT, health INTEGER);
       INSERT INTO enemies VALUES

@@ -73,6 +73,22 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 .briefing .recall{margin-top:7px;font-size:12px;color:var(--yellow);background:rgba(212,168,73,.08);border-radius:6px;padding:6px 10px}
 .briefing .recall b{color:var(--yellow)}
 .briefing .recall .rk{display:inline-block;font-family:var(--mono);font-size:11px;background:var(--surf2);color:var(--yellow);padding:1px 7px;border-radius:4px;margin:0 2px}
+/* Read-aloud: a collapsible "say it in plain English" walkthrough of the
+   query pattern — ported from the analyst prep kit. Folded by default so the
+   briefing stays uncluttered; open it when you want the spoken breakdown. */
+.briefing .ral{margin-top:8px}
+.briefing .ral>summary{cursor:pointer;font-size:12px;color:var(--accent2);list-style:none;user-select:none}
+.briefing .ral>summary::-webkit-details-marker{display:none}
+.briefing .ral>summary::before{content:'▸ ';color:var(--accent2)}
+.briefing .ral[open]>summary::before{content:'▾ '}
+.ral-sql{font-family:var(--mono);font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r2);padding:9px 11px;margin:8px 0;white-space:pre;overflow-x:auto;color:var(--text)}
+.ral-say{font-size:12.5px;font-style:italic;color:var(--text);background:rgba(88,170,162,.07);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;padding:7px 11px;margin-bottom:9px;line-height:1.5}
+.ral-say::before{content:'🗣️ ';opacity:.85;font-style:normal;margin-right:3px}
+.ral-line{display:flex;align-items:baseline;gap:9px;padding:4px 0;border-bottom:1px solid var(--border)}
+.ral-line:last-child{border:none}
+.ral-chunk{font-family:var(--mono);font-size:12px;color:var(--accent);min-width:140px;flex-shrink:0}
+.ral-arrow{color:var(--muted);flex-shrink:0}
+.ral-desc{font-size:12px;color:var(--text)}
 
 /* SCHEMA chips */
 .schema-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px}
@@ -259,6 +275,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
       <div class="obj">🎯 <b id="b-obj"></b></div>
       <div class="recall" id="b-recall"><b>🔁 Recall drill —</b> this wave makes you reuse: <span id="b-recall-text"></span></div>
       <div class="onjob" id="b-job"><b>On the job:</b> <span id="b-job-text"></span></div>
+      <details class="ral" id="b-ral"><summary>🗣️ Read it aloud — say the query in plain English</summary><div id="b-ral-body"></div></details>
     </div>
 
     <div class="schema-row" id="schema-row"></div>
@@ -308,7 +325,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 28, 2026 · 8:23 PM ET";
+const BUILD_TS = "May 28, 2026 · 8:26 PM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, audio: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -392,6 +409,20 @@ function loadWave(){
     document.getElementById('b-recall-text').innerHTML = rec.map(c=>`<span class="rk">${esc(c)}</span>`).join('');
     recEl.style.display = 'block';
   } else { recEl.style.display = 'none'; }
+  // Read-aloud: a plain-English walkthrough of the query pattern (collapsible).
+  const ral = w.readAloud;
+  const ralEl = document.getElementById('b-ral');
+  if(ral){
+    let h = '';
+    if(ral.sql)  h += `<div class="ral-sql">${esc(ral.sql)}</div>`;
+    if(ral.say)  h += `<div class="ral-say">${esc(ral.say)}</div>`;
+    (ral.lines || []).forEach(([chunk, desc])=>{
+      h += `<div class="ral-line"><span class="ral-chunk">${esc(chunk)}</span><span class="ral-arrow">→</span><span class="ral-desc">${esc(desc)}</span></div>`;
+    });
+    document.getElementById('b-ral-body').innerHTML = h;
+    ralEl.open = false;
+    ralEl.style.display = 'block';
+  } else { ralEl.style.display = 'none'; }
   renderTrack();
   document.getElementById('feedback').textContent = '';
   document.getElementById('feedback').className = 'feedback';
