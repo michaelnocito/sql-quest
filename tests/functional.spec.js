@@ -86,7 +86,10 @@ test.describe('Functional correctness', () => {
       solution: window.WAVES[0].solution,
       rounds: window.WAVES[0].rounds,
     }));
-    for (let i = 0; i < rounds; i++) {
+    // Fire the correct query until the overlay shows. A clean first-try clears
+    // in one shot (fatality); a friction-ed run takes `rounds` correct volleys.
+    for (let i = 0; i < rounds + 1; i++) {
+      if (await page.locator('#overlay.show').count() > 0) break;
       await page.waitForFunction(() => !busy, null, { timeout: 8_000 }).catch(() => {});
       await page.fill('#sql', solution);
       await page.getByRole('button', { name: /execute query/i }).click();
