@@ -323,7 +323,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 28, 2026 · 9:00 PM ET";
+const BUILD_TS = "May 28, 2026 · 9:03 PM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, music: true, sfx: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -1180,8 +1180,8 @@ const CH = {
 /* Each section: chords (one per bar), reps, and a texture style.
    arp: 'up' | 'down' | 'updown' | 'sparse' | 'none'; padGain/arpGain set the
    dynamics; bassPulse gives a section a gentle two-beat pulse. */
-/* groove:true → the section gets the funk layer (syncopated bass riff, off-beat
-   clav stab, soft shaker/hi-hat) + 7th color. Left OFF on the intro/bridge/calm
+/* groove:true → the section gets the funk layer (syncopated bass riff, soft
+   shaker/hi-hat) + 7th color. Left OFF on the intro/bridge/calm
    reprise (arp 'none'/'sparse') so those keep the pure ambient/spatial feel
    Mike likes — the funk rides the energetic sections and we drop back to calm. */
 const MUSIC_SONG = [
@@ -1267,8 +1267,8 @@ function playBar(chord, dur, style){
       bo.connect(bg); bg.connect(musicGain); bo.start(bt); bo.stop(bt + blen + 0.1);
     });
   } else {
-    // ── GROOVE BAR ── 70s-soul funk layer: syncopated plucky bass, off-beat
-    // clav stab, soft shaker. Tempo stays laid-back (~70 BPM) so it reads
+    // ── GROOVE BAR ── 70s-soul funk layer: syncopated plucky bass + soft
+    // shaker. Tempo stays laid-back (~70 BPM) so it reads
     // funky-but-mellow, not frantic — preserving the calm/spatial feel.
     // Funk bass riff: root on 1, root again pushed on the "and" of 2, octave
     // ghost on 4 — that pocket sit-back groove.
@@ -1287,18 +1287,9 @@ function playBar(chord, dur, style){
       bg.gain.exponentialRampToValueAtTime(0.0001, bt + p.len);
       bo.connect(bg); bg.connect(musicGain); bo.start(bt); bo.stop(bt + p.len + 0.05);
     });
-    // Clav stab: short bright square chord on the off-beats (the "& of 2" and 4).
-    [beat*1.5, beat*3.5].forEach(off=>{
-      chord.pad.forEach(f=>{
-        const co = c.createOscillator(), cg = c.createGain();
-        co.type = 'square'; co.frequency.value = f;
-        const ct = t + off;
-        cg.gain.setValueAtTime(0.0001, ct);
-        cg.gain.exponentialRampToValueAtTime(0.018, ct + 0.01);
-        cg.gain.exponentialRampToValueAtTime(0.0001, ct + 0.16);
-        co.connect(cg); cg.connect(musicGain); co.start(ct); co.stop(ct + 0.2);
-      });
-    });
+    // (Removed the off-beat square "clav stab" — its chiptune timbre read too
+    //  video-gamish and grew fatiguing over a long session. The triangle bass +
+    //  shaker carry the funk pocket without the harsh square edge.)
     // Shaker / hi-hat: steady eighth-note pulse, accented off-beats.
     for(let i=0;i<8;i++){
       const off = i * (beat/2);
