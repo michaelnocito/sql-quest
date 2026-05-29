@@ -200,6 +200,14 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 .base-core{transform-box:fill-box;transform-origin:center}
 .base-core.base-hit{animation:base-hit .34s ease-out}
 @keyframes base-hit{0%{fill:#fff}40%{fill:var(--red)}100%{fill:var(--accent)}}
+/* charged strike: a foe winds up over repeated misses. A pulsing warning ring
+   telegraphs the heavy hit; one correct query interrupts it (see volley). */
+.charge-warn{transform-box:fill-box;transform-origin:center;animation:charge-pulse .9s ease-in-out infinite}
+@keyframes charge-pulse{0%,100%{transform:scale(1);opacity:.3}50%{transform:scale(1.28);opacity:.95}}
+.charge-bolt{pointer-events:none;animation:bolt-fade .3s linear forwards}
+.base-core.base-hit-heavy{animation:base-hit-heavy .5s ease-out}
+@keyframes base-hit-heavy{0%{fill:#fff;transform:scale(1.5)}45%{fill:var(--red)}100%{fill:var(--accent);transform:scale(1)}}
+.dmg-charged{fill:#ffb648;font-size:17px}
 
 /* BREAK NUDGE */
 .break-nudge{position:fixed;bottom:0;left:0;right:0;background:var(--surf);border-top:1px solid var(--accent);padding:12px 16px;display:none;align-items:center;gap:12px;z-index:180;font-size:13px}
@@ -300,7 +308,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 28, 2026 · 8:18 PM ET";
+const BUILD_TS = "May 28, 2026 · 8:23 PM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, audio: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -553,9 +561,10 @@ function runQuery(){
     waveTries++;
     const fp = falsePositives(player, expected);
     const nudge = waveTries >= 2 ? ' Stuck? Tap “Show hint”.' : '';
+    const heavyNote = impendingStrike() ? ' ⚡ Charged strike incoming — a correct query breaks it!' : '';
     setFb('warn', fp > 0
-      ? `Over-broad — ${fp} stray row${fp!==1?'s':''} hit your own base (friendly fire), and the swarm strikes back for ${enemyHit()}. Tighten the filter and fire again.${nudge}`
-      : `Wrong lock — you targeted ${player.rows.length}, not the right ${expected.rows.length}. The swarm strikes back for ${enemyHit()} and edges closer. Adjust and fire again.${nudge}`);
+      ? `Over-broad — ${fp} stray row${fp!==1?'s':''} hit your own base (friendly fire), and the swarm strikes back. Tighten the filter and fire again.${heavyNote}${nudge}`
+      : `Wrong lock — you targeted ${player.rows.length}, not the right ${expected.rows.length}. The swarm strikes back and edges closer. Adjust and fire again.${heavyNote}${nudge}`);
     if(waveTries >= 2) pulseHint();
     missTurn(fp);
   }
@@ -581,12 +590,18 @@ const FIELD_W = 800, FIELD_H = 320, BASE_X = 720, LANE_TOP = 60, LANE_GAP = 52;
 const ENEMY_MAXHP = 100;   // every enemy starts here; a correct volley chips maxHp/rounds
 const FF_DMG = 4;          // friendly-fire: base HP lost per over-broad (false-positive) row
 const BASE_REACH_DMG = 14; // base HP lost for each enemy that creeps all the way in
-const ENEMY_HIT_DMG = 6;   // FF-style counterattack: a wrong command lets the swarm hit you
 function laneY(i){ return LANE_TOP + i * LANE_GAP; }
 function waveRounds(){ const r = currentWave().rounds; return (r && r > 0) ? r : 3; }
 function waveCreep(){ const c = currentWave().creep; return (c != null) ? c : 0.12; }
 function correctHit(){ return Math.ceil(ENEMY_MAXHP / waveRounds()); }
-function enemyHit(){ const d = currentWave().enemyDmg; return (d != null) ? d : ENEMY_HIT_DMG; }
+// Will the frontmost foe's next counterattack be a heavy charged strike?
+function impendingStrike(){
+  const living = enemiesLive.filter(e=>e.alive);
+  if(!living.length) return false;
+  const atk = living.reduce((a,b)=> b.advance > a.advance ? b : a);
+  const a = archOf(atk);
+  return a.charge > 0 && ((atk.charge||0)+1) >= a.charge;
+}
 function enemyX(adv){ return 90 + adv * (BASE_X - 150) / 4; } // 4 steps to reach base
 
 // Celestial Cartographer theme: the field is a window into a twilight sky.
@@ -720,17 +735,30 @@ function heroFigure(hx, hy){
 // player reads the threat at a glance. Scouts are nimble 3-point shards,
 // Raiders are 5-point red stars, Wardens are heavy 6-point violet crystals.
 // All keep class "mote-core" + fill "#160f1e" so the hit-flash keyframe works.
+// Combat behavior, by archetype:
+//   hit      — base counterattack damage on a wrong query
+//   charge   — consecutive wrong queries needed to unleash a heavy strike
+//              (0 = never charges; the foe stays pure light chip damage)
+//   charged  — the heavy-strike damage when a wind-up completes
+// A correct query always interrupts a wind-up (see volley), so good play is safe.
 const ENEMY_ARCH = {
-  scout:  { spikes:3, ro:13, ri:6, glyph:3, stroke:'#7fdfff', nucleus:'#9fe8ff', halo:'haloScout',  spin:'s-cw-9',  inner:'s-ccw-11' },
-  raider: { spikes:5, ro:16, ri:7, glyph:5, stroke:'var(--red)', nucleus:'var(--red)', halo:'haloRaider', spin:'s-cw-16', inner:'s-ccw-11' },
-  warden: { spikes:6, ro:16, ri:8, glyph:3, stroke:'#c79bff', nucleus:'#c79bff', halo:'haloWarden', spin:'s-cw-28', inner:'s-ccw-11' }
+  scout:  { spikes:3, ro:13, ri:6, glyph:3, stroke:'#7fdfff', nucleus:'#9fe8ff', halo:'haloScout',  spin:'s-cw-9',  inner:'s-ccw-11', hit:4, charge:0, charged:0 },
+  raider: { spikes:5, ro:16, ri:7, glyph:5, stroke:'var(--red)', nucleus:'var(--red)', halo:'haloRaider', spin:'s-cw-16', inner:'s-ccw-11', hit:6, charge:2, charged:13 },
+  warden: { spikes:6, ro:16, ri:8, glyph:3, stroke:'#c79bff', nucleus:'#c79bff', halo:'haloWarden', spin:'s-cw-28', inner:'s-ccw-11', hit:8, charge:2, charged:18 }
 };
 function archOf(en){ return ENEMY_ARCH[en && en.archetype] || ENEMY_ARCH.warden; }
 // A void-being — a slow-rotating dark crystal star with a counter-rotating
 // inner glyph and a glowing nucleus. Silhouette varies by archetype.
 function enemyFigure(x, y, en){
   const a = archOf(en);
+  // Telegraph: a primed foe shows a pulsing warning ring + spark — a heavy
+  // strike lands on the next wrong query unless a correct one interrupts it.
+  const warn = (en && en.primed)
+    ? `<circle class="charge-warn" cx="${x}" cy="${y}" r="22" fill="none" stroke="var(--yellow)" stroke-width="2"/>`
+      + `<text x="${x}" y="${y-26}" fill="var(--yellow)" font-size="13" text-anchor="middle">⚡</text>`
+    : '';
   return `<circle cx="${x}" cy="${y}" r="22" fill="url(#${a.halo})"/>`
+    + warn
     + `<g class="spin-self ${a.spin}"><polygon class="mote-core" points="${starPts(x,y,a.spikes,a.ro,a.ri)}" fill="#160f1e" stroke="${a.stroke}" stroke-width="2" stroke-opacity="0.85"/></g>`
     + `<g class="spin-self ${a.inner}"><polygon points="${polyPts(x,y,a.glyph,9,-Math.PI/2)}" fill="none" stroke="${a.stroke}" stroke-opacity="0.55" stroke-width="1"/></g>`
     + `<circle cx="${x}" cy="${y}" r="3.5" fill="${a.nucleus}" fill-opacity="0.9"/>`
@@ -799,6 +827,8 @@ function applyBaseDmg(dmg){
 // the Final-Fantasy-style exchange. Survivors creep a step between volleys.
 function volley(){
   busy = true;
+  // A correct query interrupts any wind-up — good play is always safe.
+  enemiesLive.forEach(en=>{ en.charge = 0; en.primed = false; });
   const svg = document.getElementById('field');
   const hit = correctHit();
   const targets = [];
@@ -854,12 +884,24 @@ function volley(){
 }
 
 // The swarm's turn: the frontmost living enemy lunges and fires a bolt at the
-// base, flashing it and chipping base HP — the Final-Fantasy-style counterattack.
-function enemyAttack(dmg){
+// base — the Final-Fantasy-style counterattack. Raiders and Wardens wind up
+// over consecutive misses; when their charge completes they unleash a heavier
+// strike (telegraphed the turn before). Scouts never charge — pure light chip.
+function enemyAttack(){
   const svg = document.getElementById('field');
   const living = enemiesLive.map((en,i)=>({en,i})).filter(o=>o.en.alive);
-  if(!living.length){ applyBaseDmg(dmg); return; }
+  if(!living.length) return;
   const atk = living.reduce((a,b)=> b.en.advance > a.en.advance ? b : a);
+  const a = archOf(atk.en);
+  // Charge bookkeeping → decide normal vs heavy strike, then set the telegraph
+  // for next turn so the player can see a wind-up coming and clear it.
+  let heavy = false, dmg = (currentWave().enemyDmg != null) ? currentWave().enemyDmg : a.hit;
+  if(a.charge > 0){
+    atk.en.charge = (atk.en.charge || 0) + 1;
+    if(atk.en.charge >= a.charge){ heavy = true; dmg = a.charged; atk.en.charge = 0; }
+  }
+  enemiesLive.forEach(en=>{ en.primed = (en === atk.en) && a.charge > 0 && (en.charge === a.charge - 1); });
+
   const y = laneY(atk.i % Math.max(1,Math.min(enemiesLive.length,5)));
   const x = enemyX(atk.en.advance);
   const node = svg.querySelector(`.enemy[data-i="${atk.i}"]`);
@@ -867,16 +909,18 @@ function enemyAttack(dmg){
   const bolt = document.createElementNS(SVGNS,'line');
   bolt.setAttribute('x1', x); bolt.setAttribute('y1', y);
   bolt.setAttribute('x2', BASE_X); bolt.setAttribute('y2', FIELD_H/2);
-  bolt.setAttribute('stroke','var(--red)'); bolt.setAttribute('stroke-width','3');
-  bolt.setAttribute('class','enemy-bolt');
+  bolt.setAttribute('stroke', heavy ? '#ffb648' : 'var(--red)');
+  bolt.setAttribute('stroke-width', heavy ? '6' : '3');
+  bolt.setAttribute('class', heavy ? 'charge-bolt' : 'enemy-bolt');
   svg.appendChild(bolt);
-  beep(140, 120);
+  beep(heavy ? 90 : 140, heavy ? 200 : 120);
   setTimeout(()=>{
     bolt.remove();
     const core = document.getElementById('base-core');
-    if(core){ core.classList.add('base-hit'); setTimeout(()=>core.classList.remove('base-hit'), 360); }
-    spawnDmg(svg, BASE_X + 23, FIELD_H/2, '-' + dmg, 'dmg-ff');
+    if(core){ const cls = heavy ? 'base-hit-heavy' : 'base-hit'; core.classList.add(cls); setTimeout(()=>core.classList.remove(cls), heavy ? 520 : 360); }
+    spawnDmg(svg, BASE_X + 23, FIELD_H/2, '-' + dmg + (heavy ? ' ⚡' : ''), heavy ? 'dmg-charged' : 'dmg-ff');
     applyBaseDmg(dmg);
+    if(!heavy) drawField();   // refresh so a new telegraph ring shows on the primed foe
   }, 220);
 }
 
@@ -887,7 +931,7 @@ function missTurn(falsePos){
   busy = true;
   const reach = creepEnemies();
   drawField();
-  enemyAttack(enemyHit());                       // the swarm hits back
+  enemyAttack();                                 // the swarm hits back
   const ffDmg = Math.min(falsePos, 6) * FF_DMG;  // extra self-inflicted hits if over-broad
   if(ffDmg > 0){
     setTimeout(()=>{ spawnDmg(document.getElementById('field'), BASE_X, FIELD_H/2 + 24, '-' + ffDmg + ' FF', 'dmg-ff'); }, 300);
