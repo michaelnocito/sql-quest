@@ -299,7 +299,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 28, 2026 · 8:07 PM ET";
+const BUILD_TS = "May 28, 2026 · 8:13 PM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, audio: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -1138,6 +1138,17 @@ function startMusic(){
   musicTimer = setInterval(tick, BAR * 1000);
 }
 function stopMusic(){ if(musicTimer){ clearInterval(musicTimer); musicTimer = null; } }
+
+/* Don't keep playing after the app is closed/backgrounded: stop the music and
+   suspend the AudioContext when the page is hidden; resume on return if audio
+   is still enabled and the campaign has started. */
+function suspendAudio(){ stopMusic(); if(actx && actx.state === 'running') actx.suspend(); }
+function resumeAudioIfActive(){
+  const onSplash = document.getElementById('splash').classList.contains('show');
+  if(state.audio && !onSplash){ if(actx) actx.resume(); startMusic(); }
+}
+document.addEventListener('visibilitychange', ()=>{ document.hidden ? suspendAudio() : resumeAudioIfActive(); });
+window.addEventListener('pagehide', suspendAudio);
 
 /* Start screen → first user gesture, so the AudioContext is allowed to play.
    Starting the campaign opts you into music; tap the speaker to mute. */
