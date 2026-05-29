@@ -23,6 +23,7 @@ window.WAVES = [
   {
     id: 1,
     concept: "SELECT",
+    enemyArch: "scout",           // nimble 3-point shards
     title: "First Contact",
     // Plain-language briefing — analyst vocab introduced gently.
     briefing: "A scout swarm broke through the perimeter. Your turret targets whatever your query returns. Pull <b>every row</b> out of the <code>enemies</code> table to lock onto the whole swarm.",
@@ -58,6 +59,7 @@ window.WAVES = [
   {
     id: 2,
     concept: "WHERE",
+    enemyArch: "raider",          // 5-point red stars
     title: "Hold Your Fire",
     briefing: "Allied scouts are mixed into the lane — don't shred your own people. Only the <b>hostiles</b> (type <code>'Raider'</code>) should be targeted. Filter the swarm with a <code>WHERE</code> clause.",
     objective: "Return only the Raiders. Spare everyone else.",
@@ -88,6 +90,7 @@ window.WAVES = [
   {
     id: 3,
     concept: "JOIN",
+    enemyArch: "warden",          // heavy 6-point violet crystals
     title: "Mark the Bounties",
     briefing: "Command only authorizes fire on enemies with an active <b>bounty</b>. The bounty list lives in a separate table. <code>JOIN</code> <code>enemies</code> to <code>bounties</code> so the turret only locks the wanted ones.",
     objective: "Return the enemies that have a matching bounty.",

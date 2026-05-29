@@ -138,6 +138,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 .s-cw-28{animation:spin-cw 28s linear infinite}
 .s-ccw-22{animation:spin-ccw 22s linear infinite}
 .s-cw-16{animation:spin-cw 16s linear infinite}
+.s-cw-9{animation:spin-cw 9s linear infinite}
 .s-ccw-11{animation:spin-ccw 11s linear infinite}
 .breathe{transform-box:fill-box;transform-origin:center;animation:breathe 6s ease-in-out infinite}
 @keyframes breathe{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:.95;transform:scale(1.07)}}
@@ -299,7 +300,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 28, 2026 · 8:13 PM ET";
+const BUILD_TS = "May 28, 2026 · 8:18 PM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, audio: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -406,6 +407,7 @@ function loadWave(){
     const obj = {}; sol.columns.forEach((c,j)=>obj[c]=row[j]);
     return {
       name: obj.name || obj.id || ('Target '+(i+1)),
+      archetype: w.enemyArch || 'warden',
       maxHp: ENEMY_MAXHP, hp: ENEMY_MAXHP, advance: 0, alive: true
     };
   });
@@ -598,9 +600,14 @@ const STARS = Array.from({length: 70}, ()=>({
 // Gameplay-layer gradients only (the animated sky/nebula live in #field-bg).
 function fieldDefs(){
   return `<defs>`
-    + `<radialGradient id="voidHalo" cx="0.5" cy="0.5" r="0.5">`
-    +   `<stop offset="0" stop-color="rgba(224,92,92,0.40)"/>`
-    +   `<stop offset="1" stop-color="rgba(224,92,92,0)"/>`
+    + `<radialGradient id="haloRaider" cx="0.5" cy="0.5" r="0.5">`
+    +   `<stop offset="0" stop-color="rgba(224,92,92,0.42)"/><stop offset="1" stop-color="rgba(224,92,92,0)"/>`
+    + `</radialGradient>`
+    + `<radialGradient id="haloScout" cx="0.5" cy="0.5" r="0.5">`
+    +   `<stop offset="0" stop-color="rgba(110,200,235,0.38)"/><stop offset="1" stop-color="rgba(110,200,235,0)"/>`
+    + `</radialGradient>`
+    + `<radialGradient id="haloWarden" cx="0.5" cy="0.5" r="0.5">`
+    +   `<stop offset="0" stop-color="rgba(176,107,223,0.40)"/><stop offset="1" stop-color="rgba(176,107,223,0)"/>`
     + `</radialGradient>`
     + `<radialGradient id="spireGlow" cx="0.5" cy="0.5" r="0.5">`
     +   `<stop offset="0" stop-color="rgba(125,191,184,0.55)"/>`
@@ -709,13 +716,24 @@ function heroFigure(hx, hy){
     + `<polygon points="${polyPts(hx,hy-1,3,6,-Math.PI/2)}" fill="var(--bg)" fill-opacity="0.55"/>`
     + `<text x="${hx}" y="${FIELD_H-10}" fill="var(--muted)" font-size="10" text-anchor="middle" font-family="var(--mono)">ORACLE</text>`;
 }
+// Void-being archetypes — each wave's foes get a distinct silhouette so the
+// player reads the threat at a glance. Scouts are nimble 3-point shards,
+// Raiders are 5-point red stars, Wardens are heavy 6-point violet crystals.
+// All keep class "mote-core" + fill "#160f1e" so the hit-flash keyframe works.
+const ENEMY_ARCH = {
+  scout:  { spikes:3, ro:13, ri:6, glyph:3, stroke:'#7fdfff', nucleus:'#9fe8ff', halo:'haloScout',  spin:'s-cw-9',  inner:'s-ccw-11' },
+  raider: { spikes:5, ro:16, ri:7, glyph:5, stroke:'var(--red)', nucleus:'var(--red)', halo:'haloRaider', spin:'s-cw-16', inner:'s-ccw-11' },
+  warden: { spikes:6, ro:16, ri:8, glyph:3, stroke:'#c79bff', nucleus:'#c79bff', halo:'haloWarden', spin:'s-cw-28', inner:'s-ccw-11' }
+};
+function archOf(en){ return ENEMY_ARCH[en && en.archetype] || ENEMY_ARCH.warden; }
 // A void-being — a slow-rotating dark crystal star with a counter-rotating
-// inner glyph and a red nucleus. Keeps class "mote-core" for the hit-flash.
+// inner glyph and a glowing nucleus. Silhouette varies by archetype.
 function enemyFigure(x, y, en){
-  return `<circle cx="${x}" cy="${y}" r="22" fill="url(#voidHalo)"/>`
-    + `<g class="spin-self s-cw-16"><polygon class="mote-core" points="${starPts(x,y,6,16,8)}" fill="#160f1e" stroke="var(--red)" stroke-width="2" stroke-opacity="0.85"/></g>`
-    + `<g class="spin-self s-ccw-11"><polygon points="${polyPts(x,y,3,9,-Math.PI/2)}" fill="none" stroke="var(--red)" stroke-opacity="0.55" stroke-width="1"/></g>`
-    + `<circle cx="${x}" cy="${y}" r="3.5" fill="var(--red)" fill-opacity="0.9"/>`
+  const a = archOf(en);
+  return `<circle cx="${x}" cy="${y}" r="22" fill="url(#${a.halo})"/>`
+    + `<g class="spin-self ${a.spin}"><polygon class="mote-core" points="${starPts(x,y,a.spikes,a.ro,a.ri)}" fill="#160f1e" stroke="${a.stroke}" stroke-width="2" stroke-opacity="0.85"/></g>`
+    + `<g class="spin-self ${a.inner}"><polygon points="${polyPts(x,y,a.glyph,9,-Math.PI/2)}" fill="none" stroke="${a.stroke}" stroke-opacity="0.55" stroke-width="1"/></g>`
+    + `<circle cx="${x}" cy="${y}" r="3.5" fill="${a.nucleus}" fill-opacity="0.9"/>`
     + `<text x="${x}" y="${y+24}" fill="#cdd6ff" font-size="10" text-anchor="middle" font-family="var(--mono)">${esc(String(en.name)).slice(0,7)}</text>`;
 }
 
