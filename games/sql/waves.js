@@ -39,6 +39,10 @@ window.WAVES = [
     reinforces: [],               // first concept — nothing to recall yet
     starter: "SELECT * FROM enemies;",
     solution: "SELECT * FROM enemies;",
+    explain: {
+      simple: "SELECT pulls rows back out of a table. The * means “every column”, so SELECT * FROM enemies hands you the whole table, nothing left out.",
+      analogy: "Like asking a librarian to wheel out an entire shelf — every book comes back, none held aside."
+    },
     readAloud: {
       sql: "SELECT * FROM enemies;",
       say: "Select everything from the enemies table — give me every column of every row.",
@@ -79,6 +83,10 @@ window.WAVES = [
     reinforces: ["SELECT"],       // still pulling rows with SELECT before you filter
     starter: "SELECT * FROM enemies WHERE type = '____';",
     solution: "SELECT * FROM enemies WHERE type = 'Raider';",
+    explain: {
+      simple: "WHERE keeps only the rows that meet a condition and drops the rest, so the query acts on just the slice you care about — here, the rows whose type is 'Raider'.",
+      analogy: "Like telling that librarian “only the mystery novels, please” — you get back just the books that match, not the whole shelf."
+    },
     readAloud: {
       sql: "SELECT * FROM enemies WHERE type = 'Raider';",
       say: "Select everything from enemies, but only the rows where the type equals 'Raider'.",
@@ -119,6 +127,10 @@ window.WAVES = [
     reinforces: ["SELECT", "WHERE"], // re-type SELECT + columns; the ON match is WHERE's "match on a condition" muscle
     starter: "SELECT e.id, e.name, e.type, e.health\nFROM enemies e\nJOIN bounties b ON ____ = ____;",
     solution: "SELECT e.id, e.name, e.type, e.health FROM enemies e JOIN bounties b ON e.id = b.enemy_id;",
+    explain: {
+      simple: "JOIN links two tables on a value they share, so one query can use facts from both at once — here, only enemies whose id appears in the bounties table come back.",
+      analogy: "Like matching coat-check tickets to coats: each ticket number lines up with exactly one coat, so you only pull the coats that have a ticket."
+    },
     readAloud: {
       sql: "SELECT e.id, e.name, e.type, e.health\nFROM enemies e\nJOIN bounties b ON e.id = b.enemy_id;",
       say: "Read four columns from enemies, and stitch in the bounties table where each enemy's id matches a bounty's enemy_id — so only enemies on the bounty list come back.",

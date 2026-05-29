@@ -39,6 +39,9 @@ header{background:var(--surf);border-bottom:1px solid var(--border);padding:8px 
 .icon-btn{background:none;border:1px solid var(--border);color:var(--muted);font:inherit;font-size:16px;width:32px;height:32px;border-radius:var(--r2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
 .icon-btn:hover{color:var(--text);border-color:var(--text)}
 .icon-btn.on{color:var(--accent);border-color:var(--accent)}
+.dev-toggle{width:auto;padding:0 10px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.5px}
+.dev-toggle::after{content:' OFF';opacity:.7}
+.dev-toggle.on::after{content:' ON'}
 
 /* LAYOUT — the battlefield (the action) is ALWAYS visible. On phones it sits on
    top with the command console scrolling beneath it; on wide screens it's a
@@ -261,7 +264,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
     <div class="hp-bar"><div class="hp-fill" id="hp-fill"></div></div>
     <span id="hp-num">100</span>
   </div>
-  <button class="icon-btn on" id="dev-btn" title="Dev mode: pre-fills the answer (Tab to insert)" onclick="toggleDev()">⚡</button>
+  <button class="icon-btn dev-toggle on" id="dev-btn" title="Dev mode — ON: full answer shown (Tab inserts). OFF: player mode — the answer is uncovered over 3 misses, then autopilot." onclick="toggleDev()">DEV</button>
   <button class="icon-btn" id="audio-btn" title="Focus audio" onclick="toggleAudio()">🔇</button>
   <button class="icon-btn" id="theme-btn" title="Theme" onclick="toggleTheme()">◐</button>
 </header>
@@ -275,7 +278,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
       <div class="obj">🎯 <b id="b-obj"></b></div>
       <div class="recall" id="b-recall"><b>🔁 Recall drill —</b> this wave makes you reuse: <span id="b-recall-text"></span></div>
       <div class="onjob" id="b-job"><b>On the job:</b> <span id="b-job-text"></span></div>
-      <details class="ral" id="b-ral"><summary>🗣️ Read it aloud — say the query in plain English</summary><div id="b-ral-body"></div></details>
+      <details class="ral" id="b-ral"><summary>🗣️ Read it aloud — hear the query as a spoken sentence</summary><div id="b-ral-body"></div></details>
     </div>
 
     <div class="schema-row" id="schema-row"></div>
@@ -325,7 +328,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 28, 2026 · 8:26 PM ET";
+const BUILD_TS = "May 28, 2026 · 8:45 PM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, audio: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -334,7 +337,10 @@ let SQLjs = null;          // initSqlJs module
 let enemiesLive = [];      // live battlefield enemies for current wave
 let hintLevel = 0;
 let busy = false;          // lock during animations
-let waveTries = 0;         // wrong/error attempts on the current wave (for first-try bonus)
+let waveTries = 0;         // failed attempts this wave (wrong answer, syntax, or banned) — drives reveal + autopilot
+let revealFrac = 0;        // player-mode (dev off): how much of the solution is uncovered (0..1)
+let autopiloted = false;   // player-mode: has autopilot already rescued this wave?
+const AUTOPILOT_AT = 3;    // failed attempts before autopilot fills the answer + explains
 
 function load(){
   try{ Object.assign(state, JSON.parse(localStorage.getItem(LS)) || {}); }catch(e){}
@@ -394,6 +400,8 @@ function loadWave(){
   const w = currentWave();
   hintLevel = 0;
   waveTries = 0;
+  revealFrac = 0;
+  autopiloted = false;
   document.getElementById('wave-num').textContent = w.id;
   document.getElementById('wave-concept').textContent = w.concept;
   document.getElementById('b-tag').textContent = w.concept;
@@ -488,6 +496,23 @@ function renderSchema(schema){
 }
 
 /* ─── EDITOR / DEV MODE ──────────────────────────────────────────────────── */
+// Player-mode reveal: split the solution into words and uncover the first
+// `frac` of them, masking the rest with dots so the shape of the query shows.
+function maskedSolution(frac){
+  const parts = currentWave().solution.split(/(\s+)/);   // keep the whitespace
+  const words = parts.filter(p=>p.trim().length).length;
+  const reveal = Math.max(1, Math.ceil(words * frac));
+  let shown = 0;
+  return parts.map(p=>{
+    if(!p.trim().length) return p;
+    return (++shown <= reveal) ? p : p.replace(/\S/g,'·');
+  }).join('');
+}
+function revealedPrefix(frac){
+  const words = currentWave().solution.split(/\s+/);
+  const reveal = Math.max(1, Math.ceil(words.length * frac));
+  return words.slice(0, reveal).join(' ');
+}
 function updateGhost(){
   const ghost = document.getElementById('ghost');
   const ed = document.getElementById('sql');
@@ -495,6 +520,10 @@ function updateGhost(){
     ghost.textContent = currentWave().solution;
     ghost.style.display = 'block';
     ed.placeholder = '';                 // avoid overlap with the ghost answer
+  } else if(!state.devMode && revealFrac > 0 && !ed.value){
+    ghost.textContent = maskedSolution(revealFrac);
+    ghost.style.display = 'block';
+    ed.placeholder = '';
   } else {
     ghost.style.display = 'none';
     ed.placeholder = 'Write your SQL here…';
@@ -502,9 +531,11 @@ function updateGhost(){
 }
 document.getElementById('sql').addEventListener('input', updateGhost);
 document.getElementById('sql').addEventListener('keydown', e => {
-  if(e.key === 'Tab' && state.devMode && !e.target.value){
+  if(e.key === 'Tab' && !e.target.value && (state.devMode || revealFrac > 0)){
     e.preventDefault();
-    e.target.value = currentWave().solution;
+    // Dev mode inserts the whole answer; player mode inserts only the part
+    // that's been uncovered so far, leaving the rest to recall.
+    e.target.value = state.devMode ? currentWave().solution : revealedPrefix(revealFrac);
     updateGhost();
   } else if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){
     e.preventDefault();
@@ -555,8 +586,15 @@ function runQuery(){
   resEl.innerHTML = '';
   if(!sql){ setFb('warn', 'Write a query first — or press Tab to borrow the answer in dev mode.'); return; }
 
-  // Tier 1: security / banned verbs
-  if(!isSafe(sql)){ setFb('err', 'Only read queries are allowed here (SELECT, WHERE, JOIN…). No table changes.'); return; }
+  // Tier 1: security / banned verbs — a failed attempt, lightly punished.
+  if(!isSafe(sql)){
+    waveTries++;
+    setFb('err', 'Only read queries are allowed here (SELECT, WHERE, JOIN…). No table changes — and the slip costs you a little base integrity.');
+    syntaxHit();
+    applyMissAssist();
+    save();
+    return;
+  }
 
   state.attempts++;
   let player, expected;
@@ -566,11 +604,13 @@ function runQuery(){
     expected = execQuery(db, w.solution);
   }catch(e){
     db.close();
-    // Tier 2: syntax error
+    // Tier 2: syntax error — a failed attempt, lightly punished.
     waveTries++;
     const nudge = waveTries >= 2 ? ' Stuck? Tap “Show hint”.' : '';
-    setFb('err', `Syntax error — check your spelling and punctuation.${nudge} (${e.message})`);
+    setFb('err', `Syntax error — check your spelling and punctuation. The swarm clips your base.${nudge} (${e.message})`);
     if(waveTries >= 2) pulseHint();
+    syntaxHit();
+    applyMissAssist();
     save();
     return;
   }
@@ -598,6 +638,7 @@ function runQuery(){
       : `Wrong lock — you targeted ${player.rows.length}, not the right ${expected.rows.length}. The swarm strikes back and edges closer. Adjust and fire again.${heavyNote}${nudge}`);
     if(waveTries >= 2) pulseHint();
     missTurn(fp);
+    applyMissAssist();
   }
   save();
 }
@@ -974,6 +1015,54 @@ function missTurn(falsePos){
   }, 600);
 }
 
+// A standard counterattack's damage from the frontmost foe (no charge).
+function standardAttackDmg(){
+  const living = enemiesLive.filter(e=>e.alive);
+  if(!living.length) return 6;
+  const atk = living.reduce((a,b)=> b.advance > a.advance ? b : a);
+  return (currentWave().enemyDmg != null) ? currentWave().enemyDmg : archOf(atk).hit;
+}
+// SYNTAX ERROR / BANNED VERB → a lighter punishment: half of a standard strike,
+// no creep and no full lunge. Still counts as a failed attempt (drives reveal).
+function syntaxHit(){
+  const dmg = Math.max(1, Math.ceil(standardAttackDmg() * 0.5));
+  const svg = document.getElementById('field');
+  const core = document.getElementById('base-core');
+  if(core){ core.classList.add('base-hit'); setTimeout(()=>core.classList.remove('base-hit'), 360); }
+  spawnDmg(svg, BASE_X + 23, FIELD_H/2, '-' + dmg, 'dmg-ff');
+  beep(150, 110);
+  applyBaseDmg(dmg);
+  if(state.baseHP <= 0) waveLost();
+}
+
+// After any failed attempt (player mode only): uncover more of the answer, and
+// once the player has missed AUTOPILOT_AT times, let autopilot finish it.
+function applyMissAssist(){
+  if(state.devMode) return;                 // dev mode already shows the full answer
+  if(waveTries >= AUTOPILOT_AT){ autopilot(); return; }
+  const ed = document.getElementById('sql');
+  ed.value = '';                            // clear so the growing reveal is visible in the ghost
+  revealFrac = waveTries / AUTOPILOT_AT;     // 1/3, then 2/3
+  updateGhost();
+}
+
+// AUTOPILOT — fills the solution, explains the concept in human terms with a
+// non-tech analogy, then hands back so the player fires it themselves.
+function autopilot(){
+  const ed = document.getElementById('sql');
+  ed.value = currentWave().solution;
+  revealFrac = 1;
+  updateGhost();
+  if(autopiloted) return;                   // explain once per wave
+  autopiloted = true;
+  const w = currentWave();
+  const ex = w.explain || {};
+  const body = `Three misses — so I filled the query in for you. Read why it works, then press <b>Execute</b> to fire it.`
+    + (ex.simple ? `<br><br><b style="color:var(--accent2)">${esc(w.concept)}</b> — ${esc(ex.simple)}` : '')
+    + (ex.analogy ? `<br><br>🧭 <i style="color:var(--muted)">${esc(ex.analogy)}</i>` : '');
+  showOverlay('🤖', 'Autopilot engaged', body, 'Got it — let me fire it ▶');
+}
+
 function updateHP(){
   document.getElementById('hp-num').textContent = state.baseHP;
   const fill = document.getElementById('hp-fill');
@@ -1027,6 +1116,7 @@ function hideOverlay(){ document.getElementById('overlay').classList.remove('sho
 
 function overlayAction(){
   const title = document.getElementById('ov-title').textContent;
+  if(title === 'Autopilot engaged'){ hideOverlay(); document.getElementById('sql').focus(); return; }
   if(title === 'Base Overrun'){
     state.baseHP = 100; updateHP(); save(); loadWave(); return;
   }
