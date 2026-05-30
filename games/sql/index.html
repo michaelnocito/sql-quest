@@ -346,7 +346,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 29, 2026 · 9:20 PM ET";
+const BUILD_TS = "May 29, 2026 · 9:36 PM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -1457,12 +1457,39 @@ function toggleMelody(){
    - Tier 2: a brighter "ting" when a SQL keyword is completed at a word boundary
    - Tier 3: a pleasant chord on Execute whose richness scales with attackTier()
    Defaults OFF so the calm focus mode stays default — Mike opts in via 🎼. */
-const MELODY_SCALE = [220.00, 261.63, 293.66, 329.63, 392.00]; // A3 C4 D4 E4 G4 — A-minor pentatonic
+// Extended A-minor pentatonic — 8 degrees gives keywords up to 8 chars a
+// distinct rising tone (LIKE = 4 → scale[4], SELECT = 6 → scale[6]).
+const MELODY_SCALE = [220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33];
+// How many chars deep `word` is into a SQL-keyword prefix. 0 if it doesn't
+// match the start of any keyword — used to gate the pitch climb.
+function keywordPrefixDepth(word){
+  if(!word) return 0;
+  const up = word.toUpperCase();
+  for(const kw of SQL_KEYWORDS){
+    if(kw.startsWith(up)) return up.length;
+  }
+  return 0;
+}
 function playMelodyType(ch){
   if(!state.melody || !state.sfx) return;
   const c = audioCtx();
-  const code = (ch || '').toLowerCase().charCodeAt(0) || 0;
-  const f = MELODY_SCALE[code % MELODY_SCALE.length];
+  // Default: low baseline tone for any non-keyword char (digits, identifiers,
+  // string contents, punctuation that's also a word char like underscore, etc.)
+  let scaleIdx = 0;
+  const ed = document.getElementById('sql');
+  const edText = ed ? ed.value : '';
+  // Don't penalize string literal contents — chars inside quotes aren't keywords.
+  const insideString = ((edText.match(/'/g) || []).length) % 2 === 1;
+  // Gradient anticipation (Mike's "pin them into typing code a certain way"):
+  // pitch RISES each char that keeps the current word a valid SQL-keyword
+  // prefix; drops to baseline the moment they break the path.
+  if(!insideString && /\w/.test(ch)){
+    const m = edText.match(/(\w*)$/);
+    const newWord = ((m && m[1]) || '') + ch;
+    const depth = keywordPrefixDepth(newWord);
+    if(depth > 0) scaleIdx = Math.min(MELODY_SCALE.length - 1, depth);
+  }
+  const f = MELODY_SCALE[scaleIdx];
   const o = c.createOscillator(), g = c.createGain();
   o.type = 'sine'; o.frequency.value = f;
   g.gain.setValueAtTime(0.0001, c.currentTime);
