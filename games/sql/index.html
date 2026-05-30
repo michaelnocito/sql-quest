@@ -91,14 +91,18 @@ main{flex:1;display:flex;flex-direction:column;min-height:0;position:relative}
 #phase-indicator.pop{animation:chip-pop .55s ease-out}
 .briefing .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--accent);background:var(--surf2);padding:2px 8px;border-radius:4px;margin-right:8px}
 .briefing .ttl{font-weight:700}
-.briefing p{margin-top:6px;color:var(--text);font-size:13px}
-/* INTELLIGENCE SHEET — sections grouped inside the briefing panel:
-   Target (the objective, big), Tables (schema), context chips. */
+/* Briefing prose (lore/flavor) is HIDDEN by default at all widths — competes
+   with the Target. Tap the ⓘ button to expand. When shown, it sits muted and
+   italic so the Target stays the visual focus. */
+.briefing p{display:none}
+.briefing.expanded p{display:block;margin-top:8px;font-size:12.5px;line-height:1.55;color:var(--muted);font-style:italic;border-left:2px solid var(--border);padding-left:9px}
+/* INTELLIGENCE SHEET — Target is the star. Tables and chips support it. */
 .intel-h{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
-.intel-target{margin-top:10px;padding-top:9px;border-top:1px solid var(--border)}
+.intel-target{margin-top:11px;padding:10px 12px;background:var(--surf2);border:1px solid rgba(212,168,73,.3);border-left:3px solid var(--yellow);border-radius:6px}
 .intel-tables{margin-top:9px;padding-top:8px;border-top:1px solid var(--border)}
-.intel-lbl{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
-.intel .obj{font-size:16px;font-weight:600;color:var(--text);line-height:1.4;padding:0;margin:0;border:0}
+.intel-lbl{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.intel-target .intel-lbl{color:var(--yellow)}
+.intel .obj{font-size:16px;font-weight:600;color:var(--text);line-height:1.45;padding:0;margin:0;border:0}
 .intel .obj b{color:var(--yellow)}
 .intel .schema-row{margin:0}
 /* Briefing context-toggle (ⓘ) — collapses the lore prose so the player gets
@@ -331,8 +335,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
   .more-group .dev-toggle{font-size:12px}
   /* Compact briefing — lore prose collapses behind ⓘ (learn-by-typing). */
   .briefing{padding:8px 11px;font-size:13px;margin-bottom:8px}
-  .briefing p{margin-top:4px;font-size:12.5px;display:none}
-  .briefing.expanded p{display:block}
+  /* (prose default-hide + expanded styling now lives in the base CSS) */
   .intel .obj{font-size:15px;line-height:1.35}
   .intel-target{margin-top:7px;padding-top:6px}
   .intel-tables{margin-top:7px;padding-top:6px}
@@ -485,7 +488,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 31, 2026 · 3:18 AM ET";
+const BUILD_TS = "May 31, 2026 · 3:48 AM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, devMode: true, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, fatalities: 0, visionWaves: [], started: Date.now()
