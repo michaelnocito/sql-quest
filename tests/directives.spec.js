@@ -23,12 +23,12 @@ test.describe('Project directives', () => {
   test('the primary action (editor + Execute) stays visible, even after a query', async ({ page }) => {
     await openGame(page);
     await startCampaign(page);
-    await expect(page.locator('#sql')).toBeInViewport();
+    await expect(page.locator('#editor')).toBeInViewport();
     await expect(page.getByRole('button', { name: /execute query/i })).toBeVisible();
-    await page.fill('#sql', 'SELECT * FROM enemies');
+    await page.fill('#editor', 'SELECT * FROM enemies');
     await page.getByRole('button', { name: /execute query/i }).click();
     await page.waitForTimeout(600);
-    await expect(page.locator('#sql')).toBeInViewport(); // result table didn't bury it
+    await expect(page.locator('#editor')).toBeInViewport(); // result table didn't bury it
   });
 
   test('build stamp is present and in the agreed ET format', async ({ page }) => {

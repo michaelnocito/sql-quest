@@ -103,8 +103,8 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 
 /* EDITOR */
 .ed-wrap{position:relative}
-#sql{width:100%;min-height:156px;resize:vertical;font-family:var(--mono);font-size:15.5px;line-height:1.7;color:var(--text);background:var(--surf);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px;outline:none}
-#sql:focus{border-color:var(--accent)}
+#editor{width:100%;min-height:156px;resize:vertical;font-family:var(--mono);font-size:15.5px;line-height:1.7;color:var(--text);background:var(--surf);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px;outline:none}
+#editor:focus{border-color:var(--accent)}
 .ed-ghost{position:absolute;top:14px;left:16px;right:16px;font-family:var(--mono);font-size:15.5px;line-height:1.7;color:var(--muted);pointer-events:none;white-space:pre-wrap;display:none}
 .ed-row{display:flex;gap:8px;align-items:center;margin-top:9px;flex-wrap:wrap}
 .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--r2);font:600 14px var(--font);cursor:pointer;border:none;transition:.15s}
@@ -328,7 +328,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
     <div class="schema-row" id="schema-row"></div>
 
     <div class="ed-wrap">
-      <textarea id="sql" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="SQL query editor" placeholder="Write your SQL here… (case-insensitive — lowercase is fine)"></textarea>
+      <textarea id="editor" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="SQL query editor" placeholder="Write your SQL here… (case-insensitive — lowercase is fine)"></textarea>
       <div class="ed-ghost" id="ghost"></div>
     </div>
 
@@ -377,7 +377,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 30, 2026 · 8:09 PM ET";
+const BUILD_TS = "May 30, 2026 · 9:48 PM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, devMode: true, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, fatalities: 0, hintsUsed: 0, started: Date.now()
@@ -409,7 +409,21 @@ function save(){
   }));
 }
 
-/* ─── SQL ENGINE ─────────────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════════════════
+   LANGUAGE MODULE — replace this entire region to clone the game.
+   Everything else (combat, audio, UI, animation, wave engine) is shared.
+
+   To port to Python / Excel / Tableau, swap these 7 surfaces:
+     1. bootSQL() / freshDB() / execQuery() — load language runtime, exec code
+     2. sameResult(a, b, ordered)            — compare player result to expected
+     3. falsePositives(player, expected)     — count over-broad rows (FF damage)
+     4. solutionIsOrdered(solution)          — does solution care about order?
+     5. isSafe(code)                         — security allowlist
+     6. attackTier(code)                     — 1-5 complexity → VFX/audio depth
+     7. SQL_KEYWORDS / KEYWORD_TONES / formatSQL() — keyword list, melody map
+   Search this file for `LANGUAGE MODULE` to find every block.
+   ════════════════════════════════════════════════════════════════════════════ */
+/* ─── LANGUAGE MODULE: SQL ENGINE ────────────────────────────────────────── */
 async function bootSQL(){
   SQLjs = await initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/${f}` });
 }
@@ -445,11 +459,18 @@ function falsePositives(player, expected){
   return extra;
 }
 
+/* Does the solution require row order to match? (SQL: any ORDER BY clause.)
+   Used by runQuery() when comparing player output to expected. */
+function solutionIsOrdered(solution){
+  return /\border\s+by\b/i.test(solution || '');
+}
+
 /* Security: allow only read-only query verbs. */
 function isSafe(sql){
   const banned = /\b(DROP|DELETE|UPDATE|INSERT|ALTER|CREATE|REPLACE|ATTACH|DETACH|PRAGMA|VACUUM)\b/i;
   return !banned.test(sql);
 }
+/* ─── END LANGUAGE MODULE: SQL ENGINE ────────────────────────────────────── */
 
 /* ─── WAVE LOADING ───────────────────────────────────────────────────────── */
 function currentWave(){ return WAVES[state.wave]; }
@@ -495,7 +516,7 @@ function loadWave(){
 
   // Editor starts empty in both modes. In DEV the solution ghost shows behind
   // (Tab to insert); in player mode the editor is clean until misses reveal it.
-  const ed = document.getElementById('sql');
+  const ed = document.getElementById('editor');
   ed.value = '';
   updateGhost();
   syncDevJump();
@@ -578,7 +599,7 @@ function revealedPrefix(frac){
 }
 function updateGhost(){
   const ghost = document.getElementById('ghost');
-  const ed = document.getElementById('sql');
+  const ed = document.getElementById('editor');
   if(state.devMode && !ed.value){
     ghost.textContent = currentPhaseSolution();
     ghost.style.display = 'block';
@@ -592,7 +613,7 @@ function updateGhost(){
     ed.placeholder = 'Write your SQL here…';
   }
 }
-document.getElementById('sql').addEventListener('input', () => {
+document.getElementById('editor').addEventListener('input', () => {
   updateGhost();
   // Reactive feedback: the WHOLE Oracle silhouette glows briefly with each
   // keystroke. Using element.animate() instead of a CSS class toggle because
@@ -606,7 +627,7 @@ document.getElementById('sql').addEventListener('input', () => {
     { filter: 'drop-shadow(0 0 0 rgba(125,191,184,0))' }
   ], { duration: 320, easing: 'ease-out' });
 });
-document.getElementById('sql').addEventListener('keydown', e => {
+document.getElementById('editor').addEventListener('keydown', e => {
   if(e.key === 'Tab' && !e.target.value && (state.devMode || revealFrac > 0)){
     e.preventDefault();
     // Dev mode inserts the whole answer; player mode inserts only the part
@@ -648,7 +669,7 @@ function toggleDev(){
   document.getElementById('dev-jump').style.display = state.devMode ? 'inline-block' : 'none';
   // Fresh slate when switching modes — clear the editor and reset the miss
   // counters so the new mode starts cleanly (no stale reveal carrying over).
-  document.getElementById('sql').value = '';
+  document.getElementById('editor').value = '';
   waveTries = 0; revealFrac = 0; autopiloted = false; waveFriction = false;
   updateGhost(); save();
 }
@@ -696,8 +717,10 @@ function cycleHint(){
   if(!state.devMode && waveTries >= AUTOPILOT_AT) autopilot();
 }
 function esc(s){ return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+/* ─── LANGUAGE MODULE: KEYWORDS + FORMAT BUTTON ──────────────────────────── */
 /* SQL keywords we recognise in our wave set. Used by formatSQL() to uppercase
-   them in place — pure presentation, the engine accepts any case. */
+   them in place — pure presentation, the engine accepts any case.
+   Also feeds the code-as-melody keyword chime (see KEYWORD_TONES). */
 const SQL_KEYWORDS = [
   'SELECT','FROM','WHERE','AND','OR','NOT','IN','BETWEEN','LIKE','IS','NULL',
   'ORDER','BY','ASC','DESC','LIMIT','OFFSET','GROUP','HAVING','AS','DISTINCT',
@@ -705,7 +728,7 @@ const SQL_KEYWORDS = [
   'COUNT','SUM','AVG','MIN','MAX','CASE','WHEN','THEN','ELSE','END','EXISTS','WITH'
 ];
 function formatSQL(){
-  const ed = document.getElementById('sql');
+  const ed = document.getElementById('editor');
   if(!ed.value) return;
   // Split on quoted string literals so we don't mangle data values like
   // 'Raider' — odd-indexed segments are the strings and stay untouched.
@@ -721,6 +744,7 @@ function formatSQL(){
   // No waveFriction flip — formatting is pure presentation, not borrowing.
   updateGhost();
 }
+/* ─── END LANGUAGE MODULE: KEYWORDS + FORMAT BUTTON ──────────────────────── */
 /* On-the-job panel: where this concept gets used in a real analyst role + a
    plain example of the ask. Names the concept/parts but never the full query. */
 function showJob(){
@@ -742,7 +766,7 @@ function pulseHint(){
 function runQuery(){
   if(busy || !SQLjs) return;
   const w = currentWave();
-  const sql = document.getElementById('sql').value.trim();
+  const sql = document.getElementById('editor').value.trim();
   const fb = document.getElementById('feedback');
   const resEl = document.getElementById('result');
   resEl.innerHTML = '';
@@ -783,7 +807,7 @@ function runQuery(){
   playMelodyExecute(sql);
   showResult(player);
 
-  const ordered = /\border\s+by\b/i.test(currentPhaseSolution());
+  const ordered = solutionIsOrdered(currentPhaseSolution());
   if(sameResult(player, expected, ordered)){
     state.correct++;
     // Decide NOW (synchronously) whether clearing this phase leads to phase 2
@@ -865,6 +889,7 @@ function correctHit(){ return Math.ceil(ENEMY_MAXHP / waveRounds()); }
    the wave's solution uses. Each new concept layer = a richer volley VFX.
    Tier 1 = SELECT only; +1 for WHERE; +1 for AND/OR/IN/BETWEEN/LIKE/NOT;
    +1 for ORDER BY / LIMIT; +1 for JOIN; +1 for aggregates / GROUP BY / HAVING. */
+/* ─── LANGUAGE MODULE: COMPLEXITY TIER (1-5) ─────────────────────────────── */
 function attackTier(sql){
   const s = (sql || '').toUpperCase();
   let t = 1;
@@ -875,6 +900,7 @@ function attackTier(sql){
   if(/\b(COUNT|SUM|AVG|MIN|MAX)\s*\(/.test(s) || /\b(GROUP\s+BY|HAVING)\b/.test(s)) t++;
   return Math.min(t, 5);
 }
+/* ─── END LANGUAGE MODULE: COMPLEXITY TIER ───────────────────────────────── */
 /* Expanding ring at the impact point — used on tier ≥ 4 volleys and on
    every fatality detonation. CSS keyframe `shock-expand` handles the grow+fade. */
 function spawnShockwave(svg, x, y, color){
@@ -1195,7 +1221,7 @@ function volley(isPhaseKill = false){
     } else {
       drawField();
       // Clear the editor so the next volley is re-typed from memory — the drill.
-      const ed = document.getElementById('sql'); ed.value = ''; updateGhost();
+      const ed = document.getElementById('editor'); ed.value = ''; updateGhost();
       busy = false;
       if(state.baseHP <= 0) waveLost();
     }
@@ -1358,7 +1384,7 @@ function syntaxHit(){
 function applyMissAssist(){
   if(state.devMode) return;                 // dev mode already shows the full answer
   if(waveTries >= AUTOPILOT_AT){ autopilot(); return; }
-  const ed = document.getElementById('sql');
+  const ed = document.getElementById('editor');
   ed.value = '';                            // clear so the growing reveal is visible in the ghost
   revealFrac = waveTries / AUTOPILOT_AT;     // 1/3, then 2/3
   updateGhost();
@@ -1367,7 +1393,7 @@ function applyMissAssist(){
 // AUTOPILOT — fills the solution, explains the concept in human terms with a
 // non-tech analogy, then hands back so the player fires it themselves.
 function autopilot(){
-  const ed = document.getElementById('sql');
+  const ed = document.getElementById('editor');
   ed.value = currentPhaseSolution();
   revealFrac = 1;
   updateGhost();
@@ -1499,7 +1525,7 @@ function phaseTransition(){
     // Reset all per-phase counters — the player starts phase 2 fresh.
     waveTries = 0; revealFrac = 0; autopiloted = false; waveFriction = false;
     hintLevel = 0;
-    document.getElementById('sql').value = '';
+    document.getElementById('editor').value = '';
     document.getElementById('hint').className = 'hint';
     document.getElementById('hint').innerHTML = '';
     const hb = document.getElementById('hint-btn'); hb.textContent = 'Show hint'; hb.disabled = false;
@@ -1563,7 +1589,7 @@ function overlayActionSecondary(){
 }
 function overlayAction(){
   const title = document.getElementById('ov-title').textContent;
-  if(title === 'Autopilot engaged'){ hideOverlay(); document.getElementById('sql').focus(); return; }
+  if(title === 'Autopilot engaged'){ hideOverlay(); document.getElementById('editor').focus(); return; }
   if(title === 'On the job'){ hideOverlay(); return; }
   if(title === 'Reset'){ hideOverlay(); replayWave(); return; }
   if(title === 'Base Overrun'){
@@ -1783,7 +1809,7 @@ function playMelodyType(ch){
   // Pitch climbs as you type into a valid SQL keyword prefix — guides correct
   // spelling; drops to baseline the moment the path breaks.
   let scaleIdx = 0;
-  const ed = document.getElementById('sql');
+  const ed = document.getElementById('editor');
   const edText = ed ? ed.value : '';
   const insideString = ((edText.match(/'/g) || []).length) % 2 === 1;
   if(!insideString && /\w/.test(ch)){

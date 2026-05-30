@@ -18,7 +18,7 @@ test.describe('Functional correctness', () => {
       return window.WAVES.map((w) => {
         const db = freshDB(w.schema);
         const sol = execQuery(db, w.solution);
-        const ordered = /\border\s+by\b/i.test(w.solution);
+        const ordered = solutionIsOrdered(w.solution);
         const pass = sameResult(sol, sol, ordered);
         db.close();
         // Row-result waves should have a name/id so enemies render with a label.
@@ -91,7 +91,7 @@ test.describe('Functional correctness', () => {
     for (let i = 0; i < rounds + 1; i++) {
       if (await page.locator('#overlay.show').count() > 0) break;
       await page.waitForFunction(() => !busy, null, { timeout: 8_000 }).catch(() => {});
-      await page.fill('#sql', solution);
+      await page.fill('#editor', solution);
       await page.getByRole('button', { name: /execute query/i }).click();
     }
     await expect(page.locator('#overlay')).toHaveClass(/show/, { timeout: 8_000 });
