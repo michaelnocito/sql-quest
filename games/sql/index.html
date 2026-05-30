@@ -56,15 +56,17 @@ header .dev-toggle{margin-left:2px}
    never buried by the mobile keyboard, and the result table is capped + scrolls
    internally so it can never push the editor off-screen. */
 main{flex:1;display:flex;flex-direction:column;min-height:0;position:relative}
-.editor-pane{flex:1 1 auto;min-height:0;padding:12px 14px 76px;overflow-y:auto;background:var(--bg)}
-.field-pane{order:-1;flex:0 0 22vh;min-height:130px;position:relative;border-bottom:1px solid var(--border);background:linear-gradient(#0b1130,#0e2a2c);transition:flex-basis .25s ease}
-/* When the editor is focused on mobile portrait, shrink the battlefield even
-   smaller — the action moves to the editor and result table during typing. */
-body.typing .field-pane{flex-basis:15vh;min-height:95px}
+.editor-pane{flex:1 1 auto;min-height:0;padding:12px 14px;overflow-y:auto;background:var(--bg)}
+.field-pane{order:-1;flex:0 0 35vh;min-height:160px;position:relative;border-bottom:1px solid var(--border);background:linear-gradient(#0b1130,#0e2a2c);transition:flex-basis .25s ease}
+/* TRUE MOBILE only: shrink the battlefield more aggressively + shrink further
+   when typing so the editor + result get more room above the keyboard.
+   Desktop-narrow stays at the comfortable 35vh default. */
+@media (max-width:699px){
+  .field-pane{flex-basis:22vh;min-height:130px}
+  body.typing .field-pane{flex-basis:15vh;min-height:95px}
+}
 /* Side-by-side layout fires for desktop (>=900px) OR any landscape phone/tablet
-   with limited vertical space (<=500px high). In landscape the vertical stack
-   doesn't fit — switch to side-by-side and unstick the action bar so it sits
-   inline at the bottom of the editor column. */
+   with limited vertical space (<=500px high). */
 @media (min-width:900px), (max-height:500px) and (orientation:landscape){
   main{flex-direction:row}
   .editor-pane{order:0;flex:0 0 44%;max-width:44%;height:100%;border-right:1px solid var(--border);padding-bottom:14px}
@@ -299,7 +301,9 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 .break-nudge.show{display:flex}
 .break-nudge .x{margin-left:auto}
 
-/* MOBILE — settings group collapses into a ⚙ panel; sticky action bar */
+/* === SUB-DESKTOP BREAKPOINT (<900px): collapse the settings menu + tighten
+   the briefing. This covers desktop-narrow windows AND real phones — the
+   header just doesn't have room for 8 buttons regardless of device. === */
 .more-group{display:contents}
 #more-btn{display:none}
 @media (max-width:899px){
@@ -308,33 +312,39 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
   .more-group.open{display:flex}
   .more-group .icon-btn,.more-group .dev-jump{width:100%;height:36px;justify-content:flex-start;padding:0 12px;font-size:13px;border-radius:var(--r2)}
   .more-group .dev-toggle{font-size:12px}
-  .ed-row .btn{padding:11px 14px;font-size:14px;flex-shrink:0}
-  .ed-row .btn-primary{flex:1;min-width:0;justify-content:center}
-  .ed-row #format-btn{display:none}            /* hide Format on mobile — pure presentation */
-  .ed-row .dev-note,.ed-row .spacer{display:none}
-  /* result table: cap height, scroll internally — never push the editor off screen */
-  #result{max-height:42vh;overflow-y:auto;margin-top:8px}
-  /* Compact briefing on mobile — less padding, tighter type, lore prose
-     collapses behind the ⓘ button (learn-by-typing philosophy). */
+  /* Compact briefing — lore prose collapses behind ⓘ (learn-by-typing). */
   .briefing{padding:8px 11px;font-size:13px;margin-bottom:8px}
   .briefing p{margin-top:4px;font-size:12.5px;display:none}
   .briefing.expanded p{display:block}
   .briefing .obj{margin-top:7px;padding-top:6px;font-size:13.5px}
   .help-row{margin-top:6px;gap:5px}
   .schema-row{margin-bottom:6px}
-  /* Editor textarea — slightly shorter min-height on mobile */
+}
+
+/* === TRUE MOBILE (<700px): action bar gets phone styling. At 700–899px on
+   desktop-narrow windows, the action bar stays inline + normal-sized — the
+   phone-specific Execute-stretch + sticky-bottom-bar look stays OFF. === */
+@media (max-width:699px){
+  .ed-row .btn{padding:11px 14px;font-size:14px;flex-shrink:0}
+  .ed-row .btn-primary{flex:1;min-width:0;justify-content:center}
+  .ed-row #format-btn{display:none}            /* presentation-only on mobile */
+  .ed-row .dev-note,.ed-row .spacer{display:none}
+  /* result table: cap so it never pushes the editor off the small screen */
+  #result{max-height:42vh;overflow-y:auto;margin-top:8px}
+  /* Editor textarea — shorter min-height for limited screen real estate */
   #editor{min-height:110px;font-size:15px}
 }
-/* Smaller-phone tighter mode: hide the campaign progress track */
+/* Sticky action bar — pinned to viewport bottom on actual phones in portrait.
+   Editor pane gets extra bottom padding so content can scroll above the bar. */
+@media (max-width:699px) and (orientation:portrait){
+  .ed-row{position:fixed;left:0;right:0;bottom:0;margin:0;padding:8px 12px;background:var(--surf);border-top:1px solid var(--border);z-index:50;gap:6px;flex-wrap:nowrap;overflow-x:auto}
+  .editor-pane{padding-bottom:76px}
+}
+
+/* === SMALLER PHONES (<520px): hide the campaign progress track (info already
+   shown in the wave chip), tighten the chrome further. === */
 @media (max-width:520px){
   .track{display:none}
-}
-/* sticky action bar only in PORTRAIT phone — landscape gets the side-by-side
-   layout where the action bar sits inline in the editor column. */
-@media (max-width:899px) and (orientation:portrait){
-  .ed-row{position:fixed;left:0;right:0;bottom:0;margin:0;padding:8px 12px;background:var(--surf);border-top:1px solid var(--border);z-index:50;gap:6px;flex-wrap:nowrap;overflow-x:auto}
-}
-@media (max-width:520px){
   .brand{font-size:14px}
   .editor-pane{padding:10px 10px 76px}
   header{gap:7px;padding:7px 10px}
@@ -444,7 +454,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 31, 2026 · 1:02 AM ET";
+const BUILD_TS = "May 31, 2026 · 1:34 AM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, devMode: true, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, fatalities: 0, hintsUsed: 0, started: Date.now()
