@@ -56,7 +56,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 .field-pane{order:-1;flex:0 0 42vh;min-height:240px;position:relative;border-bottom:1px solid var(--border);background:linear-gradient(#0b1130,#0e2a2c)}
 @media (min-width:900px){
   main{flex-direction:row}
-  .editor-pane{order:0;flex:0 0 46%;max-width:46%;height:100%;border-right:1px solid var(--border)}
+  .editor-pane{order:0;flex:0 0 40%;max-width:40%;height:100%;border-right:1px solid var(--border)}
   .field-pane{order:0;flex:1 1 auto;height:100%;min-height:0;border-bottom:none}
 }
 
@@ -335,7 +335,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 29, 2026 · 4:53 PM ET";
+const BUILD_TS = "May 29, 2026 · 8:05 PM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, music: false, sfx: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -741,7 +741,7 @@ function showResult(r){
 }
 
 /* ─── BATTLEFIELD (SVG) ──────────────────────────────────────────────────── */
-const FIELD_W = 800, FIELD_H = 320, BASE_X = 720, LANE_TOP = 60, LANE_GAP = 52;
+const FIELD_W = 800, FIELD_H = 320, BASE_X = 720, LANE_TOP = 50, LANE_GAP = 56;
 const ENEMY_MAXHP = 100;   // every enemy starts here; a correct volley chips maxHp/rounds
 const FF_DMG = 4;          // friendly-fire: base HP lost per over-broad (false-positive) row
 const BASE_REACH_DMG = 14; // base HP lost for each enemy that creeps all the way in
@@ -901,16 +901,16 @@ function starPts(cx, cy, spikes, ro, ri){
 // starburst halo, counter-rotating orbit ring, inner hexagon + glowing core.
 function heroFigure(hx, hy){
   let spokes = '';
-  for(let i=0;i<12;i++){ const a=i/12*Math.PI*2; spokes += `<line x1="${(hx+Math.cos(a)*16).toFixed(1)}" y1="${(hy+Math.sin(a)*16).toFixed(1)}" x2="${(hx+Math.cos(a)*42).toFixed(1)}" y2="${(hy+Math.sin(a)*42).toFixed(1)}" stroke="var(--accent2)" stroke-opacity="0.5" stroke-width="1.5"/>`; }
+  for(let i=0;i<12;i++){ const a=i/12*Math.PI*2; spokes += `<line x1="${(hx+Math.cos(a)*20).toFixed(1)}" y1="${(hy+Math.sin(a)*20).toFixed(1)}" x2="${(hx+Math.cos(a)*52).toFixed(1)}" y2="${(hy+Math.sin(a)*52).toFixed(1)}" stroke="var(--accent2)" stroke-opacity="0.5" stroke-width="1.8"/>`; }
   let nodes = '';
-  for(let i=0;i<6;i++){ const a=i/6*Math.PI*2; nodes += `<circle cx="${(hx+Math.cos(a)*30).toFixed(1)}" cy="${(hy+Math.sin(a)*30).toFixed(1)}" r="2.4" fill="var(--accent2)"/>`; }
-  return `<ellipse class="breathe" cx="${hx}" cy="${hy}" rx="48" ry="66" fill="url(#spireGlow)"/>`
-    + `<g class="spin-self s-cw-28"><polygon points="${starPts(hx,hy,6,40,18)}" fill="none" stroke="var(--accent)" stroke-opacity="0.55" stroke-width="1.5"/>${spokes}</g>`
-    + `<g class="spin-self s-ccw-22"><circle cx="${hx}" cy="${hy}" r="30" fill="none" stroke="var(--accent)" stroke-opacity="0.35" stroke-width="1"/>${nodes}</g>`
-    + `<polygon points="${polyPts(hx,hy,6,15,Math.PI/6)}" fill="var(--surf2)" stroke="var(--accent)" stroke-width="2"/>`
-    + `<circle id="base-core" class="base-core" cx="${hx}" cy="${hy}" r="11" fill="var(--accent)"/>`
-    + `<polygon points="${polyPts(hx,hy-1,3,6,-Math.PI/2)}" fill="var(--bg)" fill-opacity="0.55"/>`
-    + `<text x="${hx}" y="${FIELD_H-10}" fill="var(--muted)" font-size="10" text-anchor="middle" font-family="var(--mono)">ORACLE</text>`;
+  for(let i=0;i<6;i++){ const a=i/6*Math.PI*2; nodes += `<circle cx="${(hx+Math.cos(a)*38).toFixed(1)}" cy="${(hy+Math.sin(a)*38).toFixed(1)}" r="3" fill="var(--accent2)"/>`; }
+  return `<ellipse class="breathe" cx="${hx}" cy="${hy}" rx="60" ry="80" fill="url(#spireGlow)"/>`
+    + `<g class="spin-self s-cw-28"><polygon points="${starPts(hx,hy,6,50,22)}" fill="none" stroke="var(--accent)" stroke-opacity="0.55" stroke-width="1.8"/>${spokes}</g>`
+    + `<g class="spin-self s-ccw-22"><circle cx="${hx}" cy="${hy}" r="38" fill="none" stroke="var(--accent)" stroke-opacity="0.35" stroke-width="1.2"/>${nodes}</g>`
+    + `<polygon points="${polyPts(hx,hy,6,19,Math.PI/6)}" fill="var(--surf2)" stroke="var(--accent)" stroke-width="2.2"/>`
+    + `<circle id="base-core" class="base-core" cx="${hx}" cy="${hy}" r="14" fill="var(--accent)"/>`
+    + `<polygon points="${polyPts(hx,hy-1,3,8,-Math.PI/2)}" fill="var(--bg)" fill-opacity="0.55"/>`
+    + `<text x="${hx}" y="${FIELD_H-8}" fill="var(--muted)" font-size="12" text-anchor="middle" font-family="var(--mono)">ORACLE</text>`;
 }
 // Void-being archetypes — each wave's foes get a distinct silhouette so the
 // player reads the threat at a glance. Scouts are nimble 3-point shards,
@@ -923,9 +923,9 @@ function heroFigure(hx, hy){
 //   charged  — the heavy-strike damage when a wind-up completes
 // A correct query always interrupts a wind-up (see volley), so good play is safe.
 const ENEMY_ARCH = {
-  scout:  { spikes:3, ro:13, ri:6, glyph:3, stroke:'#7fdfff', nucleus:'#9fe8ff', halo:'haloScout',  spin:'s-cw-9',  inner:'s-ccw-11', hit:4, charge:0, charged:0 },
-  raider: { spikes:5, ro:16, ri:7, glyph:5, stroke:'var(--red)', nucleus:'var(--red)', halo:'haloRaider', spin:'s-cw-16', inner:'s-ccw-11', hit:6, charge:2, charged:13 },
-  warden: { spikes:6, ro:16, ri:8, glyph:3, stroke:'#c79bff', nucleus:'#c79bff', halo:'haloWarden', spin:'s-cw-28', inner:'s-ccw-11', hit:8, charge:2, charged:18 }
+  scout:  { spikes:3, ro:17, ri:8,  glyph:3, stroke:'#7fdfff', nucleus:'#9fe8ff', halo:'haloScout',  spin:'s-cw-9',  inner:'s-ccw-11', hit:4, charge:0, charged:0 },
+  raider: { spikes:5, ro:20, ri:9,  glyph:5, stroke:'var(--red)', nucleus:'var(--red)', halo:'haloRaider', spin:'s-cw-16', inner:'s-ccw-11', hit:6, charge:2, charged:13 },
+  warden: { spikes:6, ro:21, ri:11, glyph:3, stroke:'#c79bff', nucleus:'#c79bff', halo:'haloWarden', spin:'s-cw-28', inner:'s-ccw-11', hit:8, charge:2, charged:18 }
 };
 function archOf(en){ return ENEMY_ARCH[en && en.archetype] || ENEMY_ARCH.warden; }
 // A void-being — a slow-rotating dark crystal star with a counter-rotating
@@ -935,15 +935,15 @@ function enemyFigure(x, y, en){
   // Telegraph: a primed foe shows a pulsing warning ring + spark — a heavy
   // strike lands on the next wrong query unless a correct one interrupts it.
   const warn = (en && en.primed)
-    ? `<circle class="charge-warn" cx="${x}" cy="${y}" r="22" fill="none" stroke="var(--yellow)" stroke-width="2"/>`
-      + `<text x="${x}" y="${y-26}" fill="var(--yellow)" font-size="13" text-anchor="middle">⚡</text>`
+    ? `<circle class="charge-warn" cx="${x}" cy="${y}" r="27" fill="none" stroke="var(--yellow)" stroke-width="2.4"/>`
+      + `<text x="${x}" y="${y-31}" fill="var(--yellow)" font-size="15" text-anchor="middle">⚡</text>`
     : '';
-  return `<circle cx="${x}" cy="${y}" r="22" fill="url(#${a.halo})"/>`
+  return `<circle cx="${x}" cy="${y}" r="27" fill="url(#${a.halo})"/>`
     + warn
-    + `<g class="spin-self ${a.spin}"><polygon class="mote-core" points="${starPts(x,y,a.spikes,a.ro,a.ri)}" fill="#160f1e" stroke="${a.stroke}" stroke-width="2" stroke-opacity="0.85"/></g>`
-    + `<g class="spin-self ${a.inner}"><polygon points="${polyPts(x,y,a.glyph,9,-Math.PI/2)}" fill="none" stroke="${a.stroke}" stroke-opacity="0.55" stroke-width="1"/></g>`
-    + `<circle cx="${x}" cy="${y}" r="3.5" fill="${a.nucleus}" fill-opacity="0.9"/>`
-    + `<text x="${x}" y="${y+24}" fill="#cdd6ff" font-size="10" text-anchor="middle" font-family="var(--mono)">${esc(String(en.name)).slice(0,7)}</text>`;
+    + `<g class="spin-self ${a.spin}"><polygon class="mote-core" points="${starPts(x,y,a.spikes,a.ro,a.ri)}" fill="#160f1e" stroke="${a.stroke}" stroke-width="2.2" stroke-opacity="0.85"/></g>`
+    + `<g class="spin-self ${a.inner}"><polygon points="${polyPts(x,y,a.glyph,11,-Math.PI/2)}" fill="none" stroke="${a.stroke}" stroke-opacity="0.55" stroke-width="1.2"/></g>`
+    + `<circle cx="${x}" cy="${y}" r="4.5" fill="${a.nucleus}" fill-opacity="0.9"/>`
+    + `<text x="${x}" y="${y+30}" fill="#cdd6ff" font-size="12" text-anchor="middle" font-family="var(--mono)">${esc(String(en.name)).slice(0,8)}</text>`;
 }
 
 const SVGNS = 'http://www.w3.org/2000/svg';
