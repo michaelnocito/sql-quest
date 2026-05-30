@@ -90,6 +90,12 @@ body.typing .field-pane{flex-basis:15vh;min-height:95px}
 .briefing .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--accent);background:var(--surf2);padding:2px 8px;border-radius:4px;margin-right:8px}
 .briefing .ttl{font-weight:700}
 .briefing p{margin-top:6px;color:var(--text)}
+/* Briefing context-toggle (ⓘ) — collapses the lore prose so the player gets
+   only the 🎯 objective by default. Forces learn-by-typing over learn-by-reading.
+   Visible only when there's prose to expand. */
+.briefing-info{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:1px 5px;border-radius:3px;margin-left:4px;vertical-align:middle;line-height:1}
+.briefing-info:hover{color:var(--accent2)}
+.briefing-info.expanded{color:var(--accent)}
 .briefing .obj{margin-top:10px;padding-top:9px;border-top:1px solid var(--border);font-size:14px;font-weight:600;color:var(--text)}
 .briefing .obj b{color:var(--yellow)}
 /* Compact help row: secondary resources sit as small chips so the briefing
@@ -266,6 +272,16 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 @keyframes shock-expand{0%{r:6;opacity:.9;stroke-width:2.5}100%{r:46;opacity:0;stroke-width:.6}}
 .base-core.volley-pulse{animation:volley-pulse .62s ease-out}
 @keyframes volley-pulse{0%{filter:drop-shadow(0 0 0 rgba(125,191,184,0));transform:scale(1)}45%{filter:drop-shadow(0 0 14px rgba(125,191,184,.85));transform:scale(1.18)}100%{filter:drop-shadow(0 0 0 rgba(125,191,184,0));transform:scale(1)}}
+/* Oracle charge — persistent visual escalation per wrong attempt. The class
+   lives on .field-pane (not #oracle) because drawField() rebuilds the SVG
+   between turns; the parent class survives the rebuild. */
+.field-pane.charge-1 #oracle{filter:drop-shadow(0 0 8px rgba(125,191,184,.55))}
+.field-pane.charge-2 #oracle{filter:drop-shadow(0 0 14px rgba(125,191,184,.75)) drop-shadow(0 0 26px rgba(125,191,184,.35))}
+.field-pane.charge-3 #oracle{animation:oracle-charge-3 1.8s ease-in-out infinite}
+@keyframes oracle-charge-3{
+  0%,100%{filter:drop-shadow(0 0 18px rgba(212,168,73,.7)) drop-shadow(0 0 8px rgba(125,191,184,.5))}
+  50%{filter:drop-shadow(0 0 32px rgba(212,168,73,1)) drop-shadow(0 0 50px rgba(125,191,184,.4))}
+}
 /* Phase mechanic: shielded enemies in phase-1 show a pulsing teal ring */
 .shield-ring{animation:shield-pulse 1.6s ease-in-out infinite}
 @keyframes shield-pulse{0%,100%{stroke-opacity:0.3;stroke-width:2}50%{stroke-opacity:0.85;stroke-width:3.5}}
@@ -295,9 +311,11 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
   .ed-row .dev-note,.ed-row .spacer{display:none}
   /* result table: cap height, scroll internally — never push the editor off screen */
   #result{max-height:42vh;overflow-y:auto;margin-top:8px}
-  /* Compact briefing on mobile — less padding, tighter type */
+  /* Compact briefing on mobile — less padding, tighter type, lore prose
+     collapses behind the ⓘ button (learn-by-typing philosophy). */
   .briefing{padding:8px 11px;font-size:13px;margin-bottom:8px}
-  .briefing p{margin-top:4px;font-size:12.5px}
+  .briefing p{margin-top:4px;font-size:12.5px;display:none}
+  .briefing.expanded p{display:block}
   .briefing .obj{margin-top:7px;padding-top:6px;font-size:13.5px}
   .help-row{margin-top:6px;gap:5px}
   .schema-row{margin-bottom:6px}
@@ -361,7 +379,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
   <section class="editor-pane">
     <div class="track" id="track" tabindex="0" role="group" aria-label="Campaign progress"></div>
     <div class="briefing">
-      <span class="tag" id="b-tag">SELECT</span><span class="ttl" id="b-title">First Contact</span>
+      <span class="tag" id="b-tag">SELECT</span><span class="ttl" id="b-title">First Contact</span><button class="briefing-info" id="briefing-info-btn" onclick="toggleBriefingInfo()" aria-label="Show wave context" aria-expanded="false" title="Wave context">ⓘ</button>
       <p id="b-text"></p>
       <div class="obj">🎯 <b id="b-obj"></b></div>
       <div id="phase-indicator" class="phase-chip" style="display:none" aria-live="polite"></div>
@@ -423,7 +441,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 30, 2026 · 11:32 PM ET";
+const BUILD_TS = "May 31, 2026 · 12:14 AM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, devMode: true, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, fatalities: 0, hintsUsed: 0, started: Date.now()
@@ -534,6 +552,12 @@ function loadWave(){
   revealFrac = 0;
   autopiloted = false;
   waveFriction = false;
+  setOracleCharge(0);             // fresh wave → no power-up carry-over
+  // Collapse briefing prose by default each wave (mobile philosophy: learn by typing).
+  const br = document.querySelector('.briefing');
+  if(br) br.classList.remove('expanded');
+  const bib = document.getElementById('briefing-info-btn');
+  if(bib){ bib.classList.remove('expanded'); bib.setAttribute('aria-expanded','false'); }
   document.getElementById('wave-num').textContent = w.id;
   document.getElementById('wave-concept').textContent = w.concept;
   document.getElementById('b-tag').textContent = w.concept;
@@ -1437,9 +1461,53 @@ function syntaxHit(){
   if(state.baseHP <= 0) waveLost();
 }
 
+// "Learn by failing" — each wrong attempt powers up the Oracle visually and
+// sonically. The Oracle gets stronger as the player struggles, so failure
+// feels like progress, not punishment. Capped at 3 (the AUTOPILOT_AT threshold).
+function setOracleCharge(level){
+  const fp = document.querySelector('.field-pane');
+  if(!fp) return;
+  fp.classList.remove('charge-1','charge-2','charge-3');
+  if(level >= 1) fp.classList.add('charge-' + Math.min(3, level));
+}
+// Audio companion to the visual charge — a harmonic stack that grows with
+// each miss. Miss 1 = A2 alone. Miss 2 = A2 + A3 (octave). Miss 3 = A2 + A3 + E4
+// (fifth) — full power-up triad, signals the Oracle is ready.
+function playPowerUp(level){
+  if(!state.sfx) return;
+  const c = audioCtx();
+  const tones = [110.00];
+  if(level >= 2) tones.push(220.00);
+  if(level >= 3) tones.push(329.63);
+  tones.forEach((f, i) => {
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = 'triangle'; o.frequency.value = f;
+    const t = c.currentTime + i * 0.045;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.050, t + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+    o.connect(g); g.connect(c.destination);
+    o.start(t); o.stop(t + 0.60);
+  });
+}
+// Briefing collapse — the lore prose stays hidden by default on mobile so
+// the player sees only the 🎯 objective. Tap ⓘ to reveal context.
+function toggleBriefingInfo(){
+  const br = document.querySelector('.briefing');
+  const btn = document.getElementById('briefing-info-btn');
+  if(!br) return;
+  const open = br.classList.toggle('expanded');
+  if(btn){
+    btn.classList.toggle('expanded', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+}
+
 // After any failed attempt (player mode only): uncover more of the answer, and
 // once the player has missed AUTOPILOT_AT times, let autopilot finish it.
 function applyMissAssist(){
+  setOracleCharge(waveTries);               // visual power-up (always — even in dev for the look)
+  playPowerUp(waveTries);                   // audio harmonic stack grows with misses
   if(state.devMode) return;                 // dev mode already shows the full answer
   if(waveTries >= AUTOPILOT_AT){ autopilot(); return; }
   const ed = document.getElementById('editor');
@@ -1583,6 +1651,7 @@ function phaseTransition(){
     // Reset all per-phase counters — the player starts phase 2 fresh.
     waveTries = 0; revealFrac = 0; autopiloted = false; waveFriction = false;
     hintLevel = 0;
+    setOracleCharge(0);            // phase 2 = clean slate for the power-up
     document.getElementById('editor').value = '';
     document.getElementById('hint').className = 'hint';
     document.getElementById('hint').innerHTML = '';
