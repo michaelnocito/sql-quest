@@ -27,7 +27,9 @@ a{color:var(--accent);text-decoration:none}
 code{font-family:var(--mono);background:var(--surf2);padding:1px 5px;border-radius:4px;font-size:.85em;color:var(--accent2)}
 
 /* TOP BAR */
-header{background:var(--surf);border-bottom:1px solid var(--border);padding:8px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap}
+header{background:var(--surf);border-bottom:1px solid var(--border);padding:8px 14px;display:flex;align-items:center;gap:14px;flex-shrink:0;flex-wrap:wrap}
+header .hp-wrap{margin-right:4px}
+header .dev-toggle{margin-left:2px}
 .brand{font-weight:700;font-size:15px;white-space:nowrap}
 .brand .q{color:var(--accent)}
 .wave-chip{font-size:12px;color:var(--muted);background:var(--surf2);padding:3px 10px;border-radius:20px;white-space:nowrap}
@@ -340,7 +342,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 29, 2026 · 8:25 PM ET";
+const BUILD_TS = "May 29, 2026 · 8:30 PM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, music: false, sfx: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
