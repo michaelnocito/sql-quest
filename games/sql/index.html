@@ -233,9 +233,9 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 @keyframes shock-expand{0%{r:6;opacity:.9;stroke-width:2.5}100%{r:46;opacity:0;stroke-width:.6}}
 .base-core.volley-pulse{animation:volley-pulse .62s ease-out}
 @keyframes volley-pulse{0%{filter:drop-shadow(0 0 0 rgba(125,191,184,0));transform:scale(1)}45%{filter:drop-shadow(0 0 14px rgba(125,191,184,.85));transform:scale(1.18)}100%{filter:drop-shadow(0 0 0 rgba(125,191,184,0));transform:scale(1)}}
-/* Tiny reactive blip — the Oracle "breathes with" each keystroke. */
-.base-core.type-pulse{animation:type-pulse .2s ease-out}
-@keyframes type-pulse{0%{filter:drop-shadow(0 0 0 rgba(125,191,184,0))}50%{filter:drop-shadow(0 0 6px rgba(125,191,184,.55))}100%{filter:drop-shadow(0 0 0 rgba(125,191,184,0))}}
+/* Reactive glow — the whole Oracle silhouette lights up briefly on each keystroke. */
+#oracle.type-pulse{animation:type-pulse .28s ease-out}
+@keyframes type-pulse{0%{filter:drop-shadow(0 0 0 rgba(125,191,184,0))}45%{filter:drop-shadow(0 0 10px rgba(125,191,184,.6))}100%{filter:drop-shadow(0 0 0 rgba(125,191,184,0))}}
 
 /* BREAK NUDGE */
 .break-nudge{position:fixed;bottom:0;left:0;right:0;background:var(--surf);border-top:1px solid var(--accent);padding:12px 16px;display:none;align-items:center;gap:12px;z-index:180;font-size:13px}
@@ -346,7 +346,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 29, 2026 · 9:36 PM ET";
+const BUILD_TS = "May 30, 2026 · 7:35 AM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -550,12 +550,12 @@ function updateGhost(){
 }
 document.getElementById('sql').addEventListener('input', () => {
   updateGhost();
-  // Reactive feedback: the Oracle's core pulses with each keystroke.
-  const core = document.getElementById('base-core');
-  if(!core) return;
-  core.classList.remove('type-pulse');
-  void core.offsetWidth;          // force reflow to restart the animation
-  core.classList.add('type-pulse');
+  // Reactive feedback: the WHOLE Oracle silhouette glows briefly with each keystroke.
+  const oracle = document.getElementById('oracle');
+  if(!oracle) return;
+  oracle.classList.remove('type-pulse');
+  void oracle.offsetWidth;          // force reflow to restart the animation
+  oracle.classList.add('type-pulse');
 });
 document.getElementById('sql').addEventListener('keydown', e => {
   if(e.key === 'Tab' && !e.target.value && (state.devMode || revealFrac > 0)){
@@ -954,38 +954,23 @@ function starPts(cx, cy, spikes, ro, ri){
 }
 // The Oracle — a radiant geometric figure: pulsing aura, slow-rotating
 // starburst halo, counter-rotating orbit ring, inner hexagon + glowing core.
-// The Oracle "levels up" visually as the player progresses. Each 3 waves
-// adds a new layer: bare core → hexagon → aura → orbit/nodes → starburst → spokes.
-// base-core always renders (target for hit/volley/type-pulse animations).
-function oracleComplexity(){
-  return Math.min(6, Math.floor(state.wave / 3) + 1);
-}
+// Full Oracle on every wave (per Mike — the complexity-per-wave gating was
+// reverted). Whole-Oracle wrapper #oracle is the target for the keystroke pulse
+// (a glow that lights up the entire silhouette).
 function heroFigure(hx, hy){
-  const lvl = oracleComplexity();
-  let s = '';
-  // L3+: breathing aura ellipse — the Oracle feels alive
-  if(lvl >= 3) s += `<ellipse class="breathe" cx="${hx}" cy="${hy}" rx="109" ry="146" fill="url(#spireGlow)"/>`;
-  // L5+: outer starburst halo (and L6 adds the radial spokes)
-  if(lvl >= 5){
-    let spokes = '';
-    if(lvl >= 6){
-      for(let i=0;i<12;i++){ const a=i/12*Math.PI*2; spokes += `<line x1="${(hx+Math.cos(a)*37).toFixed(1)}" y1="${(hy+Math.sin(a)*37).toFixed(1)}" x2="${(hx+Math.cos(a)*97).toFixed(1)}" y2="${(hy+Math.sin(a)*97).toFixed(1)}" stroke="var(--accent2)" stroke-opacity="0.5" stroke-width="2.2"/>`; }
-    }
-    s += `<g class="spin-self s-cw-28"><polygon points="${starPts(hx,hy,6,93,41)}" fill="none" stroke="var(--accent)" stroke-opacity="0.55" stroke-width="2.2"/>${spokes}</g>`;
-  }
-  // L4+: counter-rotating orbit ring with nodes
-  if(lvl >= 4){
-    let nodes = '';
-    for(let i=0;i<6;i++){ const a=i/6*Math.PI*2; nodes += `<circle cx="${(hx+Math.cos(a)*71).toFixed(1)}" cy="${(hy+Math.sin(a)*71).toFixed(1)}" r="5" fill="var(--accent2)"/>`; }
-    s += `<g class="spin-self s-ccw-22"><circle cx="${hx}" cy="${hy}" r="71" fill="none" stroke="var(--accent)" stroke-opacity="0.35" stroke-width="1.5"/>${nodes}</g>`;
-  }
-  // L2+: inner hexagonal frame
-  if(lvl >= 2) s += `<polygon points="${polyPts(hx,hy,6,36,Math.PI/6)}" fill="var(--surf2)" stroke="var(--accent)" stroke-width="2.8"/>`;
-  // Always: base-core (animation target), inner triangle pointer, ORACLE label
-  s += `<circle id="base-core" class="base-core" cx="${hx}" cy="${hy}" r="26" fill="var(--accent)"/>`
+  let spokes = '';
+  for(let i=0;i<12;i++){ const a=i/12*Math.PI*2; spokes += `<line x1="${(hx+Math.cos(a)*37).toFixed(1)}" y1="${(hy+Math.sin(a)*37).toFixed(1)}" x2="${(hx+Math.cos(a)*97).toFixed(1)}" y2="${(hy+Math.sin(a)*97).toFixed(1)}" stroke="var(--accent2)" stroke-opacity="0.5" stroke-width="2.2"/>`; }
+  let nodes = '';
+  for(let i=0;i<6;i++){ const a=i/6*Math.PI*2; nodes += `<circle cx="${(hx+Math.cos(a)*71).toFixed(1)}" cy="${(hy+Math.sin(a)*71).toFixed(1)}" r="5" fill="var(--accent2)"/>`; }
+  return `<g id="oracle">`
+    + `<ellipse class="breathe" cx="${hx}" cy="${hy}" rx="109" ry="146" fill="url(#spireGlow)"/>`
+    + `<g class="spin-self s-cw-28"><polygon points="${starPts(hx,hy,6,93,41)}" fill="none" stroke="var(--accent)" stroke-opacity="0.55" stroke-width="2.2"/>${spokes}</g>`
+    + `<g class="spin-self s-ccw-22"><circle cx="${hx}" cy="${hy}" r="71" fill="none" stroke="var(--accent)" stroke-opacity="0.35" stroke-width="1.5"/>${nodes}</g>`
+    + `<polygon points="${polyPts(hx,hy,6,36,Math.PI/6)}" fill="var(--surf2)" stroke="var(--accent)" stroke-width="2.8"/>`
+    + `<circle id="base-core" class="base-core" cx="${hx}" cy="${hy}" r="26" fill="var(--accent)"/>`
     + `<polygon points="${polyPts(hx,hy-1,3,15,-Math.PI/2)}" fill="var(--bg)" fill-opacity="0.55"/>`
-    + `<text x="${hx}" y="${FIELD_H-4}" fill="var(--muted)" font-size="14" text-anchor="middle" font-family="var(--mono)">ORACLE</text>`;
-  return s;
+    + `<text x="${hx}" y="${FIELD_H-4}" fill="var(--muted)" font-size="14" text-anchor="middle" font-family="var(--mono)">ORACLE</text>`
+    + `</g>`;
 }
 // Void-being archetypes — each wave's foes get a distinct silhouette so the
 // player reads the threat at a glance. Scouts are nimble 3-point shards,
