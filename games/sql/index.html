@@ -57,11 +57,19 @@ header .dev-toggle{margin-left:2px}
    internally so it can never push the editor off-screen. */
 main{flex:1;display:flex;flex-direction:column;min-height:0;position:relative}
 .editor-pane{flex:1 1 auto;min-height:0;padding:12px 14px 76px;overflow-y:auto;background:var(--bg)}
-.field-pane{order:-1;flex:0 0 35vh;min-height:200px;position:relative;border-bottom:1px solid var(--border);background:linear-gradient(#0b1130,#0e2a2c)}
-@media (min-width:900px){
+.field-pane{order:-1;flex:0 0 35vh;min-height:160px;position:relative;border-bottom:1px solid var(--border);background:linear-gradient(#0b1130,#0e2a2c);transition:flex-basis .25s ease}
+/* When the editor is focused on mobile portrait, shrink the battlefield so
+   both the field AND the editor stay visible above the keyboard. */
+body.typing .field-pane{flex-basis:22vh;min-height:120px}
+/* Side-by-side layout fires for desktop (>=900px) OR any landscape phone/tablet
+   with limited vertical space (<=500px high). In landscape the vertical stack
+   doesn't fit — switch to side-by-side and unstick the action bar so it sits
+   inline at the bottom of the editor column. */
+@media (min-width:900px), (max-height:500px) and (orientation:landscape){
   main{flex-direction:row}
-  .editor-pane{order:0;flex:0 0 40%;max-width:40%;height:100%;border-right:1px solid var(--border);padding-bottom:14px}
-  .field-pane{order:0;flex:1 1 auto;height:100%;min-height:0;border-bottom:none;flex-basis:auto}
+  .editor-pane{order:0;flex:0 0 44%;max-width:44%;height:100%;border-right:1px solid var(--border);padding-bottom:14px}
+  .field-pane{order:0;flex:1 1 auto;height:100%;min-height:0;border-bottom:none;flex-basis:auto;transition:none}
+  body.typing .field-pane{flex-basis:auto;min-height:0}
 }
 
 /* CONCEPT TRACK — shows the whole campaign path: done · current · upcoming */
@@ -281,14 +289,17 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
   .more-group.open{display:flex}
   .more-group .icon-btn,.more-group .dev-jump{width:100%;height:36px;justify-content:flex-start;padding:0 12px;font-size:13px;border-radius:var(--r2)}
   .more-group .dev-toggle{font-size:12px}
-  /* sticky action bar (Execute / Hint / Format) pinned to viewport bottom */
-  .ed-row{position:fixed;left:0;right:0;bottom:0;margin:0;padding:8px 12px;background:var(--surf);border-top:1px solid var(--border);z-index:50;gap:6px;flex-wrap:nowrap;overflow-x:auto}
   .ed-row .btn{padding:11px 14px;font-size:14px;flex-shrink:0}
   .ed-row .btn-primary{flex:1;min-width:0;justify-content:center}
   .ed-row #format-btn{display:none}            /* hide Format on mobile — pure presentation */
   .ed-row .dev-note,.ed-row .spacer{display:none}
   /* result table: cap height, scroll internally — never push the editor off screen */
   #result{max-height:30vh;overflow-y:auto;margin-top:8px}
+}
+/* sticky action bar only in PORTRAIT phone — landscape gets the side-by-side
+   layout where the action bar sits inline in the editor column. */
+@media (max-width:899px) and (orientation:portrait){
+  .ed-row{position:fixed;left:0;right:0;bottom:0;margin:0;padding:8px 12px;background:var(--surf);border-top:1px solid var(--border);z-index:50;gap:6px;flex-wrap:nowrap;overflow-x:auto}
 }
 @media (max-width:520px){
   .brand{font-size:14px}
@@ -400,7 +411,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 30, 2026 · 10:38 PM ET";
+const BUILD_TS = "May 30, 2026 · 11:04 PM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, devMode: true, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, fatalities: 0, hintsUsed: 0, started: Date.now()
@@ -636,6 +647,10 @@ function updateGhost(){
     ed.placeholder = 'Write your SQL here…';
   }
 }
+// Toggle body.typing on focus/blur so the mobile-portrait CSS can shrink the
+// battlefield while the keyboard is up — keeps both visible.
+document.getElementById('editor').addEventListener('focus', () => document.body.classList.add('typing'));
+document.getElementById('editor').addEventListener('blur',  () => document.body.classList.remove('typing'));
 document.getElementById('editor').addEventListener('input', () => {
   updateGhost();
   // Reactive feedback: the WHOLE Oracle silhouette glows briefly with each
