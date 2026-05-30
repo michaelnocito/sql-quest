@@ -400,7 +400,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 30, 2026 · 10:12 PM ET";
+const BUILD_TS = "May 30, 2026 · 10:38 PM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, devMode: true, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, fatalities: 0, hintsUsed: 0, started: Date.now()
@@ -1744,6 +1744,16 @@ function audioCtx(){
   if(actx.state === 'suspended') actx.resume();   // iOS/Safari start suspended until a gesture
   return actx;
 }
+// Awaitable resume — use from user-gesture handlers (toggle buttons) so the
+// confirmation sound doesn't fire on a still-suspended context after a
+// visibility resume. resume() is async on mobile.
+async function audioCtxReady(){
+  const c = audioCtx();
+  if(c.state !== 'running'){
+    try{ await c.resume(); }catch(e){}
+  }
+  return c;
+}
 function beep(freq, ms){
   if(!state.sfx) return;
   const c = audioCtx(); const o = c.createOscillator(); const g = c.createGain();
@@ -1760,21 +1770,21 @@ function updateAudioBtns(){
   if(sb){ sb.textContent = state.sfx ? '🔔' : '🔕'; sb.classList.toggle('on', state.sfx); sb.classList.toggle('off', !state.sfx); }
   if(melb){ melb.classList.toggle('on', state.melody); melb.classList.toggle('off', !state.melody); }
 }
-function toggleMusic(){
+async function toggleMusic(){
   state.music = !state.music;
-  if(state.music){ audioCtx(); startMusic(); } else { stopMusic(); }
+  if(state.music){ await audioCtxReady(); startMusic(); } else { stopMusic(); }
   updateAudioBtns();
   save();
 }
-function toggleSfx(){
+async function toggleSfx(){
   state.sfx = !state.sfx;
-  if(state.sfx){ audioCtx(); beep(660,90); }   // unlock + a tiny confirmation blip
+  if(state.sfx){ await audioCtxReady(); beep(660,90); }   // unlock + a tiny confirmation blip
   updateAudioBtns();
   save();
 }
-function toggleMelody(){
+async function toggleMelody(){
   state.melody = !state.melody;
-  if(state.melody){ audioCtx(); playMelodyKeyword(); }   // tiny confirmation chime
+  if(state.melody){ await audioCtxReady(); playMelodyKeyword(); }   // tiny confirmation chime
   updateAudioBtns();
   save();
 }
@@ -2132,7 +2142,13 @@ function stopMusic(){ if(musicTimer){ clearInterval(musicTimer); musicTimer = nu
 function suspendAudio(){ stopMusic(); if(actx && actx.state === 'running') actx.suspend(); }
 function resumeAudioIfActive(){
   const onSplash = document.getElementById('splash').classList.contains('show');
-  if(state.music && !onSplash){ if(actx) actx.resume(); startMusic(); }
+  if(onSplash) return;
+  // ALWAYS resume the AudioContext on return — SFX, melody, and keystroke
+  // sounds all share one context. Only restart the music scheduler if music
+  // is enabled. Without this, mobile visibility events (URL bar collapse,
+  // tab switch, screen lock) leave the context permanently suspended → silence.
+  if(actx) actx.resume();
+  if(state.music) startMusic();
 }
 document.addEventListener('visibilitychange', ()=>{ document.hidden ? suspendAudio() : resumeAudioIfActive(); });
 window.addEventListener('pagehide', suspendAudio);
