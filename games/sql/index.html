@@ -342,7 +342,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 29, 2026 · 8:46 PM ET";
+const BUILD_TS = "May 29, 2026 · 8:52 PM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, music: false, sfx: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -764,7 +764,7 @@ function enemyPos(i, en){
   const rowCount = inTop ? topCount : (N - topCount);
   const idxInRow = inTop ? i : (i - topCount);
   const centerIdx = (rowCount - 1) / 2;
-  const ROW_OFFSET = 52, COL_OFFSET = 64;
+  const ROW_OFFSET = 78, COL_OFFSET = 112;
   return {
     x: enemyX(en.advance) + (centerIdx - idxInRow) * COL_OFFSET,
     y: FIELD_H/2 + (inTop ? -ROW_OFFSET : ROW_OFFSET)
@@ -811,7 +811,7 @@ function impendingStrike(){
   const a = archOf(atk);
   return a.charge > 0 && ((atk.charge||0)+1) >= a.charge;
 }
-function enemyX(adv){ return 140 + adv * (BASE_X - 200) / 4; } // 4 steps to reach base; shifted right to fit wider squadrons
+function enemyX(adv){ return 210 + adv * (BASE_X - 280) / 4; } // 4 steps to reach base; shifted right to fit wider doubled-size squadrons
 
 // Celestial Cartographer theme: the field is a window into a twilight sky.
 // Star positions are generated once so they stay put across the frequent
@@ -904,7 +904,7 @@ function drawField(){
     if(!en.alive) return;
     const { x, y } = enemyPos(i, en);
     const frac = Math.max(0, en.hp) / en.maxHp;
-    const barW = 38, barH = 4, barX = x - barW/2, barY = y - 40;
+    const barW = 56, barH = 5, barX = x - barW/2, barY = y - 78;
     const hpCol = frac > 0.5 ? 'var(--green)' : frac > 0.25 ? 'var(--yellow)' : 'var(--red)';
     s += `<g class="enemy" data-i="${i}">`
       + enemyFigure(x, y, en)
@@ -953,9 +953,9 @@ function heroFigure(hx, hy){
 //   charged  — the heavy-strike damage when a wind-up completes
 // A correct query always interrupts a wind-up (see volley), so good play is safe.
 const ENEMY_ARCH = {
-  scout:  { spikes:3, ro:21, ri:10, glyph:3, stroke:'#7fdfff', nucleus:'#9fe8ff', halo:'haloScout',  spin:'s-cw-9',  inner:'s-ccw-11', hit:4, charge:0, charged:0 },
-  raider: { spikes:5, ro:25, ri:11, glyph:5, stroke:'var(--red)', nucleus:'var(--red)', halo:'haloRaider', spin:'s-cw-16', inner:'s-ccw-11', hit:6, charge:2, charged:13 },
-  warden: { spikes:6, ro:26, ri:14, glyph:3, stroke:'#c79bff', nucleus:'#c79bff', halo:'haloWarden', spin:'s-cw-28', inner:'s-ccw-11', hit:8, charge:2, charged:18 }
+  scout:  { spikes:3, ro:42, ri:20, glyph:3, stroke:'#7fdfff', nucleus:'#9fe8ff', halo:'haloScout',  spin:'s-cw-9',  inner:'s-ccw-11', hit:4, charge:0, charged:0 },
+  raider: { spikes:5, ro:50, ri:22, glyph:5, stroke:'var(--red)', nucleus:'var(--red)', halo:'haloRaider', spin:'s-cw-16', inner:'s-ccw-11', hit:6, charge:2, charged:13 },
+  warden: { spikes:6, ro:52, ri:28, glyph:3, stroke:'#c79bff', nucleus:'#c79bff', halo:'haloWarden', spin:'s-cw-28', inner:'s-ccw-11', hit:8, charge:2, charged:18 }
 };
 function archOf(en){ return ENEMY_ARCH[en && en.archetype] || ENEMY_ARCH.warden; }
 // Per-row archetype mapping: lets a single lane render a mix of silhouettes
@@ -969,15 +969,15 @@ function enemyFigure(x, y, en){
   // Telegraph: a primed foe shows a pulsing warning ring + spark — a heavy
   // strike lands on the next wrong query unless a correct one interrupts it.
   const warn = (en && en.primed)
-    ? `<circle class="charge-warn" cx="${x}" cy="${y}" r="33" fill="none" stroke="var(--yellow)" stroke-width="2.5"/>`
-      + `<text x="${x}" y="${y-37}" fill="var(--yellow)" font-size="16" text-anchor="middle">⚡</text>`
+    ? `<circle class="charge-warn" cx="${x}" cy="${y}" r="66" fill="none" stroke="var(--yellow)" stroke-width="3"/>`
+      + `<text x="${x}" y="${y-74}" fill="var(--yellow)" font-size="22" text-anchor="middle">⚡</text>`
     : '';
-  return `<circle cx="${x}" cy="${y}" r="33" fill="url(#${a.halo})"/>`
+  return `<circle cx="${x}" cy="${y}" r="66" fill="url(#${a.halo})"/>`
     + warn
-    + `<g class="spin-self ${a.spin}"><polygon class="mote-core" points="${starPts(x,y,a.spikes,a.ro,a.ri)}" fill="#160f1e" stroke="${a.stroke}" stroke-width="2.4" stroke-opacity="0.85"/></g>`
-    + `<g class="spin-self ${a.inner}"><polygon points="${polyPts(x,y,a.glyph,14,-Math.PI/2)}" fill="none" stroke="${a.stroke}" stroke-opacity="0.55" stroke-width="1.3"/></g>`
-    + `<circle cx="${x}" cy="${y}" r="5.5" fill="${a.nucleus}" fill-opacity="0.9"/>`
-    + `<text x="${x}" y="${y+37}" fill="#cdd6ff" font-size="13" text-anchor="middle" font-family="var(--mono)">${esc(String(en.name)).slice(0,8)}</text>`;
+    + `<g class="spin-self ${a.spin}"><polygon class="mote-core" points="${starPts(x,y,a.spikes,a.ro,a.ri)}" fill="#160f1e" stroke="${a.stroke}" stroke-width="3" stroke-opacity="0.85"/></g>`
+    + `<g class="spin-self ${a.inner}"><polygon points="${polyPts(x,y,a.glyph,28,-Math.PI/2)}" fill="none" stroke="${a.stroke}" stroke-opacity="0.55" stroke-width="1.5"/></g>`
+    + `<circle cx="${x}" cy="${y}" r="11" fill="${a.nucleus}" fill-opacity="0.9"/>`
+    + `<text x="${x}" y="${y+74}" fill="#cdd6ff" font-size="14" text-anchor="middle" font-family="var(--mono)">${esc(String(en.name)).slice(0,9)}</text>`;
 }
 
 const SVGNS = 'http://www.w3.org/2000/svg';
