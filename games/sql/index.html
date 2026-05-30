@@ -117,11 +117,14 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 .schema-tbl{font-family:var(--mono);font-size:11px;background:var(--surf2);border:1px solid var(--border);border-radius:var(--r2);padding:5px 9px;color:var(--muted)}
 .schema-tbl b{color:var(--accent2)}
 
-/* EDITOR */
-.ed-wrap{position:relative}
-#editor{width:100%;min-height:156px;resize:vertical;font-family:var(--mono);font-size:15.5px;line-height:1.7;color:var(--text);background:var(--surf);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px;outline:none}
-#editor:focus{border-color:var(--accent)}
-.ed-ghost{position:absolute;top:14px;left:16px;right:16px;font-family:var(--mono);font-size:15.5px;line-height:1.7;color:var(--muted);pointer-events:none;white-space:pre-wrap;display:none}
+/* EDITOR — wrap holds the surface + border; the textarea is TRANSPARENT so the
+   grey ghost shows THROUGH where the player hasn't typed yet. As they type,
+   their bright text overlays the grey at the corresponding positions — the
+   "type over the vision" effect Mike wants for both DEV and Oracle's Vision. */
+.ed-wrap{position:relative;background:var(--surf);border:1px solid var(--border);border-radius:var(--r2);transition:border-color .15s}
+.ed-wrap:focus-within{border-color:var(--accent)}
+#editor{width:100%;min-height:156px;resize:vertical;font-family:var(--mono);font-size:15.5px;line-height:1.7;color:var(--text);background:transparent;border:0;border-radius:var(--r2);padding:14px 16px;outline:none;position:relative;z-index:2}
+.ed-ghost{position:absolute;top:14px;left:16px;right:16px;font-family:var(--mono);font-size:15.5px;line-height:1.7;color:var(--muted);pointer-events:none;white-space:pre-wrap;display:none;z-index:1}
 .ed-row{display:flex;gap:8px;align-items:center;margin-top:9px;flex-wrap:wrap}
 .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--r2);font:600 14px var(--font);cursor:pointer;border:none;transition:.15s}
 .btn-primary{background:var(--accent);color:#0e1f1e}
@@ -441,7 +444,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 31, 2026 · 12:14 AM ET";
+const BUILD_TS = "May 31, 2026 · 1:02 AM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, devMode: true, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, fatalities: 0, hintsUsed: 0, started: Date.now()
@@ -670,11 +673,16 @@ function revealedPrefix(frac){
 function updateGhost(){
   const ghost = document.getElementById('ghost');
   const ed = document.getElementById('editor');
-  if(state.devMode && !ed.value){
+  // The ghost is PERSISTENT — shows the solution (or partial reveal) behind
+  // the transparent textarea so the player types OVER the grey letters.
+  // Their bright text covers the grey at matching positions; unfilled positions
+  // stay grey as a continuous guide. This applies in DEV mode and in player
+  // mode whenever the reveal has been triggered by misses.
+  if(state.devMode){
     ghost.textContent = currentPhaseSolution();
     ghost.style.display = 'block';
-    ed.placeholder = '';                 // avoid overlap with the ghost answer
-  } else if(!state.devMode && revealFrac > 0 && !ed.value){
+    ed.placeholder = '';
+  } else if(revealFrac > 0){
     ghost.textContent = maskedSolution(revealFrac);
     ghost.style.display = 'block';
     ed.placeholder = '';
@@ -1518,21 +1526,25 @@ function applyMissAssist(){
 
 // AUTOPILOT — fills the solution, explains the concept in human terms with a
 // non-tech analogy, then hands back so the player fires it themselves.
+// ORACLE'S VISION — at 3 misses the Oracle reveals the full solution as a
+// PERSISTENT grey ghost in the editor. The player still has to type the answer
+// themselves (no auto-fill); typing over the grey turns it bright. This keeps
+// learn-by-typing alive even when the player needs full guidance.
 function autopilot(){
-  const ed = document.getElementById('editor');
-  ed.value = currentPhaseSolution();
-  revealFrac = 1;
+  revealFrac = 1;                           // ghost shows full solution
+  // Clear the editor so the player starts the type-over from scratch.
+  document.getElementById('editor').value = '';
   updateGhost();
   if(autopiloted) return;                   // explain once per wave
   autopiloted = true;
   const w = currentWave();
   const ex = w.explain || {};
-  const body = `Three misses — so I filled the query in for you. Read why it works, then press <b>Execute</b> to fire it.`
+  const body = `The Oracle reveals the answer in your terminal as a grey vision. <b>Type over the grey text</b> — your typing turns the letters bright. Then press <b>Execute</b> to fire.`
     + (ex.simple ? `<br><br><b style="color:var(--accent2)">${esc(w.concept)}</b> — ${esc(ex.simple)}` : '')
-    + (ex.analogy ? `<br><br>🧭 <i style="color:var(--muted)">${esc(ex.analogy)}</i>` : '');
-  showOverlay('🤖', 'Autopilot engaged', body, 'Move forward ▶');
-  // Slice 3: agency at the struggle point — let the player replay fresh instead
-  // of just firing the filled answer. Both buttons live in `.ov-btns`.
+    + (ex.analogy ? `<br><br>👁 <i style="color:var(--muted)">${esc(ex.analogy)}</i>` : '');
+  showOverlay('👁', "Oracle's Vision", body, 'Begin typing →');
+  // Secondary: agency at the struggle point — replay the wave fresh instead
+  // of typing through the vision. Becomes "Reweave" in Slice C.
   const sec = document.getElementById('ov-btn-secondary');
   sec.textContent = '↻ Replay this wave';
   sec.style.display = 'inline-flex';
@@ -1711,12 +1723,12 @@ function showResetOverlay(){
 
 function overlayActionSecondary(){
   const title = document.getElementById('ov-title').textContent;
-  if(title === 'Autopilot engaged'){ hideOverlay(); replayWave(); return; }
+  if(title === "Oracle's Vision"){ hideOverlay(); replayWave(); return; }
   if(title === 'Reset'){ hideOverlay(); resetCampaign(); return; }
 }
 function overlayAction(){
   const title = document.getElementById('ov-title').textContent;
-  if(title === 'Autopilot engaged'){ hideOverlay(); document.getElementById('editor').focus(); return; }
+  if(title === "Oracle's Vision"){ hideOverlay(); document.getElementById('editor').focus(); return; }
   if(title === 'On the job'){ hideOverlay(); return; }
   if(title === 'Reset'){ hideOverlay(); replayWave(); return; }
   if(title === 'Base Overrun'){
