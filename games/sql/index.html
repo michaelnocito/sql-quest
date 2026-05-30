@@ -233,9 +233,9 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 @keyframes shock-expand{0%{r:6;opacity:.9;stroke-width:2.5}100%{r:46;opacity:0;stroke-width:.6}}
 .base-core.volley-pulse{animation:volley-pulse .62s ease-out}
 @keyframes volley-pulse{0%{filter:drop-shadow(0 0 0 rgba(125,191,184,0));transform:scale(1)}45%{filter:drop-shadow(0 0 14px rgba(125,191,184,.85));transform:scale(1.18)}100%{filter:drop-shadow(0 0 0 rgba(125,191,184,0));transform:scale(1)}}
-/* Reactive glow — the whole Oracle silhouette lights up briefly on each keystroke. */
-#oracle.type-pulse{animation:type-pulse .28s ease-out}
-@keyframes type-pulse{0%{filter:drop-shadow(0 0 0 rgba(125,191,184,0))}45%{filter:drop-shadow(0 0 10px rgba(125,191,184,.6))}100%{filter:drop-shadow(0 0 0 rgba(125,191,184,0))}}
+/* Reactive whole-Oracle keystroke glow is driven by the Web Animations API
+   (see the editor `input` handler) — CSS class-toggle restart fails on SVG
+   elements because they don't expose offsetWidth, so we can't force a reflow. */
 
 /* BREAK NUDGE */
 .break-nudge{position:fixed;bottom:0;left:0;right:0;background:var(--surf);border-top:1px solid var(--accent);padding:12px 16px;display:none;align-items:center;gap:12px;z-index:180;font-size:13px}
@@ -346,7 +346,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 30, 2026 · 7:35 AM ET";
+const BUILD_TS = "May 30, 2026 · 7:53 AM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -550,12 +550,17 @@ function updateGhost(){
 }
 document.getElementById('sql').addEventListener('input', () => {
   updateGhost();
-  // Reactive feedback: the WHOLE Oracle silhouette glows briefly with each keystroke.
+  // Reactive feedback: the WHOLE Oracle silhouette glows briefly with each
+  // keystroke. Using element.animate() instead of a CSS class toggle because
+  // SVG elements don't expose offsetWidth — the usual class-toggle reflow
+  // restart trick is a silent no-op on them (only the first keystroke fired).
   const oracle = document.getElementById('oracle');
   if(!oracle) return;
-  oracle.classList.remove('type-pulse');
-  void oracle.offsetWidth;          // force reflow to restart the animation
-  oracle.classList.add('type-pulse');
+  oracle.animate([
+    { filter: 'drop-shadow(0 0 0 rgba(125,191,184,0))' },
+    { filter: 'drop-shadow(0 0 12px rgba(125,191,184,.7))', offset: 0.4 },
+    { filter: 'drop-shadow(0 0 0 rgba(125,191,184,0))' }
+  ], { duration: 320, easing: 'ease-out' });
 });
 document.getElementById('sql').addEventListener('keydown', e => {
   if(e.key === 'Tab' && !e.target.value && (state.devMode || revealFrac > 0)){
