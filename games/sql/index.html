@@ -342,7 +342,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 29, 2026 · 8:37 PM ET";
+const BUILD_TS = "May 29, 2026 · 8:46 PM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, music: false, sfx: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -751,19 +751,23 @@ function showResult(r){
 }
 
 /* ─── BATTLEFIELD (SVG) ──────────────────────────────────────────────────── */
-const FIELD_W = 800, FIELD_H = 320, BASE_X = 720, ORACLE_X = 710, LANE_TOP = 50, LANE_GAP = 56;
-// 2-row enemy formation centered on the advance line; columns are spaced so the
-// bigger silhouettes don't overlap. Solo enemies (aggregate waves) center vertically.
+const FIELD_W = 800, FIELD_H = 320, BASE_X = 720, ORACLE_X = 690, LANE_TOP = 50, LANE_GAP = 56;
+// Squadron formation — splits the enemies into a top row (front line, ceil N/2)
+// and a bottom row (back line, floor N/2), each centered on the advance line.
+// For odd N the top row is wider, giving a clean arrowhead/pyramid silhouette.
+// Solo enemies (aggregate waves) center vertically.
 function enemyPos(i, en){
-  if(enemiesLive.length === 1) return { x: enemyX(en.advance), y: FIELD_H/2 };
-  const row = i % 2;
-  const col = Math.floor(i / 2);
-  const totalCols = Math.ceil(enemiesLive.length / 2);
-  const centerCol = (totalCols - 1) / 2;
-  const ROW_OFFSET = 64, COL_OFFSET = 58;
+  const N = enemiesLive.length;
+  if(N === 1) return { x: enemyX(en.advance), y: FIELD_H/2 };
+  const topCount = Math.ceil(N / 2);
+  const inTop = i < topCount;
+  const rowCount = inTop ? topCount : (N - topCount);
+  const idxInRow = inTop ? i : (i - topCount);
+  const centerIdx = (rowCount - 1) / 2;
+  const ROW_OFFSET = 52, COL_OFFSET = 64;
   return {
-    x: enemyX(en.advance) + (centerCol - col) * COL_OFFSET,
-    y: FIELD_H/2 + (row === 0 ? -ROW_OFFSET : ROW_OFFSET)
+    x: enemyX(en.advance) + (centerIdx - idxInRow) * COL_OFFSET,
+    y: FIELD_H/2 + (inTop ? -ROW_OFFSET : ROW_OFFSET)
   };
 }
 const ENEMY_MAXHP = 100;   // every enemy starts here; a correct volley chips maxHp/rounds
@@ -807,7 +811,7 @@ function impendingStrike(){
   const a = archOf(atk);
   return a.charge > 0 && ((atk.charge||0)+1) >= a.charge;
 }
-function enemyX(adv){ return 90 + adv * (BASE_X - 150) / 4; } // 4 steps to reach base
+function enemyX(adv){ return 140 + adv * (BASE_X - 200) / 4; } // 4 steps to reach base; shifted right to fit wider squadrons
 
 // Celestial Cartographer theme: the field is a window into a twilight sky.
 // Star positions are generated once so they stay put across the frequent
@@ -900,7 +904,7 @@ function drawField(){
     if(!en.alive) return;
     const { x, y } = enemyPos(i, en);
     const frac = Math.max(0, en.hp) / en.maxHp;
-    const barW = 34, barH = 4, barX = x - barW/2, barY = y - 32;
+    const barW = 38, barH = 4, barX = x - barW/2, barY = y - 40;
     const hpCol = frac > 0.5 ? 'var(--green)' : frac > 0.25 ? 'var(--yellow)' : 'var(--red)';
     s += `<g class="enemy" data-i="${i}">`
       + enemyFigure(x, y, en)
@@ -927,16 +931,16 @@ function starPts(cx, cy, spikes, ro, ri){
 // starburst halo, counter-rotating orbit ring, inner hexagon + glowing core.
 function heroFigure(hx, hy){
   let spokes = '';
-  for(let i=0;i<12;i++){ const a=i/12*Math.PI*2; spokes += `<line x1="${(hx+Math.cos(a)*30).toFixed(1)}" y1="${(hy+Math.sin(a)*30).toFixed(1)}" x2="${(hx+Math.cos(a)*78).toFixed(1)}" y2="${(hy+Math.sin(a)*78).toFixed(1)}" stroke="var(--accent2)" stroke-opacity="0.5" stroke-width="2"/>`; }
+  for(let i=0;i<12;i++){ const a=i/12*Math.PI*2; spokes += `<line x1="${(hx+Math.cos(a)*37).toFixed(1)}" y1="${(hy+Math.sin(a)*37).toFixed(1)}" x2="${(hx+Math.cos(a)*97).toFixed(1)}" y2="${(hy+Math.sin(a)*97).toFixed(1)}" stroke="var(--accent2)" stroke-opacity="0.5" stroke-width="2.2"/>`; }
   let nodes = '';
-  for(let i=0;i<6;i++){ const a=i/6*Math.PI*2; nodes += `<circle cx="${(hx+Math.cos(a)*57).toFixed(1)}" cy="${(hy+Math.sin(a)*57).toFixed(1)}" r="4" fill="var(--accent2)"/>`; }
-  return `<ellipse class="breathe" cx="${hx}" cy="${hy}" rx="88" ry="118" fill="url(#spireGlow)"/>`
-    + `<g class="spin-self s-cw-28"><polygon points="${starPts(hx,hy,6,75,33)}" fill="none" stroke="var(--accent)" stroke-opacity="0.55" stroke-width="2"/>${spokes}</g>`
-    + `<g class="spin-self s-ccw-22"><circle cx="${hx}" cy="${hy}" r="57" fill="none" stroke="var(--accent)" stroke-opacity="0.35" stroke-width="1.4"/>${nodes}</g>`
-    + `<polygon points="${polyPts(hx,hy,6,29,Math.PI/6)}" fill="var(--surf2)" stroke="var(--accent)" stroke-width="2.6"/>`
-    + `<circle id="base-core" class="base-core" cx="${hx}" cy="${hy}" r="21" fill="var(--accent)"/>`
-    + `<polygon points="${polyPts(hx,hy-1,3,12,-Math.PI/2)}" fill="var(--bg)" fill-opacity="0.55"/>`
-    + `<text x="${hx}" y="${FIELD_H-6}" fill="var(--muted)" font-size="14" text-anchor="middle" font-family="var(--mono)">ORACLE</text>`;
+  for(let i=0;i<6;i++){ const a=i/6*Math.PI*2; nodes += `<circle cx="${(hx+Math.cos(a)*71).toFixed(1)}" cy="${(hy+Math.sin(a)*71).toFixed(1)}" r="5" fill="var(--accent2)"/>`; }
+  return `<ellipse class="breathe" cx="${hx}" cy="${hy}" rx="109" ry="146" fill="url(#spireGlow)"/>`
+    + `<g class="spin-self s-cw-28"><polygon points="${starPts(hx,hy,6,93,41)}" fill="none" stroke="var(--accent)" stroke-opacity="0.55" stroke-width="2.2"/>${spokes}</g>`
+    + `<g class="spin-self s-ccw-22"><circle cx="${hx}" cy="${hy}" r="71" fill="none" stroke="var(--accent)" stroke-opacity="0.35" stroke-width="1.5"/>${nodes}</g>`
+    + `<polygon points="${polyPts(hx,hy,6,36,Math.PI/6)}" fill="var(--surf2)" stroke="var(--accent)" stroke-width="2.8"/>`
+    + `<circle id="base-core" class="base-core" cx="${hx}" cy="${hy}" r="26" fill="var(--accent)"/>`
+    + `<polygon points="${polyPts(hx,hy-1,3,15,-Math.PI/2)}" fill="var(--bg)" fill-opacity="0.55"/>`
+    + `<text x="${hx}" y="${FIELD_H-4}" fill="var(--muted)" font-size="14" text-anchor="middle" font-family="var(--mono)">ORACLE</text>`;
 }
 // Void-being archetypes — each wave's foes get a distinct silhouette so the
 // player reads the threat at a glance. Scouts are nimble 3-point shards,
@@ -949,9 +953,9 @@ function heroFigure(hx, hy){
 //   charged  — the heavy-strike damage when a wind-up completes
 // A correct query always interrupts a wind-up (see volley), so good play is safe.
 const ENEMY_ARCH = {
-  scout:  { spikes:3, ro:17, ri:8,  glyph:3, stroke:'#7fdfff', nucleus:'#9fe8ff', halo:'haloScout',  spin:'s-cw-9',  inner:'s-ccw-11', hit:4, charge:0, charged:0 },
-  raider: { spikes:5, ro:20, ri:9,  glyph:5, stroke:'var(--red)', nucleus:'var(--red)', halo:'haloRaider', spin:'s-cw-16', inner:'s-ccw-11', hit:6, charge:2, charged:13 },
-  warden: { spikes:6, ro:21, ri:11, glyph:3, stroke:'#c79bff', nucleus:'#c79bff', halo:'haloWarden', spin:'s-cw-28', inner:'s-ccw-11', hit:8, charge:2, charged:18 }
+  scout:  { spikes:3, ro:21, ri:10, glyph:3, stroke:'#7fdfff', nucleus:'#9fe8ff', halo:'haloScout',  spin:'s-cw-9',  inner:'s-ccw-11', hit:4, charge:0, charged:0 },
+  raider: { spikes:5, ro:25, ri:11, glyph:5, stroke:'var(--red)', nucleus:'var(--red)', halo:'haloRaider', spin:'s-cw-16', inner:'s-ccw-11', hit:6, charge:2, charged:13 },
+  warden: { spikes:6, ro:26, ri:14, glyph:3, stroke:'#c79bff', nucleus:'#c79bff', halo:'haloWarden', spin:'s-cw-28', inner:'s-ccw-11', hit:8, charge:2, charged:18 }
 };
 function archOf(en){ return ENEMY_ARCH[en && en.archetype] || ENEMY_ARCH.warden; }
 // Per-row archetype mapping: lets a single lane render a mix of silhouettes
@@ -965,15 +969,15 @@ function enemyFigure(x, y, en){
   // Telegraph: a primed foe shows a pulsing warning ring + spark — a heavy
   // strike lands on the next wrong query unless a correct one interrupts it.
   const warn = (en && en.primed)
-    ? `<circle class="charge-warn" cx="${x}" cy="${y}" r="27" fill="none" stroke="var(--yellow)" stroke-width="2.4"/>`
-      + `<text x="${x}" y="${y-31}" fill="var(--yellow)" font-size="15" text-anchor="middle">⚡</text>`
+    ? `<circle class="charge-warn" cx="${x}" cy="${y}" r="33" fill="none" stroke="var(--yellow)" stroke-width="2.5"/>`
+      + `<text x="${x}" y="${y-37}" fill="var(--yellow)" font-size="16" text-anchor="middle">⚡</text>`
     : '';
-  return `<circle cx="${x}" cy="${y}" r="27" fill="url(#${a.halo})"/>`
+  return `<circle cx="${x}" cy="${y}" r="33" fill="url(#${a.halo})"/>`
     + warn
-    + `<g class="spin-self ${a.spin}"><polygon class="mote-core" points="${starPts(x,y,a.spikes,a.ro,a.ri)}" fill="#160f1e" stroke="${a.stroke}" stroke-width="2.2" stroke-opacity="0.85"/></g>`
-    + `<g class="spin-self ${a.inner}"><polygon points="${polyPts(x,y,a.glyph,11,-Math.PI/2)}" fill="none" stroke="${a.stroke}" stroke-opacity="0.55" stroke-width="1.2"/></g>`
-    + `<circle cx="${x}" cy="${y}" r="4.5" fill="${a.nucleus}" fill-opacity="0.9"/>`
-    + `<text x="${x}" y="${y+30}" fill="#cdd6ff" font-size="12" text-anchor="middle" font-family="var(--mono)">${esc(String(en.name)).slice(0,8)}</text>`;
+    + `<g class="spin-self ${a.spin}"><polygon class="mote-core" points="${starPts(x,y,a.spikes,a.ro,a.ri)}" fill="#160f1e" stroke="${a.stroke}" stroke-width="2.4" stroke-opacity="0.85"/></g>`
+    + `<g class="spin-self ${a.inner}"><polygon points="${polyPts(x,y,a.glyph,14,-Math.PI/2)}" fill="none" stroke="${a.stroke}" stroke-opacity="0.55" stroke-width="1.3"/></g>`
+    + `<circle cx="${x}" cy="${y}" r="5.5" fill="${a.nucleus}" fill-opacity="0.9"/>`
+    + `<text x="${x}" y="${y+37}" fill="#cdd6ff" font-size="13" text-anchor="middle" font-family="var(--mono)">${esc(String(en.name)).slice(0,8)}</text>`;
 }
 
 const SVGNS = 'http://www.w3.org/2000/svg';
