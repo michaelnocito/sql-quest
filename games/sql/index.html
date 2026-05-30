@@ -373,7 +373,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 30, 2026 · 5:44 PM ET";
+const BUILD_TS = "May 30, 2026 · 6:38 PM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, devMode: true, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, fatalities: 0, hintsUsed: 0, started: Date.now()
@@ -629,7 +629,10 @@ document.getElementById('sql').addEventListener('keydown', e => {
     // already in the editor (this keydown hasn't appended its char yet).
     if(' ;,().'.includes(e.key)){
       const m = (e.target.value || '').match(/(\w+)\s*$/);
-      if(m && SQL_KEYWORDS.includes(m[1].toUpperCase())) setTimeout(playMelodyKeyword, 35);
+      if(m && SQL_KEYWORDS.includes(m[1].toUpperCase())){
+        const kw = m[1].toUpperCase();
+        setTimeout(()=>playMelodyKeyword(kw), 35);
+      }
     }
   }
 });
@@ -1771,20 +1774,92 @@ function playMelodyBackspace(){
   o.connect(g); g.connect(c.destination);
   o.start(); o.stop(c.currentTime + 0.09);
 }
-function playMelodyKeyword(){
+// ── KEYWORD CHARACTERISTIC TONES ──────────────────────────────────────────
+// Every SQL keyword has its own fixed pitch in A-minor. Typing SELECT always
+// lands on E4; FROM always lands on C4; WHERE on G4. A complete query becomes
+// a consistent musical phrase — the same melody every time you write it.
+// All pitches stay inside the same A-minor scale as the background music.
+const KEYWORD_TONES = {
+  // Foundations
+  SELECT:   329.63,  // E4  — central, you hear it most
+  FROM:     261.63,  // C4  — grounding, the base
+  WHERE:    392.00,  // G4  — filtering lifts the pitch
+  AND:      293.66,  // D4  — connector, stays low
+  OR:       440.00,  // A4  — wider option, higher than AND
+  ORDER:    523.25,  // C5  — sorting feels elevated
+  BY:       293.66,  // D4  — pairs with ORDER/GROUP
+  LIMIT:    587.33,  // D5  — capping: the ceiling note
+  DISTINCT: 587.33,  // D5  — clean and high
+  // Joining
+  JOIN:     null,    // two-note: C4→G4 (two tables meeting)
+  LEFT:     261.63,  // C4  — grounding (same as FROM)
+  RIGHT:    261.63,  // C4
+  INNER:    329.63,  // E4
+  ON:       329.63,  // E4  — the link point
+  // Filtering
+  IN:       329.63,  // E4
+  BETWEEN:  null,    // two-note spread: C4→C5 (a range = wide)
+  LIKE:     392.00,  // G4  — pattern = same zone as WHERE
+  IS:       293.66,  // D4
+  NULL:     220.00,  // A3  — low and quiet: nothing there
+  NOT:      220.00,  // A3  — low negation
+  // Aggregates & grouping
+  COUNT:    null,    // descending two-note: G4→C4 (rows collapsing)
+  SUM:      null,    // descending two-note
+  AVG:      null,    // descending two-note
+  MIN:      220.00,  // A3  — the floor
+  MAX:      587.33,  // D5  — the ceiling
+  GROUP:    523.25,  // C5  — bucketing = elevated like ORDER
+  HAVING:   440.00,  // A4  — filtering groups
+  // Aliases & formatting
+  AS:       261.63,  // C4  — simple rename
+};
+
+function playMelodyKeyword(kw){
   if(!state.melody || !state.sfx) return;
   const c = audioCtx();
-  // A bright fifth above the typing range — feels like a confirmation bell.
-  [659.25, 987.77].forEach((f, i)=>{
-    const o = c.createOscillator(), g = c.createGain();
-    o.type = 'sine'; o.frequency.value = f;
-    const t0 = c.currentTime + i*0.018;
-    g.gain.setValueAtTime(0.0001, t0);
-    g.gain.exponentialRampToValueAtTime(0.068, t0 + 0.006);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.32);
-    o.connect(g); g.connect(c.destination);
-    o.start(t0); o.stop(t0 + 0.35);
-  });
+  const tone = KEYWORD_TONES[kw];
+
+  // JOIN / BETWEEN: two-note phrase (two concepts meeting / a range)
+  if(kw === 'JOIN' || kw === 'BETWEEN'){
+    const notes = kw === 'JOIN' ? [261.63, 392.00] : [261.63, 523.25];
+    notes.forEach((f, i)=>{
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      const t0 = c.currentTime + i * 0.13;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.062, t0 + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.30);
+      o.connect(g); g.connect(c.destination);
+      o.start(t0); o.stop(t0 + 0.34);
+    });
+    return;
+  }
+
+  // COUNT / SUM / AVG: descending two-note (rows collapsing into one number)
+  if(kw === 'COUNT' || kw === 'SUM' || kw === 'AVG'){
+    [392.00, 261.63].forEach((f, i)=>{
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      const t0 = c.currentTime + i * 0.11;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.060, t0 + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.28);
+      o.connect(g); g.connect(c.destination);
+      o.start(t0); o.stop(t0 + 0.32);
+    });
+    return;
+  }
+
+  // Single characteristic tone (known keyword) or fallback
+  const f = (tone != null) ? tone : 659.25;
+  const o = c.createOscillator(), g = c.createGain();
+  o.type = 'sine'; o.frequency.value = f;
+  g.gain.setValueAtTime(0.0001, c.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.068, c.currentTime + 0.006);
+  g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.32);
+  o.connect(g); g.connect(c.destination);
+  o.start(); o.stop(c.currentTime + 0.36);
 }
 function playMelodyExecute(sql){
   if(!state.melody || !state.sfx) return;
