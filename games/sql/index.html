@@ -352,7 +352,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 30, 2026 · 10:02 AM ET";
+const BUILD_TS = "May 30, 2026 · 11:18 AM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, devMode: true, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -754,19 +754,23 @@ function runQuery(){
   const ordered = /\border\s+by\b/i.test(currentPhaseSolution());
   if(sameResult(player, expected, ordered)){
     state.correct++;
+    // Decide NOW (synchronously) whether clearing this phase leads to phase 2
+    // or a full wave clear. Passing the flag into fatality/volley avoids any
+    // race between state and a deferred callback reading currentWave() later.
+    const hasNextPhase = !!(w.phases && state.phase < w.phases.length - 1);
     if(!waveFriction){
-      // FATALITY — clean first-try clear. The query landed cold, so we don't
-      // make them drill it more; the lane goes down in one decisive strike.
-      setFb('ok', '⚡ FATALITY — flawless execution. Lane neutralized.');
-      fatality();
+      setFb('ok', hasNextPhase ? '⚡ Shields fractured — phase 2 loading…' : '⚡ FATALITY — flawless execution. Lane neutralized.');
+      fatality(hasNextPhase);
     } else {
       // Friction-ed correct → existing multi-volley chip (they're still drilling).
       const hit = correctHit();
       const willClear = enemiesLive.filter(e=>e.alive).every(e => e.hp - hit <= 0);
-      setFb('ok', willClear
+      setFb('ok', willClear && hasNextPhase
+        ? `Direct hit — shields down! Phase 2 begins.`
+        : willClear
         ? `Direct hit — lane down! Targets neutralized.`
         : `Volley lands for ${hit} — the swarm reels. Hit them again to finish the job.`);
-      volley();
+      volley(hasNextPhase);
     }
   } else {
     // Valid but wrong result set → wasted turn (+ friendly fire if over-broad).
@@ -952,7 +956,7 @@ function drawField(){
     if(!en.alive) return;
     const { x, y } = enemyPos(i, en);
     const frac = Math.max(0, en.hp) / en.maxHp;
-    const barW = 56, barH = 5, barX = x - barW/2, barY = y - 78;
+    const barW = 48, barH = 5, barX = x - barW/2, barY = y - 66;
     const hpCol = frac > 0.5 ? 'var(--green)' : frac > 0.25 ? 'var(--yellow)' : 'var(--red)';
     s += `<g class="enemy" data-i="${i}">`
       + enemyFigure(x, y, en)
@@ -1006,9 +1010,9 @@ function heroFigure(hx, hy){
 //   charged  — the heavy-strike damage when a wind-up completes
 // A correct query always interrupts a wind-up (see volley), so good play is safe.
 const ENEMY_ARCH = {
-  scout:  { spikes:3, ro:42, ri:20, glyph:3, stroke:'#7fdfff', nucleus:'#9fe8ff', halo:'haloScout',  spin:'s-cw-9',  inner:'s-ccw-11', hit:4, charge:0, charged:0 },
-  raider: { spikes:5, ro:50, ri:22, glyph:5, stroke:'var(--red)', nucleus:'var(--red)', halo:'haloRaider', spin:'s-cw-16', inner:'s-ccw-11', hit:6, charge:2, charged:13 },
-  warden: { spikes:6, ro:52, ri:28, glyph:3, stroke:'#c79bff', nucleus:'#c79bff', halo:'haloWarden', spin:'s-cw-28', inner:'s-ccw-11', hit:8, charge:2, charged:18 }
+  scout:  { spikes:3, ro:36, ri:17, glyph:3, stroke:'#7fdfff', nucleus:'#9fe8ff', halo:'haloScout',  spin:'s-cw-9',  inner:'s-ccw-11', hit:4, charge:0, charged:0 },
+  raider: { spikes:5, ro:43, ri:19, glyph:5, stroke:'var(--red)', nucleus:'var(--red)', halo:'haloRaider', spin:'s-cw-16', inner:'s-ccw-11', hit:6, charge:2, charged:13 },
+  warden: { spikes:6, ro:44, ri:24, glyph:3, stroke:'#c79bff', nucleus:'#c79bff', halo:'haloWarden', spin:'s-cw-28', inner:'s-ccw-11', hit:8, charge:2, charged:18 }
 };
 function archOf(en){ return ENEMY_ARCH[en && en.archetype] || ENEMY_ARCH.warden; }
 // Per-row archetype mapping: lets a single lane render a mix of silhouettes
@@ -1022,19 +1026,21 @@ function enemyFigure(x, y, en){
   // Telegraph: a primed foe shows a pulsing warning ring + spark — a heavy
   // strike lands on the next wrong query unless a correct one interrupts it.
   const warn = (en && en.primed)
-    ? `<circle class="charge-warn" cx="${x}" cy="${y}" r="66" fill="none" stroke="var(--yellow)" stroke-width="3"/>`
-      + `<text x="${x}" y="${y-74}" fill="var(--yellow)" font-size="22" text-anchor="middle">⚡</text>`
+    ? `<circle class="charge-warn" cx="${x}" cy="${y}" r="56" fill="none" stroke="var(--yellow)" stroke-width="3"/>`
+      + `<text x="${x}" y="${y-63}" fill="var(--yellow)" font-size="22" text-anchor="middle">⚡</text>`
     : '';
   const shield = (en && en.shielded)
-    ? `<circle class="shield-ring" cx="${x}" cy="${y}" r="${a.ro + 26}" fill="none" stroke="var(--accent2)" stroke-width="2.5"/>`
+    ? `<circle class="shield-ring" cx="${x}" cy="${y}" r="${a.ro + 22}" fill="none" stroke="var(--accent2)" stroke-width="2.5"/>`
     : '';
-  return `<circle cx="${x}" cy="${y}" r="66" fill="url(#${a.halo})"/>`
+  // Show the archetype class name (Warden / Raider / Scout) — not the DB row name.
+  const label = (en.archetype || '').charAt(0).toUpperCase() + (en.archetype || '').slice(1);
+  return `<circle cx="${x}" cy="${y}" r="56" fill="url(#${a.halo})"/>`
     + warn
     + shield
     + `<g class="spin-self ${a.spin}"><polygon class="mote-core" points="${starPts(x,y,a.spikes,a.ro,a.ri)}" fill="#160f1e" stroke="${a.stroke}" stroke-width="3" stroke-opacity="0.85"/></g>`
-    + `<g class="spin-self ${a.inner}"><polygon points="${polyPts(x,y,a.glyph,28,-Math.PI/2)}" fill="none" stroke="${a.stroke}" stroke-opacity="0.55" stroke-width="1.5"/></g>`
-    + `<circle cx="${x}" cy="${y}" r="11" fill="${a.nucleus}" fill-opacity="0.9"/>`
-    + `<text x="${x}" y="${y+74}" fill="#cdd6ff" font-size="14" text-anchor="middle" font-family="var(--mono)">${esc(String(en.name)).slice(0,9)}</text>`;
+    + `<g class="spin-self ${a.inner}"><polygon points="${polyPts(x,y,a.glyph,24,-Math.PI/2)}" fill="none" stroke="${a.stroke}" stroke-opacity="0.55" stroke-width="1.5"/></g>`
+    + `<circle cx="${x}" cy="${y}" r="9" fill="${a.nucleus}" fill-opacity="0.9"/>`
+    + `<text x="${x}" y="${y+63}" fill="#cdd6ff" font-size="13" text-anchor="middle" font-family="var(--mono)">${label}</text>`;
 }
 
 const SVGNS = 'http://www.w3.org/2000/svg';
@@ -1087,7 +1093,7 @@ function applyBaseDmg(dmg){
 // CORRECT query → a volley that chips every living enemy by maxHp/rounds.
 // Repeating the correct query (waveRounds of them) whittles the lane to zero —
 // the Final-Fantasy-style exchange. Survivors creep a step between volleys.
-function volley(){
+function volley(isPhaseKill = false){
   busy = true;
   // A correct query interrupts any wind-up — good play is always safe.
   enemiesLive.forEach(en=>{ en.charge = 0; en.primed = false; });
@@ -1153,9 +1159,7 @@ function volley(){
     if(cleared){
       drawField();
       busy = false;
-      const wc = currentWave();
-      if(wc.phases && state.phase < wc.phases.length - 1){ phaseTransition(); }
-      else { waveCleared(); }
+      isPhaseKill ? phaseTransition() : waveCleared();
     } else {
       drawField();
       // Clear the editor so the next volley is re-typed from memory — the drill.
@@ -1169,7 +1173,9 @@ function volley(){
 // FATALITY — a first-try clean clear (no syntax errors, no wrong tries, no
 // hint clicks, no Tab-borrowing). Every living enemy detonates in a tight
 // stagger, no slow chip; rewards a player who recalled the query cold.
-function fatality(){
+// isPhaseKill: decided synchronously in runQuery() before any animation fires,
+// so there's no risk of reading stale state inside a deferred callback.
+function fatality(isPhaseKill = false){
   busy = true;
   const svg = document.getElementById('field');
   // Interrupt any wind-up — clean play always cancels charges.
@@ -1206,9 +1212,7 @@ function fatality(){
     enemiesLive.forEach(en=>{ en.alive = false; });
     drawField();
     busy = false;
-    const wf = currentWave();
-    if(wf.phases && state.phase < wf.phases.length - 1){ phaseTransition(); }
-    else { waveCleared(true); }
+    isPhaseKill ? phaseTransition() : waveCleared(true);
   }, settle);
 }
 
