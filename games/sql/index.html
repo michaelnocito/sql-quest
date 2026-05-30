@@ -339,7 +339,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 29, 2026 · 8:12 PM ET";
+const BUILD_TS = "May 29, 2026 · 8:22 PM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, music: false, sfx: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -459,11 +459,14 @@ function loadWave(){
   const db = freshDB(w.schema);
   const sol = execQuery(db, w.solution);
   db.close();
+  // Derive each enemy's archetype from its `type` column when present, so a
+  // mixed-type lane (e.g. Wave 6's Raiders OR Wardens) actually LOOKS mixed.
+  // Falls back to the wave's enemyArch for waves whose result has no type.
   enemiesLive = sol.rows.map((row, i) => {
     const obj = {}; sol.columns.forEach((c,j)=>obj[c]=row[j]);
     return {
       name: obj.name || obj.id || ('Target '+(i+1)),
-      archetype: w.enemyArch || 'warden',
+      archetype: archFromType(obj.type) || w.enemyArch || 'warden',
       maxHp: ENEMY_MAXHP, hp: ENEMY_MAXHP, advance: 0, alive: true
     };
   });
@@ -932,6 +935,10 @@ const ENEMY_ARCH = {
   warden: { spikes:6, ro:21, ri:11, glyph:3, stroke:'#c79bff', nucleus:'#c79bff', halo:'haloWarden', spin:'s-cw-28', inner:'s-ccw-11', hit:8, charge:2, charged:18 }
 };
 function archOf(en){ return ENEMY_ARCH[en && en.archetype] || ENEMY_ARCH.warden; }
+// Per-row archetype mapping: lets a single lane render a mix of silhouettes
+// when the result set has a `type` column (Raider/Warden/Scout/etc.).
+const TYPE_TO_ARCH = { 'Raider':'raider', 'Warden':'warden', 'Scout':'scout' };
+function archFromType(t){ return TYPE_TO_ARCH[t] || null; }
 // A void-being — a slow-rotating dark crystal star with a counter-rotating
 // inner glyph and a glowing nucleus. Silhouette varies by archetype.
 function enemyFigure(x, y, en){
