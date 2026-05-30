@@ -284,6 +284,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
     <div class="splash-logo">SQL <span class="q">Quest</span></div>
     <p class="splash-tag">Command your turret with real SQL. Each query is an attack — clear the swarm, learn the language analysts get hired for.</p>
     <button class="btn btn-primary splash-start" onclick="startGame()">▶ Start Campaign</button>
+    <a class="btn btn-ghost splash-start" href="guide.html" style="font-size:13px;margin-top:-4px">📖 Study Guide — all 23 concepts explained</a>
     <div class="splash-build">Build · <span id="build-ts">—</span></div>
   </div>
 </div>
@@ -372,7 +373,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 30, 2026 · 3:28 PM ET";
+const BUILD_TS = "May 30, 2026 · 4:15 PM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, devMode: true, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, fatalities: 0, hintsUsed: 0, started: Date.now()
