@@ -25,7 +25,15 @@ _Nothing in flight._
 - **[P2] Turret muzzle flash + recoil** — make the base feel like it fires, not just the enemies exploding.
 - **[P2] Per-wave combat tuning pass** — once Mike plays it, dial `rounds`/`creep` per wave so each fight reinforces without going stale.
 
+## Milestones (strategic sequence — logged 2026-05-30)
+- **Desktop Prototype 1 (current sprint)** — lock down all desktop experience before going public. Remaining: R25 retest (phase mechanic), R26 retest (audio fix in flight), guide test (Task #55 — Mike to test).
+- **Mobile Prototype 1 (next sprint)** — [P1] force landscape orientation, optimize coding window legibility on phone, ensure graphics + layout parity with desktop. Mike played on mobile — found the experience noticeably worse. Goal: a player on mobile has the same quality experience as desktop.
+- **Expansion Pack: Python** — clone the wave engine for pandas/Python data-manipulation concepts. Cross-promote with the Analyst Prep Kit on GitHub (michaelnocito.github.io/analyst-prep-kit/).
+- **Expansion Pack: Excel** — same engine, Excel formula/analysis concepts.
+- **Expansion Pack: Tableau/BI** — visual analytics concepts (filters, LOD, calcs). All three packs align with the existing prep kit tracks so users naturally flow between them.
+
 ## Parked — revisit before prototype ships
+- **[P2] Companion guide test** — Mike to test guide.html; confirm readability, content accuracy, and print layout. (Task #55 shipped 2026-05-30.)
 - **[P2] Music → ~10 min** — ~5 min through-composed track is good enough for now. Before the prototype is done: extend the SONG toward ~10 min, consider per-difficulty intensity. (Funk/oomph layer shipped 2026-05-28 — un-shelved at Mike's request and added; length still ~5 min.)
 
 ## Later (good ideas, not scheduled)
