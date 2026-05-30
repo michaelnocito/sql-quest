@@ -177,6 +177,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 .overlay.show{display:flex}
 .overlay h2{font-size:1.5rem;margin-bottom:6px}
 .overlay p{color:var(--muted);margin-bottom:16px;max-width:340px}
+.ov-btns{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;align-items:center}
 .overlay .big{font-size:2.4rem;margin-bottom:8px}
 .first-try{font-size:13px;font-weight:700;color:#0e1f1e;background:var(--yellow);padding:3px 12px;border-radius:20px;margin-bottom:12px;display:none}
 .first-try.show{display:inline-block}
@@ -317,7 +318,10 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
       <h2 id="ov-title">Wave Cleared</h2>
       <p id="ov-text"></p>
       <div class="terms-wrap" id="ov-terms"></div>
-      <button class="btn btn-primary" id="ov-btn" onclick="overlayAction()">Next Wave →</button>
+      <div class="ov-btns">
+        <button class="btn btn-ghost" id="ov-btn-secondary" onclick="overlayActionSecondary()" style="display:none">↻ Replay</button>
+        <button class="btn btn-primary" id="ov-btn" onclick="overlayAction()">Next Wave →</button>
+      </div>
     </div>
   </section>
 </main>
@@ -335,7 +339,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 29, 2026 · 8:05 PM ET";
+const BUILD_TS = "May 29, 2026 · 8:12 PM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, music: false, sfx: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -1234,7 +1238,12 @@ function autopilot(){
   const body = `Three misses — so I filled the query in for you. Read why it works, then press <b>Execute</b> to fire it.`
     + (ex.simple ? `<br><br><b style="color:var(--accent2)">${esc(w.concept)}</b> — ${esc(ex.simple)}` : '')
     + (ex.analogy ? `<br><br>🧭 <i style="color:var(--muted)">${esc(ex.analogy)}</i>` : '');
-  showOverlay('🤖', 'Autopilot engaged', body, 'Got it — let me fire it ▶');
+  showOverlay('🤖', 'Autopilot engaged', body, 'Move forward ▶');
+  // Slice 3: agency at the struggle point — let the player replay fresh instead
+  // of just firing the filled answer. Both buttons live in `.ov-btns`.
+  const sec = document.getElementById('ov-btn-secondary');
+  sec.textContent = '↻ Replay this wave';
+  sec.style.display = 'inline-flex';
 }
 
 function updateHP(){
@@ -1287,10 +1296,26 @@ function showOverlay(big, title, text, btn){
   document.getElementById('ov-title').textContent = title;
   document.getElementById('ov-text').innerHTML = text;
   document.getElementById('ov-btn').textContent = btn;
+  // Secondary button is opt-in per-overlay — autopilot turns it on for Replay.
+  document.getElementById('ov-btn-secondary').style.display = 'none';
   document.getElementById('overlay').classList.add('show');
 }
-function hideOverlay(){ document.getElementById('overlay').classList.remove('show'); }
+function hideOverlay(){
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('ov-btn-secondary').style.display = 'none';
+}
+// Reset the current wave from scratch: full HP, fresh attempt counters, no
+// reveal, no autopilot history, no friction — a clean run can still earn fatality.
+function replayWave(){
+  state.baseHP = 100; updateHP();
+  save();
+  loadWave();
+}
 
+function overlayActionSecondary(){
+  const title = document.getElementById('ov-title').textContent;
+  if(title === 'Autopilot engaged'){ hideOverlay(); replayWave(); return; }
+}
 function overlayAction(){
   const title = document.getElementById('ov-title').textContent;
   if(title === 'Autopilot engaged'){ hideOverlay(); document.getElementById('sql').focus(); return; }
