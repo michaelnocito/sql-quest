@@ -231,6 +231,11 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 .cpb-val{color:var(--accent2)}
 .cpb-sep{color:var(--border)}
 .cgoal{font-size:12.5px;color:var(--muted);text-align:center;margin-bottom:4px}
+.cvision{margin-bottom:14px;padding:10px 12px;background:var(--surf2);border:1px solid var(--border);border-radius:6px}
+.cvision-lbl{font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--accent2);margin-bottom:7px;font-weight:600}
+.cvision-chips{display:flex;flex-wrap:wrap;gap:5px}
+.cvision-chip{font-family:var(--mono);font-size:11px;background:var(--surf);border:1px solid var(--border);color:var(--yellow);padding:3px 8px;border-radius:4px}
+.cvision-empty{font-size:13px;color:var(--green);text-align:center;font-weight:600}
 .overlay{position:absolute;inset:0;background:rgba(23,21,19,.86);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;z-index:30;overflow-y:auto}
 .overlay.show{display:flex}
 .overlay h2{font-size:1.5rem;margin-bottom:6px}
@@ -434,7 +439,6 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 
     <div class="ed-row">
       <button class="btn btn-primary" onclick="runQuery()">Execute Query <span class="kbd">Ctrl+↵</span></button>
-      <button class="btn btn-ghost btn-sm" onclick="cycleHint()" id="hint-btn">Show hint</button>
       <button class="btn btn-ghost btn-sm" onclick="formatSQL()" id="format-btn" title="Uppercase SQL keywords (Alt+Shift+F). SQL is case-insensitive — type lowercase, click Format.">Format <span class="kbd">⌥⇧F</span></button>
       <span class="spacer"></span>
       <span class="dev-note" id="dev-hint">Dev mode on — press <span class="kbd">Tab</span> to insert the answer</span>
@@ -447,7 +451,6 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
       <div class="output-h">🔍 Output — what your query returned</div>
       <div id="result"></div>
     </div>
-    <div class="hint" id="hint"></div>
   </section>
 
   <section class="field-pane">
@@ -482,10 +485,10 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 31, 2026 · 2:46 AM ET";
+const BUILD_TS = "May 31, 2026 · 3:18 AM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, devMode: true, music: false, sfx: true, melody: false, theme: 'dark',
-  cleared: [], attempts: 0, correct: 0, fatalities: 0, hintsUsed: 0, started: Date.now()
+  cleared: [], attempts: 0, correct: 0, fatalities: 0, visionWaves: [], started: Date.now()
 };
 let SQLjs = null;          // initSqlJs module
 let enemiesLive = [];      // live battlefield enemies for current wave
@@ -510,7 +513,7 @@ function save(){
     wave: state.wave, baseHP: state.baseHP, devMode: state.devMode,
     music: state.music, sfx: state.sfx, melody: state.melody, theme: state.theme, cleared: state.cleared,
     attempts: state.attempts, correct: state.correct,
-    fatalities: state.fatalities || 0, hintsUsed: state.hintsUsed || 0
+    fatalities: state.fatalities || 0, visionWaves: state.visionWaves || []
   }));
 }
 
@@ -623,8 +626,6 @@ function loadWave(){
   document.getElementById('feedback').className = 'feedback';
   document.getElementById('result').innerHTML = '';
   const ob = document.getElementById('output-block'); if(ob) ob.style.display = 'none';
-  const hintEl = document.getElementById('hint'); hintEl.className = 'hint'; hintEl.innerHTML = '';
-  const hb = document.getElementById('hint-btn'); hb.textContent = 'Show hint'; hb.disabled = false;
 
   // Editor starts empty in both modes. In DEV the solution ghost shows behind
   // (Tab to insert); in player mode the editor is clean until misses reveal it.
@@ -815,28 +816,8 @@ function jumpToWave(idx){
 }
 
 /* ─── HINTS (progressive) ────────────────────────────────────────────────── */
-function cycleHint(){
-  const w = currentWave();
-  const el = document.getElementById('hint');
-  const btn = document.getElementById('hint-btn');
-  if(hintLevel >= w.hints.length){ return; }
-  waveFriction = true;   // peeking at a hint disqualifies a clean fatality
-  waveTries++;           // hint clicks count toward the 3-attempt autopilot threshold
-  state.hintsUsed = (state.hintsUsed || 0) + 1;
-  const txt = w.hints[hintLevel];
-  const isAnswer = hintLevel === w.hints.length - 1;
-  el.innerHTML = isAnswer
-    ? `💡 Full answer:<pre>${esc(txt)}</pre>`
-    : `💡 ${esc(txt)}`;
-  el.classList.add('show');
-  hintLevel++;
-  btn.textContent = hintLevel >= w.hints.length ? 'No more hints' : 'Next hint';
-  if(hintLevel >= w.hints.length) btn.disabled = true;
-  // After incrementing the counter, see if 3 friction events have piled up
-  // (any combo of misses + hints). Don't touch the editor or the miss-reveal
-  // scaffold — the user just clicked for HELP, not made a wrong attempt.
-  if(!state.devMode && waveTries >= AUTOPILOT_AT) autopilot();
-}
+// (cycleHint removed — the persistent grey ghost in the editor IS the hint now.
+//  Wrong/syntax attempts drive the reveal directly; no separate hint button.)
 function esc(s){ return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 /* ─── LANGUAGE MODULE: KEYWORDS + FORMAT BUTTON ──────────────────────────── */
 /* SQL keywords we recognise in our wave set. Used by formatSQL() to uppercase
@@ -877,11 +858,7 @@ function showJob(){
   if(j.example) body += `<div class="job-line eg"><span class="lbl">For example</span>${esc(j.example)}</div>`;
   showOverlay('💼', 'On the job', body, 'Back to the query');
 }
-function pulseHint(){
-  const btn = document.getElementById('hint-btn');
-  if(btn.disabled) return;
-  btn.classList.remove('pulse'); void btn.offsetWidth; btn.classList.add('pulse');
-}
+// (pulseHint removed with the Show hint button.)
 
 /* ─── RUN QUERY ──────────────────────────────────────────────────────────── */
 function runQuery(){
@@ -913,9 +890,7 @@ function runQuery(){
     db.close();
     // Tier 2: syntax error — a failed attempt, lightly punished.
     waveTries++; waveFriction = true;
-    const nudge = waveTries >= 2 ? ' Stuck? Tap “Show hint”.' : '';
-    setFb('err', `Syntax error — check your spelling and punctuation. The swarm clips your base.${nudge} (${e.message})`);
-    if(waveTries >= 2) pulseHint();
+    setFb('err', `Syntax error — check your spelling and punctuation. The swarm clips your base. (${e.message})`);
     syntaxHit();
     applyMissAssist();
     save();
@@ -961,12 +936,10 @@ function runQuery(){
     // Valid but wrong result set → wasted turn (+ friendly fire if over-broad).
     waveTries++; waveFriction = true;
     const fp = falsePositives(player, expected);
-    const nudge = waveTries >= 2 ? ' Stuck? Tap “Show hint”.' : '';
     const heavyNote = impendingStrike() ? ' ⚡ Charged strike incoming — a correct query breaks it!' : '';
     setFb('warn', fp > 0
-      ? `Over-broad — ${fp} stray row${fp!==1?'s':''} hit your own base (friendly fire), and the swarm strikes back. Tighten the filter and fire again.${heavyNote}${nudge}`
-      : `Wrong lock — you targeted ${player.rows.length}, not the right ${expected.rows.length}. The swarm strikes back. Adjust and fire again.${heavyNote}${nudge}`);
-    if(waveTries >= 2) pulseHint();
+      ? `Over-broad — ${fp} stray row${fp!==1?'s':''} hit your own base (friendly fire), and the swarm strikes back. Tighten the filter and fire again.${heavyNote}`
+      : `Wrong lock — you targeted ${player.rows.length}, not the right ${expected.rows.length}. The swarm strikes back. Adjust and fire again.${heavyNote}`);
     missTurn(fp);
     applyMissAssist();
   }
@@ -1586,8 +1559,13 @@ function autopilot(){
   revealFrac = 1;                           // ghost shows full solution
   document.getElementById('editor').value = '';   // fresh canvas to type into
   updateGhost();
-  if(autopiloted) return;                   // hint inline once per wave
+  if(autopiloted) return;                   // cue inline once per wave
   autopiloted = true;
+  // Track which lessons needed the full Vision — surfaced in Course Complete
+  // so the player knows where to drill next run. De-duped per wave id.
+  const wid = currentWave().id;
+  if(!Array.isArray(state.visionWaves)) state.visionWaves = [];
+  if(state.visionWaves.indexOf(wid) === -1){ state.visionWaves.push(wid); save(); }
   setFb('warn', '👁 <b>Oracle\'s Vision</b> reveals the answer — type over the grey letters to channel it.');
 }
 
@@ -1716,9 +1694,6 @@ function phaseTransition(){
     hintLevel = 0;
     setOracleCharge(0);            // phase 2 = clean slate for the power-up
     document.getElementById('editor').value = '';
-    document.getElementById('hint').className = 'hint';
-    document.getElementById('hint').innerHTML = '';
-    const hb = document.getElementById('hint-btn'); hb.textContent = 'Show hint'; hb.disabled = false;
     // Rebuild enemies from phase-2 solution — no shields this time.
     const db = freshDB(w.schema);
     const sol = execQuery(db, w.phases[state.phase].solution);
@@ -1758,7 +1733,7 @@ function resetCampaign(){
   state.baseHP = 100;
   state.cleared = [];
   state.attempts = 0; state.correct = 0;
-  state.fatalities = 0; state.hintsUsed = 0;
+  state.fatalities = 0; state.visionWaves = [];
   state.started = Date.now();
   updateHP();
   save();
@@ -1805,7 +1780,7 @@ function saveProfile(run){
   if(!b.accuracy  || run.accuracy  > b.accuracy)  b.accuracy  = run.accuracy;
   if(!b.baseHP    || run.baseHP    > b.baseHP)    b.baseHP    = run.baseHP;
   if(!b.timeMs    || run.timeMs    < b.timeMs)    b.timeMs    = run.timeMs;
-  if(b.hintsUsed === undefined || run.hintsUsed < b.hintsUsed) b.hintsUsed = run.hintsUsed;
+  if(b.visionCount === undefined || run.visionCount < b.visionCount) b.visionCount = run.visionCount;
   p.best = b; p.lastRun = run;
   localStorage.setItem(PROFILE_LS, JSON.stringify(p));
   return p;
@@ -1818,10 +1793,11 @@ function showCourseComplete(){
   const timeStr = `${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
   const acc = state.attempts ? Math.round(100 * state.correct / state.attempts) : 100;
   const fat = state.fatalities || 0;
-  const hints = state.hintsUsed || 0;
+  const visionIds = Array.isArray(state.visionWaves) ? state.visionWaves : [];
+  const visionCount = visionIds.length;
   const total = WAVES.length;
 
-  const run = { fatalities: fat, accuracy: acc, baseHP: state.baseHP, timeMs, hintsUsed: hints };
+  const run = { fatalities: fat, accuracy: acc, baseHP: state.baseHP, timeMs, visionCount };
   const profile = saveProfile(run);
   const best = profile.best || run;
   const runs = profile.runs || 1;
@@ -1858,8 +1834,19 @@ function showCourseComplete(){
       <span class="cpb-val">${best.fatalities}/${total} first-try</span><span class="cpb-sep">·</span>
       <span class="cpb-val">${best.accuracy}% acc</span><span class="cpb-sep">·</span>
       <span class="cpb-val">${best.baseHP} HP</span><span class="cpb-sep">·</span>
-      <span class="cpb-val">${fmtTime(best.timeMs)}</span>
+      <span class="cpb-val">${fmtTime(best.timeMs)}</span><span class="cpb-sep">·</span>
+      <span class="cpb-val">${best.visionCount} Vision${best.visionCount !== 1 ? 's' : ''}</span>
     </div>` : '';
+
+  // List the lessons that triggered Oracle's Vision — what to drill next run.
+  const visionList = visionCount === 0
+    ? `<div class="cvision-empty">🌟 No Visions needed — you typed every wave cold. Master form.</div>`
+    : `<div class="cvision-lbl">Lessons that needed Oracle's Vision (${visionCount}/${total})</div>`
+      + `<div class="cvision-chips">` + visionIds.map(id => {
+          const w = WAVES.find(x => x.id === id);
+          if(!w) return '';
+          return `<span class="cvision-chip">W${w.id} · ${esc(w.concept)}</span>`;
+        }).join('') + `</div>`;
 
   document.getElementById('complete-screen').innerHTML = `
     <div class="cbox">
@@ -1886,11 +1873,8 @@ function showCourseComplete(){
           <div class="cs-label">Completion time</div>
           <div class="cs-val">${timeStr}</div>
         </div>
-        <div class="cs-row">
-          <div class="cs-label">Hints used</div>
-          <div class="cs-val">${hints}</div>
-        </div>
       </div>
+      <div class="cvision">${visionList}</div>
       ${pbBlock}
       <div class="cgoal">🎯 ${esc(nextGoal)}</div>
       <button class="btn btn-primary" onclick="restartFromComplete()" style="margin-top:16px;width:100%">↻ Play Again</button>
