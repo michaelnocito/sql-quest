@@ -25,6 +25,9 @@ _Nothing in flight._
 - **[P2] Turret muzzle flash + recoil** — make the base feel like it fires, not just the enemies exploding.
 - **[P2] Per-wave combat tuning pass** — once Mike plays it, dial `rounds`/`creep` per wave so each fight reinforces without going stale.
 
+## Future products (spin-offs from this codebase)
+- **[P1] Reusable code-melody module + Windows tray app** — Mike loved the keystroke audio in SQL Quest and wants it available system-wide. Two deliverables: (1) Extract the keystroke melody system from index.html into a standalone `code-melody.js` ES module (zero dependencies, browser + Node). Public API: `attachKeystrokeMelody(textareaElement, { keywords, keywordTones, scale, gradientAnticipation })` — drop into any text editor or web app. (2) Windows tray app shell (Electron or native) that hooks global keystrokes and plays the same melody system-wide while Mike works. Same A-minor harmonic engine, same characteristic-tone keyword map (configurable). Schedule: after desktop prototype lock so we don't churn the current build. Cross-promote with the analyst prep kit + other future expansion games (each game uses the same module).
+
 ## Milestones (strategic sequence — logged 2026-05-30)
 - **Desktop Prototype 1 (current sprint)** — lock down all desktop experience before going public. Remaining: R25 retest (phase mechanic), R26 retest (audio fix in flight), guide test (Task #55 — Mike to test).
 - **Mobile Prototype 1 (next sprint)** — [P1] force landscape orientation, optimize coding window legibility on phone, ensure graphics + layout parity with desktop. Mike played on mobile — found the experience noticeably worse. Goal: a player on mobile has the same quality experience as desktop.
