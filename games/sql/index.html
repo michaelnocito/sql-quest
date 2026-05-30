@@ -27,7 +27,7 @@ a{color:var(--accent);text-decoration:none}
 code{font-family:var(--mono);background:var(--surf2);padding:1px 5px;border-radius:4px;font-size:.85em;color:var(--accent2)}
 
 /* TOP BAR */
-header{background:var(--surf);border-bottom:1px solid var(--border);padding:8px 14px;display:flex;align-items:center;gap:14px;flex-shrink:0;flex-wrap:wrap}
+header{background:var(--surf);border-bottom:1px solid var(--border);padding:8px 14px;display:flex;align-items:center;gap:14px;flex-shrink:0;flex-wrap:wrap;position:relative}
 header .hp-wrap{margin-right:4px}
 header .dev-toggle{margin-left:2px}
 .brand{font-weight:700;font-size:15px;white-space:nowrap}
@@ -50,16 +50,18 @@ header .dev-toggle{margin-left:2px}
 .dev-toggle::after{content:' OFF';opacity:.7}
 .dev-toggle.on::after{content:' ON'}
 
-/* LAYOUT — the battlefield (the action) is ALWAYS visible. On phones it sits on
-   top with the command console scrolling beneath it; on wide screens it's a
-   full-height panel beside the console. The result table never covers the fight. */
-main{flex:1;display:flex;flex-direction:column;min-height:0}
-.editor-pane{flex:1 1 auto;min-height:0;padding:12px 14px;overflow-y:auto;background:var(--bg)}
-.field-pane{order:-1;flex:0 0 42vh;min-height:240px;position:relative;border-bottom:1px solid var(--border);background:linear-gradient(#0b1130,#0e2a2c)}
+/* LAYOUT — MOBILE FIRST. Default targets phone portrait; desktop expands
+   at ≥900px. Mobile stack: header → battlefield (35vh) → scrollable editor
+   pane → sticky action bar at the viewport bottom. The Execute button is
+   never buried by the mobile keyboard, and the result table is capped + scrolls
+   internally so it can never push the editor off-screen. */
+main{flex:1;display:flex;flex-direction:column;min-height:0;position:relative}
+.editor-pane{flex:1 1 auto;min-height:0;padding:12px 14px 76px;overflow-y:auto;background:var(--bg)}
+.field-pane{order:-1;flex:0 0 35vh;min-height:200px;position:relative;border-bottom:1px solid var(--border);background:linear-gradient(#0b1130,#0e2a2c)}
 @media (min-width:900px){
   main{flex-direction:row}
-  .editor-pane{order:0;flex:0 0 40%;max-width:40%;height:100%;border-right:1px solid var(--border)}
-  .field-pane{order:0;flex:1 1 auto;height:100%;min-height:0;border-bottom:none}
+  .editor-pane{order:0;flex:0 0 40%;max-width:40%;height:100%;border-right:1px solid var(--border);padding-bottom:14px}
+  .field-pane{order:0;flex:1 1 auto;height:100%;min-height:0;border-bottom:none;flex-basis:auto}
 }
 
 /* CONCEPT TRACK — shows the whole campaign path: done · current · upcoming */
@@ -270,10 +272,28 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 .break-nudge.show{display:flex}
 .break-nudge .x{margin-left:auto}
 
+/* MOBILE — settings group collapses into a ⚙ panel; sticky action bar */
+.more-group{display:contents}
+#more-btn{display:none}
+@media (max-width:899px){
+  #more-btn{display:flex}
+  .more-group{display:none;position:absolute;top:100%;right:10px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r2);padding:9px;gap:7px;flex-direction:column;align-items:stretch;box-shadow:0 6px 20px rgba(0,0,0,.4);z-index:120;min-width:160px}
+  .more-group.open{display:flex}
+  .more-group .icon-btn,.more-group .dev-jump{width:100%;height:36px;justify-content:flex-start;padding:0 12px;font-size:13px;border-radius:var(--r2)}
+  .more-group .dev-toggle{font-size:12px}
+  /* sticky action bar (Execute / Hint / Format) pinned to viewport bottom */
+  .ed-row{position:fixed;left:0;right:0;bottom:0;margin:0;padding:8px 12px;background:var(--surf);border-top:1px solid var(--border);z-index:50;gap:6px;flex-wrap:nowrap;overflow-x:auto}
+  .ed-row .btn{padding:11px 14px;font-size:14px;flex-shrink:0}
+  .ed-row .btn-primary{flex:1;min-width:0;justify-content:center}
+  .ed-row #format-btn{display:none}            /* hide Format on mobile — pure presentation */
+  .ed-row .dev-note,.ed-row .spacer{display:none}
+  /* result table: cap height, scroll internally — never push the editor off screen */
+  #result{max-height:30vh;overflow-y:auto;margin-top:8px}
+}
 @media (max-width:520px){
   .brand{font-size:14px}
-  .editor-pane{padding:10px}
-  header{gap:7px}
+  .editor-pane{padding:10px 10px 76px}
+  header{gap:7px;padding:7px 10px}
   .hp-wrap{font-size:11px;gap:5px}
   .hp-bar{width:54px}
   .icon-btn{width:30px;height:30px;font-size:15px}
@@ -302,13 +322,16 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
     <div class="hp-bar"><div class="hp-fill" id="hp-fill"></div></div>
     <span id="hp-num">100</span>
   </div>
-  <button class="icon-btn dev-toggle on" id="dev-btn" title="Dev mode — ON: full answer shown (Tab inserts). OFF: player mode — the answer is uncovered over 3 misses, then autopilot." onclick="toggleDev()">DEV</button>
-  <select class="dev-jump" id="dev-jump" aria-label="Jump to wave (dev mode)" title="Jump to any wave (dev)" onchange="jumpToWave(this.value)"></select>
   <button class="icon-btn" id="music-btn" title="Background music on/off" onclick="toggleMusic()">🎵</button>
   <button class="icon-btn" id="sfx-btn" title="Sound effects on/off" onclick="toggleSfx()">🔔</button>
   <button class="icon-btn" id="melody-btn" title="Code-as-melody: typing tones + keyword chimes + execute chord (opt-in; requires SFX on)" onclick="toggleMelody()">🎼</button>
-  <button class="icon-btn" id="theme-btn" title="Theme" onclick="toggleTheme()">◐</button>
-  <button class="icon-btn" id="reset-btn" title="Reset (this wave or all progress)" onclick="showResetOverlay()">↻</button>
+  <button class="icon-btn" id="more-btn" title="More settings" aria-label="More settings" aria-expanded="false" onclick="toggleMore()">⚙</button>
+  <div class="more-group" id="more-group">
+    <button class="icon-btn dev-toggle on" id="dev-btn" title="Dev mode — ON: full answer shown (Tab inserts). OFF: player mode — the answer is uncovered over 3 misses, then autopilot." onclick="toggleDev()">DEV</button>
+    <select class="dev-jump" id="dev-jump" aria-label="Jump to wave (dev mode)" title="Jump to any wave (dev)" onchange="jumpToWave(this.value)"></select>
+    <button class="icon-btn" id="theme-btn" title="Theme" onclick="toggleTheme()">◐</button>
+    <button class="icon-btn" id="reset-btn" title="Reset (this wave or all progress)" onclick="showResetOverlay()">↻</button>
+  </div>
 </header>
 
 <main>
@@ -377,7 +400,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 30, 2026 · 9:48 PM ET";
+const BUILD_TS = "May 30, 2026 · 10:12 PM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, devMode: true, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, fatalities: 0, hintsUsed: 0, started: Date.now()
@@ -2166,6 +2189,26 @@ function dismissBreak(){
 /* ─── THEME ──────────────────────────────────────────────────────────────── */
 function applyTheme(){ document.body.classList.toggle('light', state.theme === 'light'); }
 function toggleTheme(){ state.theme = state.theme === 'light' ? 'dark' : 'light'; applyTheme(); save(); }
+
+/* ─── MOBILE SETTINGS MENU ──────────────────────────────────────────────────
+   On phone-sized screens the DEV / wave-picker / theme / reset controls
+   collapse into a ⚙ button that opens a small dropdown panel anchored to
+   the header. Desktop ignores this entirely (display:contents on the group). */
+function toggleMore(){
+  const g = document.getElementById('more-group');
+  const b = document.getElementById('more-btn');
+  const open = g.classList.toggle('open');
+  if(b) b.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+// Close the more-group when clicking outside it on mobile.
+document.addEventListener('click', (e)=>{
+  const g = document.getElementById('more-group');
+  const b = document.getElementById('more-btn');
+  if(!g || !g.classList.contains('open')) return;
+  if(g.contains(e.target) || (b && b.contains(e.target))) return;
+  g.classList.remove('open');
+  if(b) b.setAttribute('aria-expanded', 'false');
+});
 
 /* ─── INIT ───────────────────────────────────────────────────────────────── */
 async function init(){
