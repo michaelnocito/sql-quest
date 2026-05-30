@@ -372,7 +372,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 30, 2026 · 2:11 PM ET";
+const BUILD_TS = "May 30, 2026 · 3:28 PM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, devMode: true, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, fatalities: 0, hintsUsed: 0, started: Date.now()
@@ -618,6 +618,8 @@ document.getElementById('sql').addEventListener('keydown', e => {
   } else if((e.key === 'F' || e.key === 'f') && e.altKey && e.shiftKey){
     e.preventDefault();
     formatSQL();
+  } else if(e.key === 'Backspace'){
+    playMelodyBackspace();
   } else if(e.key && e.key.length === 1){
     // Code-as-melody Tier 1: a soft pentatonic ping per printable keystroke.
     playMelodyType(e.key);
@@ -1703,16 +1705,40 @@ function keywordPrefixDepth(word){
 function playMelodyType(ch){
   if(!state.melody || !state.sfx) return;
   const c = audioCtx();
-  // Default: low baseline tone for any non-keyword char (digits, identifiers,
-  // string contents, punctuation that's also a word char like underscore, etc.)
+
+  // ── SPACE: soft low thud ── feels like hitting the spacebar
+  if(ch === ' '){
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = 'triangle'; o.frequency.value = 130;
+    g.gain.setValueAtTime(0.0001, c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.038, c.currentTime + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.07);
+    o.connect(g); g.connect(c.destination);
+    o.start(); o.stop(c.currentTime + 0.09);
+    return;
+  }
+
+  // ── PUNCTUATION: crisp bright tick ── operators, brackets, quotes, semicolons
+  if(";,.'()=*><! ".indexOf(ch) >= 0){
+    // slight pitch variety per character code so they don't all sound identical
+    const f = 820 + (ch.charCodeAt(0) % 9) * 55;
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = 'triangle'; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.042, c.currentTime + 0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.048);
+    o.connect(g); g.connect(c.destination);
+    o.start(); o.stop(c.currentTime + 0.06);
+    return;
+  }
+
+  // ── WORD CHARACTERS: gradient anticipation ──
+  // Pitch climbs as you type into a valid SQL keyword prefix (sine = intentional,
+  // brighter). Falls back to a soft triangle ping for non-keyword chars.
   let scaleIdx = 0;
   const ed = document.getElementById('sql');
   const edText = ed ? ed.value : '';
-  // Don't penalize string literal contents — chars inside quotes aren't keywords.
   const insideString = ((edText.match(/'/g) || []).length) % 2 === 1;
-  // Gradient anticipation (Mike's "pin them into typing code a certain way"):
-  // pitch RISES each char that keeps the current word a valid SQL-keyword
-  // prefix; drops to baseline the moment they break the path.
   if(!insideString && /\w/.test(ch)){
     const m = edText.match(/(\w*)$/);
     const newWord = ((m && m[1]) || '') + ch;
@@ -1720,13 +1746,29 @@ function playMelodyType(ch){
     if(depth > 0) scaleIdx = Math.min(MELODY_SCALE.length - 1, depth);
   }
   const f = MELODY_SCALE[scaleIdx];
+  const isKw = scaleIdx > 0;
   const o = c.createOscillator(), g = c.createGain();
-  o.type = 'sine'; o.frequency.value = f;
+  o.type = isKw ? 'sine' : 'triangle';
+  o.frequency.value = f;
   g.gain.setValueAtTime(0.0001, c.currentTime);
-  g.gain.exponentialRampToValueAtTime(0.018, c.currentTime + 0.008);
-  g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.09);
+  g.gain.exponentialRampToValueAtTime(isKw ? 0.048 : 0.030, c.currentTime + 0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + (isKw ? 0.13 : 0.09));
   o.connect(g); g.connect(c.destination);
-  o.start(); o.stop(c.currentTime + 0.11);
+  o.start(); o.stop(c.currentTime + (isKw ? 0.15 : 0.11));
+}
+// Backspace: short downward glide — "undo" feel
+function playMelodyBackspace(){
+  if(!state.melody || !state.sfx) return;
+  const c = audioCtx();
+  const o = c.createOscillator(), g = c.createGain();
+  o.type = 'triangle';
+  o.frequency.setValueAtTime(320, c.currentTime);
+  o.frequency.exponentialRampToValueAtTime(160, c.currentTime + 0.065);
+  g.gain.setValueAtTime(0.0001, c.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.026, c.currentTime + 0.005);
+  g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.07);
+  o.connect(g); g.connect(c.destination);
+  o.start(); o.stop(c.currentTime + 0.09);
 }
 function playMelodyKeyword(){
   if(!state.melody || !state.sfx) return;
@@ -1737,10 +1779,10 @@ function playMelodyKeyword(){
     o.type = 'sine'; o.frequency.value = f;
     const t0 = c.currentTime + i*0.018;
     g.gain.setValueAtTime(0.0001, t0);
-    g.gain.exponentialRampToValueAtTime(0.045, t0 + 0.006);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.28);
+    g.gain.exponentialRampToValueAtTime(0.068, t0 + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.32);
     o.connect(g); g.connect(c.destination);
-    o.start(t0); o.stop(t0 + 0.3);
+    o.start(t0); o.stop(t0 + 0.35);
   });
 }
 function playMelodyExecute(sql){
@@ -1755,10 +1797,10 @@ function playMelodyExecute(sql){
     o.type = 'sine'; o.frequency.value = chord[i];
     const t0 = c.currentTime + i * 0.025;
     g.gain.setValueAtTime(0.0001, t0);
-    g.gain.exponentialRampToValueAtTime(0.04, t0 + 0.04);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.85);
+    g.gain.exponentialRampToValueAtTime(0.058, t0 + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.9);
     o.connect(g); g.connect(c.destination);
-    o.start(t0); o.stop(t0 + 0.9);
+    o.start(t0); o.stop(t0 + 0.95);
   }
 }
 
@@ -1900,18 +1942,8 @@ function playBar(chord, dur, style){
       noiseTick(c, t + off, accent ? 0.020 : 0.011, accent ? 7000 : 5500);
     }
   }
-  // arpeggio — chord tones an octave up, shape varies by section
-  const order = ARP_ORDER[style.arp || 'up'];
-  const tones = chord.pad.map(f=> f * 2);
-  order.forEach((idx, i)=>{
-    const ao = c.createOscillator(), ag = c.createGain();
-    ao.type = 'triangle'; ao.frequency.value = tones[idx];
-    const at = t + (i + 1) * (dur / (order.length + 1));
-    ag.gain.setValueAtTime(0.0001, at);
-    ag.gain.exponentialRampToValueAtTime(arpPk, at + 0.04);
-    ag.gain.exponentialRampToValueAtTime(0.0001, at + 0.6);
-    ao.connect(ag); ag.connect(musicGain); ao.start(at); ao.stop(at + 0.7);
-  });
+  // Arpeggios removed — the typing melody IS the melodic layer now.
+  // Music stays as a clean harmonic bed (pad + bass + groove shaker).
 }
 function startMusic(){
   if(!state.music || musicTimer) return;
