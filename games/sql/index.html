@@ -175,6 +175,25 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 .splash-build{margin-top:22px;font-family:var(--mono);font-size:11px;color:var(--muted);opacity:.8}
 
 /* WAVE OVERLAY (win/lose) */
+/* Course-complete screen — full-page overlay with stats + personal best */
+#complete-screen{position:fixed;inset:0;background:rgba(23,21,19,.95);display:none;align-items:center;justify-content:center;z-index:50;overflow-y:auto;padding:20px}
+#complete-screen.show{display:flex}
+.cbox{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:28px 30px;max-width:420px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.6)}
+.crank{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--yellow);letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
+.ctitle{font-size:22px;font-weight:700;margin-bottom:3px}
+.csub{font-size:13px;color:var(--muted);margin-bottom:22px}
+.cstats{display:flex;flex-direction:column;gap:14px;margin-bottom:20px}
+.cs-row{display:grid;grid-template-columns:1fr auto;align-items:end;gap:6px}
+.cs-label{font-size:11px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;grid-column:1}
+.cs-val{font-size:22px;font-weight:700;line-height:1;text-align:right}
+.cs-sub{font-size:12px;font-weight:400;color:var(--muted)}
+.cs-bar-wrap{grid-column:1/-1;background:var(--surf2);border-radius:3px;height:5px}
+.cs-bar{height:5px;border-radius:3px;transition:width .7s cubic-bezier(.4,0,.2,1)}
+.cpb{display:flex;flex-wrap:wrap;gap:5px 8px;align-items:center;font-size:12px;background:var(--surf2);padding:9px 12px;border-radius:6px;margin-bottom:14px}
+.cpb-lbl{font-weight:600;color:var(--muted);flex-basis:100%}
+.cpb-val{color:var(--accent2)}
+.cpb-sep{color:var(--border)}
+.cgoal{font-size:12.5px;color:var(--muted);text-align:center;margin-bottom:4px}
 .overlay{position:absolute;inset:0;background:rgba(23,21,19,.86);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;z-index:30;overflow-y:auto}
 .overlay.show{display:flex}
 .overlay h2{font-size:1.5rem;margin-bottom:6px}
@@ -341,6 +360,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 
 <div id="toast"></div>
 <div id="confetti"></div>
+<div id="complete-screen"></div>
 <div class="break-nudge" id="break-nudge">
   <span>🧠 You've been locked in a while. A 5–10 min break now keeps your focus sharp — that's how analysts last a full day.</span>
   <button class="btn btn-ghost btn-sm x" onclick="dismissBreak()">Got it</button>
@@ -352,10 +372,10 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 30, 2026 · 12:44 PM ET";
+const BUILD_TS = "May 30, 2026 · 2:11 PM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, devMode: true, music: false, sfx: true, melody: false, theme: 'dark',
-  cleared: [], attempts: 0, correct: 0, started: Date.now()
+  cleared: [], attempts: 0, correct: 0, fatalities: 0, hintsUsed: 0, started: Date.now()
 };
 let SQLjs = null;          // initSqlJs module
 let enemiesLive = [];      // live battlefield enemies for current wave
@@ -379,7 +399,8 @@ function save(){
   localStorage.setItem(LS, JSON.stringify({
     wave: state.wave, baseHP: state.baseHP, devMode: state.devMode,
     music: state.music, sfx: state.sfx, melody: state.melody, theme: state.theme, cleared: state.cleared,
-    attempts: state.attempts, correct: state.correct
+    attempts: state.attempts, correct: state.correct,
+    fatalities: state.fatalities || 0, hintsUsed: state.hintsUsed || 0
   }));
 }
 
@@ -649,6 +670,7 @@ function cycleHint(){
   if(hintLevel >= w.hints.length){ return; }
   waveFriction = true;   // peeking at a hint disqualifies a clean fatality
   waveTries++;           // hint clicks count toward the 3-attempt autopilot threshold
+  state.hintsUsed = (state.hintsUsed || 0) + 1;
   const txt = w.hints[hintLevel];
   const isAnswer = hintLevel === w.hints.length - 1;
   el.innerHTML = isAnswer
@@ -1336,28 +1358,31 @@ function updateHP(){
 function waveCleared(wasFatality){
   const w = currentWave();
   // A "fatality" is the new first-try badge — clean clear, no friction at all.
-  const fatality = !!wasFatality && !waveFriction;
+  const isFatality = !!wasFatality && !waveFriction;
+  if(isFatality) state.fatalities = (state.fatalities || 0) + 1;
   if(!state.cleared.includes(w.id)) state.cleared.push(w.id);
   save();
   celebrate();
-  const last = state.wave >= WAVES.length - 1;
-  const next = last ? null : WAVES[state.wave + 1];
-  const body = last
-    ? `You cleared all ${WAVES.length} waves. Accuracy: ${accuracy()}%. More waves and the Python pack are coming.`
-    : `Concept locked in: <b style="color:var(--accent2)">${esc(w.concept)}</b>. Accuracy: ${accuracy()}%.`
-      + `<br><span style="color:var(--muted);font-size:13px">Next up — Wave ${next.id}: <b style="color:var(--text)">${esc(next.concept)}</b> · ${esc(next.title)}</span>`;
-  showOverlay(fatality ? '⚡' : '🏆', last ? 'Campaign Clear!' : 'Wave Cleared', body,
-    last ? 'Replay from Wave 1' : `Start Wave ${next.id}: ${next.concept} →`);
+  // Last wave → course complete screen instead of regular overlay.
+  if(state.wave >= WAVES.length - 1){
+    if(isFatality) setTimeout(()=>beep(988,130), 360);
+    setTimeout(showCourseComplete, 900);
+    return;
+  }
+  const next = WAVES[state.wave + 1];
+  const body = `Concept locked in: <b style="color:var(--accent2)">${esc(w.concept)}</b>. Accuracy: ${accuracy()}%.`
+    + `<br><span style="color:var(--muted);font-size:13px">Next up — Wave ${next.id}: <b style="color:var(--text)">${esc(next.concept)}</b> · ${esc(next.title)}</span>`;
+  showOverlay(isFatality ? '⚡' : '🏆', 'Wave Cleared', body, `Start Wave ${next.id}: ${next.concept} →`);
   // Fatality bonus — rewards real cold-recall (no peek, no hint, no Tab).
   const badge = document.getElementById('ov-firsttry');
   badge.textContent = '⚡ FATALITY — flawless execution';
-  badge.classList.toggle('show', fatality);
+  badge.classList.toggle('show', isFatality);
   // Vocab chips reinforce the analyst terminology this wave introduced.
   const tw = document.getElementById('ov-terms');
   tw.innerHTML = (w.terms && w.terms.length)
     ? `<div class="terms-label">Terms unlocked</div>` + w.terms.map(t=>`<span class="term-chip">${esc(t)}</span>`).join('')
     : '';
-  if(fatality){ setTimeout(()=>beep(988,130),360); }   // extra sparkle chime
+  if(isFatality){ setTimeout(()=>beep(988,130),360); }
   maybeBreak();
 }
 function waveLost(){
@@ -1464,11 +1489,12 @@ function phaseTransition(){
 
 // Full campaign reset — back to wave 1, no cleared waves, fresh stats.
 function resetCampaign(){
-  state.wave = 0;
+  state.wave = 0; state.phase = 0;
   state.baseHP = 100;
   state.cleared = [];
-  state.attempts = 0;
-  state.correct = 0;
+  state.attempts = 0; state.correct = 0;
+  state.fatalities = 0; state.hintsUsed = 0;
+  state.started = Date.now();
   updateHP();
   save();
   loadWave();
@@ -1499,6 +1525,118 @@ function overlayAction(){
   if(state.wave === 0){ state.baseHP = 100; updateHP(); }
   save();
   loadWave();
+}
+
+/* ─── COURSE COMPLETE + PLAYER PROFILE ──────────────────────────────────── */
+const PROFILE_LS = 'sqlquest_profile';
+function loadProfile(){
+  try{ return JSON.parse(localStorage.getItem(PROFILE_LS)) || {}; }catch(e){ return {}; }
+}
+function saveProfile(run){
+  const p = loadProfile();
+  p.runs = (p.runs || 0) + 1;
+  const b = p.best || {};
+  if(!b.fatalities || run.fatalities > b.fatalities) b.fatalities = run.fatalities;
+  if(!b.accuracy  || run.accuracy  > b.accuracy)  b.accuracy  = run.accuracy;
+  if(!b.baseHP    || run.baseHP    > b.baseHP)    b.baseHP    = run.baseHP;
+  if(!b.timeMs    || run.timeMs    < b.timeMs)    b.timeMs    = run.timeMs;
+  if(b.hintsUsed === undefined || run.hintsUsed < b.hintsUsed) b.hintsUsed = run.hintsUsed;
+  p.best = b; p.lastRun = run;
+  localStorage.setItem(PROFILE_LS, JSON.stringify(p));
+  return p;
+}
+
+function showCourseComplete(){
+  const timeMs = Math.max(0, Date.now() - state.started);
+  const mins = Math.floor(timeMs / 60000);
+  const secs = Math.floor((timeMs % 60000) / 1000);
+  const timeStr = `${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+  const acc = state.attempts ? Math.round(100 * state.correct / state.attempts) : 100;
+  const fat = state.fatalities || 0;
+  const hints = state.hintsUsed || 0;
+  const total = WAVES.length;
+
+  const run = { fatalities: fat, accuracy: acc, baseHP: state.baseHP, timeMs, hintsUsed: hints };
+  const profile = saveProfile(run);
+  const best = profile.best || run;
+  const runs = profile.runs || 1;
+  const isNewBest = runs > 1 && (
+    fat  > (profile.best.fatalities || 0) ||
+    acc  > (profile.best.accuracy   || 0) ||
+    state.baseHP > (profile.best.baseHP  || 0)
+  );
+
+  // Rank title (celestial theme)
+  const rank = fat >= 21 ? 'Grand Oracle' :
+               fat >= 16 ? 'Oracle' :
+               fat >= 11 ? 'Adept' :
+               fat >= 5  ? 'Apprentice' : 'Initiate';
+
+  // Next run goal — first gap
+  const nextGoal =
+    fat  < total  ? `Beat your clears: aim for ${Math.min(fat + 3, total)} first-try waves` :
+    acc  < 95     ? `Hit 95% accuracy — tighten those filters` :
+    state.baseHP < 100 ? `Finish at full HP — zero wrong guesses` :
+    `Perfect run — every concept landed cold.`;
+
+  const bar = (frac, col) =>
+    `<div class="cs-bar-wrap"><div class="cs-bar" style="width:${Math.round(Math.min(1,frac)*100)}%;background:${col}"></div></div>`;
+
+  const fmtTime = ms => {
+    const m=Math.floor(ms/60000), s=Math.floor((ms%60000)/1000);
+    return `${m}m ${s < 10 ? '0' : ''}${s}s`;
+  };
+
+  const pbBlock = runs > 1 ? `
+    <div class="cpb">
+      <span class="cpb-lbl">Personal best${isNewBest ? ' 🆕' : ''}</span>
+      <span class="cpb-val">${best.fatalities}/${total} first-try</span><span class="cpb-sep">·</span>
+      <span class="cpb-val">${best.accuracy}% acc</span><span class="cpb-sep">·</span>
+      <span class="cpb-val">${best.baseHP} HP</span><span class="cpb-sep">·</span>
+      <span class="cpb-val">${fmtTime(best.timeMs)}</span>
+    </div>` : '';
+
+  document.getElementById('complete-screen').innerHTML = `
+    <div class="cbox">
+      <div class="crank">${rank}${runs > 1 ? ` · Run ${runs}` : ''}</div>
+      <div class="ctitle">Course Complete</div>
+      <div class="csub">All ${total} waves cleared · SQL analyst curriculum complete</div>
+      <div class="cstats">
+        <div class="cs-row">
+          <div class="cs-label">First-try clears</div>
+          <div class="cs-val">${fat} <span class="cs-sub">/ ${total}</span></div>
+          ${bar(fat/total,'var(--yellow)')}
+        </div>
+        <div class="cs-row">
+          <div class="cs-label">Query accuracy</div>
+          <div class="cs-val">${acc}<span class="cs-sub">%</span></div>
+          ${bar(acc/100,'var(--accent)')}
+        </div>
+        <div class="cs-row">
+          <div class="cs-label">Base integrity</div>
+          <div class="cs-val">${state.baseHP} <span class="cs-sub">/ 100 HP</span></div>
+          ${bar(state.baseHP/100,'var(--green)')}
+        </div>
+        <div class="cs-row">
+          <div class="cs-label">Completion time</div>
+          <div class="cs-val">${timeStr}</div>
+        </div>
+        <div class="cs-row">
+          <div class="cs-label">Hints used</div>
+          <div class="cs-val">${hints}</div>
+        </div>
+      </div>
+      ${pbBlock}
+      <div class="cgoal">🎯 ${esc(nextGoal)}</div>
+      <button class="btn btn-primary" onclick="restartFromComplete()" style="margin-top:16px;width:100%">↻ Play Again</button>
+    </div>`;
+  document.getElementById('complete-screen').classList.add('show');
+  beep(523,80); setTimeout(()=>beep(659,100),120); setTimeout(()=>beep(784,130),250); setTimeout(()=>beep(1047,200),420);
+}
+
+function restartFromComplete(){
+  document.getElementById('complete-screen').classList.remove('show');
+  resetCampaign();
 }
 
 /* ─── AUDIO (focus hum + chimes) ─────────────────────────────────────────── */
