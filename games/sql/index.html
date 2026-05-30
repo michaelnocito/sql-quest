@@ -273,6 +273,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
   <button class="icon-btn" id="music-btn" title="Background music on/off" onclick="toggleMusic()">🎵</button>
   <button class="icon-btn" id="sfx-btn" title="Sound effects on/off" onclick="toggleSfx()">🔔</button>
   <button class="icon-btn" id="theme-btn" title="Theme" onclick="toggleTheme()">◐</button>
+  <button class="icon-btn" id="reset-btn" title="Reset (this wave or all progress)" onclick="showResetOverlay()">↻</button>
 </header>
 
 <main>
@@ -339,7 +340,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 29, 2026 · 8:22 PM ET";
+const BUILD_TS = "May 29, 2026 · 8:25 PM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, music: false, sfx: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -1318,15 +1319,35 @@ function replayWave(){
   save();
   loadWave();
 }
+// Full campaign reset — back to wave 1, no cleared waves, fresh stats.
+function resetCampaign(){
+  state.wave = 0;
+  state.baseHP = 100;
+  state.cleared = [];
+  state.attempts = 0;
+  state.correct = 0;
+  updateHP();
+  save();
+  loadWave();
+}
+// Title-bar ↻ button: opens the shared overlay with two choices.
+function showResetOverlay(){
+  showOverlay('↻', 'Reset', 'Pick what to reset:', '↻ Reset this wave');
+  const sec = document.getElementById('ov-btn-secondary');
+  sec.textContent = '⟲ Reset all progress';
+  sec.style.display = 'inline-flex';
+}
 
 function overlayActionSecondary(){
   const title = document.getElementById('ov-title').textContent;
   if(title === 'Autopilot engaged'){ hideOverlay(); replayWave(); return; }
+  if(title === 'Reset'){ hideOverlay(); resetCampaign(); return; }
 }
 function overlayAction(){
   const title = document.getElementById('ov-title').textContent;
   if(title === 'Autopilot engaged'){ hideOverlay(); document.getElementById('sql').focus(); return; }
   if(title === 'On the job'){ hideOverlay(); return; }
+  if(title === 'Reset'){ hideOverlay(); replayWave(); return; }
   if(title === 'Base Overrun'){
     state.baseHP = 100; updateHP(); save(); loadWave(); return;
   }
