@@ -342,7 +342,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 29, 2026 · 8:52 PM ET";
+const BUILD_TS = "May 29, 2026 · 9:01 PM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, music: false, sfx: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -474,7 +474,7 @@ function loadWave(){
     };
   });
   document.getElementById('field-status').textContent =
-    `${enemiesLive.length} void-mote${enemiesLive.length!==1?'s':''} drifting toward the Oracle — weave the right query each turn to scatter them.`;
+    `${enemiesLive.length} void-mote${enemiesLive.length!==1?'s':''} hold the line against the Oracle — weave the right query to scatter them.`;
   drawField();
   hideOverlay();
 }
@@ -728,7 +728,7 @@ function runQuery(){
     const heavyNote = impendingStrike() ? ' ⚡ Charged strike incoming — a correct query breaks it!' : '';
     setFb('warn', fp > 0
       ? `Over-broad — ${fp} stray row${fp!==1?'s':''} hit your own base (friendly fire), and the swarm strikes back. Tighten the filter and fire again.${heavyNote}${nudge}`
-      : `Wrong lock — you targeted ${player.rows.length}, not the right ${expected.rows.length}. The swarm strikes back and edges closer. Adjust and fire again.${heavyNote}${nudge}`);
+      : `Wrong lock — you targeted ${player.rows.length}, not the right ${expected.rows.length}. The swarm strikes back. Adjust and fire again.${heavyNote}${nudge}`);
     if(waveTries >= 2) pulseHint();
     missTurn(fp);
     applyMissAssist();
@@ -772,10 +772,10 @@ function enemyPos(i, en){
 }
 const ENEMY_MAXHP = 100;   // every enemy starts here; a correct volley chips maxHp/rounds
 const FF_DMG = 4;          // friendly-fire: base HP lost per over-broad (false-positive) row
-const BASE_REACH_DMG = 14; // base HP lost for each enemy that creeps all the way in
+// (creep mechanic removed — FF-style combat now: enemies hold their squadron on the left, the Oracle on the right, animations travel between)
 function laneY(i){ return LANE_TOP + i * LANE_GAP; }
 function waveRounds(){ const r = currentWave().rounds; return (r && r > 0) ? r : 3; }
-function waveCreep(){ const c = currentWave().creep; return (c != null) ? c : 0.12; }
+// waveCreep() removed with the creep mechanic; `creep` field in waves.js is now ignored data.
 function correctHit(){ return Math.ceil(ENEMY_MAXHP / waveRounds()); }
 /* Layered attack: derive a tier (1–5) from how many operative SQL clauses
    the wave's solution uses. Each new concept layer = a richer volley VFX.
@@ -1018,18 +1018,8 @@ function spawnDmg(svg, x, y, text, cls){
   setTimeout(()=>t.remove(), 820);
 }
 
-// Slow ambient advance for every living enemy. Returns base damage from any
-// that reached the wall this turn. Early waves creep so slowly it's mostly
-// just visible movement, not a real threat.
-function creepEnemies(){
-  let reachDmg = 0;
-  enemiesLive.forEach(en=>{
-    if(!en.alive) return;
-    en.advance = Math.min(4, en.advance + waveCreep());
-    if(en.advance >= 4) reachDmg += BASE_REACH_DMG;
-  });
-  return reachDmg;
-}
+// (creepEnemies removed — FF-style stationary combat. en.advance stays at 0
+//  for the life of the wave; enemyX() returns the fixed squadron X.)
 function applyBaseDmg(dmg){
   if(dmg <= 0) return;
   state.baseHP = Math.max(0, state.baseHP - dmg);
@@ -1108,9 +1098,7 @@ function volley(){
       busy = false;
       waveCleared();
     } else {
-      const reach = creepEnemies();
       drawField();
-      applyBaseDmg(reach);
       // Clear the editor so the next volley is re-typed from memory — the drill.
       const ed = document.getElementById('sql'); ed.value = ''; updateGhost();
       busy = false;
@@ -1204,18 +1192,15 @@ function enemyAttack(){
 }
 
 // VALID-but-WRONG query → the enemy gets its turn and strikes you for a little
-// damage. Over-broad (false-positive) rows add friendly-fire on top, and the
-// swarm still creeps a free step.
+// damage. Over-broad (false-positive) rows add friendly-fire on top.
 function missTurn(falsePos){
   busy = true;
-  const reach = creepEnemies();
-  drawField();
   enemyAttack();                                 // the swarm hits back
   const ffDmg = Math.min(falsePos, 6) * FF_DMG;  // extra self-inflicted hits if over-broad
   if(ffDmg > 0){
-    setTimeout(()=>{ spawnDmg(document.getElementById('field'), BASE_X, FIELD_H/2 + 24, '-' + ffDmg + ' FF', 'dmg-ff'); }, 300);
+    setTimeout(()=>{ spawnDmg(document.getElementById('field'), ORACLE_X, FIELD_H/2 + 24, '-' + ffDmg + ' FF', 'dmg-ff'); }, 300);
+    applyBaseDmg(ffDmg);
   }
-  applyBaseDmg(reach + ffDmg);
   setTimeout(()=>{
     busy = false;
     if(state.baseHP <= 0) waveLost();
