@@ -454,7 +454,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 31, 2026 · 1:34 AM ET";
+const BUILD_TS = "May 31, 2026 · 2:08 AM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, devMode: true, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, fatalities: 0, hintsUsed: 0, started: Date.now()
@@ -906,8 +906,16 @@ function runQuery(){
     // or a full wave clear. Passing the flag into fatality/volley avoids any
     // race between state and a deferred callback reading currentWave() later.
     const hasNextPhase = !!(w.phases && state.phase < w.phases.length - 1);
-    if(!waveFriction){
-      setFb('ok', hasNextPhase ? '⚡ Shields fractured — phase 2 loading…' : '⚡ FATALITY — flawless execution. Lane neutralized.');
+    // Cold first-try → fatality. Autopiloted typing-through → ALSO fatality
+    // (reward for completing the guided journey: Mike's "make their winning
+    // attempt perform fatality as a reward" when they reach the full Vision).
+    if(!waveFriction || autopiloted){
+      const visionWin = autopiloted && waveFriction;
+      setFb('ok', hasNextPhase
+        ? '⚡ Shields fractured — phase 2 loading…'
+        : (visionWin
+            ? '👁 ORACLE\'S VISION — channeled to victory. Lane neutralized.'
+            : '⚡ FATALITY — flawless execution. Lane neutralized.'));
       fatality(hasNextPhase);
     } else {
       // Friction-ed correct → existing multi-volley chip (they're still drilling).
@@ -1536,28 +1544,19 @@ function applyMissAssist(){
 
 // AUTOPILOT — fills the solution, explains the concept in human terms with a
 // non-tech analogy, then hands back so the player fires it themselves.
-// ORACLE'S VISION — at 3 misses the Oracle reveals the full solution as a
-// PERSISTENT grey ghost in the editor. The player still has to type the answer
-// themselves (no auto-fill); typing over the grey turns it bright. This keeps
-// learn-by-typing alive even when the player needs full guidance.
+// ORACLE'S VISION — at 3 misses the Oracle silently reveals the full solution
+// as a persistent grey ghost in the editor. NO overlay popup interrupts —
+// the grey text IS the cue. The player must type through to finish (no
+// escape hatch). Completing the wave from here triggers a fatality animation
+// as the reward — see runQuery() correct path. The Oracle's Vision
+// celebration screen shows AFTER the win, not before — see waveCleared().
 function autopilot(){
   revealFrac = 1;                           // ghost shows full solution
-  // Clear the editor so the player starts the type-over from scratch.
-  document.getElementById('editor').value = '';
+  document.getElementById('editor').value = '';   // fresh canvas to type into
   updateGhost();
-  if(autopiloted) return;                   // explain once per wave
+  if(autopiloted) return;                   // hint inline once per wave
   autopiloted = true;
-  const w = currentWave();
-  const ex = w.explain || {};
-  const body = `The Oracle reveals the answer in your terminal as a grey vision. <b>Type over the grey text</b> — your typing turns the letters bright. Then press <b>Execute</b> to fire.`
-    + (ex.simple ? `<br><br><b style="color:var(--accent2)">${esc(w.concept)}</b> — ${esc(ex.simple)}` : '')
-    + (ex.analogy ? `<br><br>👁 <i style="color:var(--muted)">${esc(ex.analogy)}</i>` : '');
-  showOverlay('👁', "Oracle's Vision", body, 'Begin typing →');
-  // Secondary: agency at the struggle point — replay the wave fresh instead
-  // of typing through the vision. Becomes "Reweave" in Slice C.
-  const sec = document.getElementById('ov-btn-secondary');
-  sec.textContent = '↻ Replay this wave';
-  sec.style.display = 'inline-flex';
+  setFb('warn', '👁 <b>Oracle\'s Vision</b> reveals the answer — type over the grey letters to channel it.');
 }
 
 function updateHP(){
@@ -1570,26 +1569,36 @@ function updateHP(){
 /* ─── WIN / LOSE ─────────────────────────────────────────────────────────── */
 function waveCleared(wasFatality){
   const w = currentWave();
-  // A "fatality" is the new first-try badge — clean clear, no friction at all.
-  const isFatality = !!wasFatality && !waveFriction;
-  if(isFatality) state.fatalities = (state.fatalities || 0) + 1;
+  // Cold-recall fatality (no friction at all) is the gold standard. An
+  // autopiloted typing-through win ALSO gets the fatality animation as
+  // reward — but the recognition screen marks it differently.
+  const isColdFatality = !!wasFatality && !waveFriction;
+  const isVisionWin    = !!wasFatality && autopiloted;
+  const showFatalityVibe = isColdFatality || isVisionWin;
+  if(isColdFatality) state.fatalities = (state.fatalities || 0) + 1;
   if(!state.cleared.includes(w.id)) state.cleared.push(w.id);
   save();
   celebrate();
   // Last wave → course complete screen instead of regular overlay.
   if(state.wave >= WAVES.length - 1){
-    if(isFatality) setTimeout(()=>beep(988,130), 360);
+    if(showFatalityVibe) setTimeout(()=>beep(988,130), 360);
     setTimeout(showCourseComplete, 900);
     return;
   }
   const next = WAVES[state.wave + 1];
-  const body = `Concept locked in: <b style="color:var(--accent2)">${esc(w.concept)}</b>. Accuracy: ${accuracy()}%.`
-    + `<br><span style="color:var(--muted);font-size:13px">Next up — Wave ${next.id}: <b style="color:var(--text)">${esc(next.concept)}</b> · ${esc(next.title)}</span>`;
-  showOverlay(isFatality ? '⚡' : '🏆', 'Wave Cleared', body, `Start Wave ${next.id}: ${next.concept} →`);
-  // Fatality bonus — rewards real cold-recall (no peek, no hint, no Tab).
+  const overlayTitle = isVisionWin ? "Oracle's Vision" : 'Wave Cleared';
+  const overlayIcon  = isVisionWin ? '👁' : (isColdFatality ? '⚡' : '🏆');
+  const body = isVisionWin
+    ? `You channeled the Vision and finished the wave. <b style="color:var(--accent2)">${esc(w.concept)}</b> is yours now — next time, try it cold.`
+      + `<br><span style="color:var(--muted);font-size:13px">Next up — Wave ${next.id}: <b style="color:var(--text)">${esc(next.concept)}</b> · ${esc(next.title)}</span>`
+    : `Concept locked in: <b style="color:var(--accent2)">${esc(w.concept)}</b>. Accuracy: ${accuracy()}%.`
+      + `<br><span style="color:var(--muted);font-size:13px">Next up — Wave ${next.id}: <b style="color:var(--text)">${esc(next.concept)}</b> · ${esc(next.title)}</span>`;
+  showOverlay(overlayIcon, overlayTitle, body, `Start Wave ${next.id}: ${next.concept} →`);
+  // Fatality badge — only for cold-recall wins. Vision wins are recognized
+  // by the overlay title itself (no double-badge needed).
   const badge = document.getElementById('ov-firsttry');
   badge.textContent = '⚡ FATALITY — flawless execution';
-  badge.classList.toggle('show', isFatality);
+  badge.classList.toggle('show', isColdFatality);
   // Vocab chips reinforce the analyst terminology this wave introduced.
   const tw = document.getElementById('ov-terms');
   tw.innerHTML = (w.terms && w.terms.length)
