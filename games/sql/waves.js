@@ -106,6 +106,47 @@ window.WAVES = [
 
   {
     id: 3,
+    concept: "SELECT DISTINCT",
+    enemyArch: "raider",
+    title: "Sensor Noise",
+    briefing: "The sensor array is logging duplicate contacts — each enemy was detected more than once. Your query returns one row per detection unless you tell it otherwise. Use <code>DISTINCT</code> to collapse the repeats into a clean target list.",
+    objective: "Return each enemy once — no duplicates. Hint: add DISTINCT right after SELECT to keep only unique rows.",
+    realWorld: "Real tables accumulate duplicates through event logs, joins, and ETL pipelines. SELECT DISTINCT is how you cut through to the unique values.",
+    layer: "modify",
+    rounds: 3,
+    creep: 0.11,
+    reinforces: ["SELECT"],
+    starter: "SELECT DISTINCT ____, ____ FROM enemies;",
+    solution: "SELECT DISTINCT name, type FROM enemies;",
+    explain: {
+      simple: "DISTINCT filters the result set down to unique rows only — any row that's an exact copy of another is dropped. It sits right after SELECT, before the column list.",
+      analogy: "Like calling roll in a class where some students appear twice on the sheet — you mark each name once and skip the repeat."
+    },
+    onTheJob: {
+      uses: "Duplicates sneak in through logging, joins, and pipelines. SELECT DISTINCT is the quick sanity-check: how many unique values actually exist in this column?",
+      example: "\"How many distinct product categories do we sell?\" — SELECT DISTINCT category FROM products."
+    },
+    schema: `
+      CREATE TABLE enemies (id INTEGER, name TEXT, type TEXT, health INTEGER);
+      INSERT INTO enemies VALUES
+        (1,'Vex','Raider',60),
+        (1,'Vex','Raider',60),
+        (2,'Pip','Scout',25),
+        (2,'Pip','Scout',25),
+        (3,'Maul','Raider',70),
+        (4,'Glider','Scout',30),
+        (4,'Glider','Scout',30);
+    `,
+    hints: [
+      "The table has duplicate rows — you want one entry per unique contact.",
+      "DISTINCT goes right after SELECT: SELECT DISTINCT name, type FROM ...",
+      "SELECT DISTINCT name, type FROM enemies;"
+    ],
+    terms: ["SELECT DISTINCT", "deduplication", "unique values"]
+  },
+
+  {
+    id: 4,
     concept: "WHERE",
     enemyArch: "raider",
     title: "Hold Your Fire",
@@ -144,7 +185,7 @@ window.WAVES = [
   },
 
   {
-    id: 4,
+    id: 5,
     concept: "WHERE (numbers)",
     enemyArch: "raider",
     title: "Heavy Armor",
@@ -183,7 +224,7 @@ window.WAVES = [
   },
 
   {
-    id: 5,
+    id: 6,
     concept: "AND",
     enemyArch: "raider",
     title: "Confirmed Hostiles",
@@ -222,7 +263,7 @@ window.WAVES = [
   },
 
   {
-    id: 6,
+    id: 7,
     concept: "OR",
     enemyArch: "raider",
     title: "Multiple Targets",
@@ -262,7 +303,7 @@ window.WAVES = [
   },
 
   {
-    id: 7,
+    id: 8,
     concept: "ORDER BY",
     enemyArch: "warden",
     title: "Threat Priority",
@@ -301,7 +342,7 @@ window.WAVES = [
   },
 
   {
-    id: 8,
+    id: 9,
     concept: "LIMIT",
     enemyArch: "warden",
     title: "Top Threats Only",
@@ -341,7 +382,7 @@ window.WAVES = [
   },
 
   {
-    id: 9,
+    id: 10,
     concept: "JOIN",
     enemyArch: "warden",
     title: "Mark the Bounties",
@@ -380,10 +421,88 @@ window.WAVES = [
     terms: ["JOIN", "key", "ON", "table alias"]
   },
 
+  {
+    id: 11,
+    concept: "LEFT JOIN",
+    enemyArch: "warden",
+    title: "Off the Books",
+    briefing: "Command authorized bounties on some contacts — but two are completely off the books. An INNER JOIN would silently drop them from the readout. <code>LEFT JOIN</code> keeps every enemy, bounty or not.",
+    objective: "Return all enemies — including those with no bounty. Hint: LEFT JOIN keeps all rows from the left table, filling NULL where there's no right-side match.",
+    realWorld: "INNER JOIN silently drops unmatched rows. LEFT JOIN keeps them — essential when 'no match' is itself meaningful data.",
+    layer: "scratch",
+    rounds: 4,
+    creep: 0,
+    reinforces: ["JOIN"],
+    starter: "SELECT e.id, e.name, e.type, e.health\nFROM enemies e\n____ JOIN rewards r ON e.id = r.enemy_id;",
+    solution: "SELECT e.id, e.name, e.type, e.health FROM enemies e LEFT JOIN rewards r ON e.id = r.enemy_id;",
+    explain: {
+      simple: "LEFT JOIN keeps every row from the left table. When the right table has no match, the right-side columns come back as NULL — but the left-side row is never dropped. INNER JOIN would have cut those rows silently.",
+      analogy: "Like a class photo where some students forgot their permission slip — you still include them in the picture, their slip column just says blank."
+    },
+    onTheJob: {
+      uses: "LEFT JOIN is how you find 'orphans' — customers with no orders, users with no activity, products with no sales. You can't see what's missing with an INNER JOIN.",
+      example: "\"Which customers have never placed an order?\" — LEFT JOIN customers to orders; any customer with no matching order shows up with NULLs on the orders side."
+    },
+    schema: `
+      CREATE TABLE enemies (id INTEGER, name TEXT, type TEXT, health INTEGER);
+      INSERT INTO enemies VALUES
+        (1,'Vex','Raider',60),
+        (2,'Pip','Scout',25),
+        (3,'Maul','Raider',70),
+        (4,'Glider','Scout',30);
+      CREATE TABLE rewards (enemy_id INTEGER, bounty INTEGER);
+      INSERT INTO rewards VALUES (1,500),(3,750);
+    `,
+    hints: [
+      "You need all 4 contacts in the result — even Pip and Glider who have no bounty.",
+      "LEFT JOIN keeps all left-table rows: FROM enemies e LEFT JOIN rewards r ON e.id = r.enemy_id",
+      "SELECT e.id, e.name, e.type, e.health FROM enemies e LEFT JOIN rewards r ON e.id = r.enemy_id;"
+    ],
+    terms: ["LEFT JOIN", "outer join", "NULL for no match", "unmatched rows"]
+  },
+
+  {
+    id: 12,
+    concept: "IS NULL",
+    enemyArch: "scout",
+    title: "Dark Contacts",
+    briefing: "Two contacts have no known weakness on file. <code>NULL</code> means the data is missing entirely — not zero, not an empty string. Use <code>IS NULL</code> to surface the unknowns.",
+    objective: "Return only enemies with no weakness on record. Hint: WHERE weakness IS NULL — you can't use = NULL, it won't work.",
+    realWorld: "NULL means 'unknown' or 'not recorded'. IS NULL and IS NOT NULL are the only reliable way to filter for missing data — = NULL silently returns nothing.",
+    layer: "modify",
+    rounds: 3,
+    creep: 0,
+    reinforces: ["WHERE"],
+    starter: "SELECT * FROM enemies WHERE weakness ____ NULL;",
+    solution: "SELECT * FROM enemies WHERE weakness IS NULL;",
+    explain: {
+      simple: "NULL is not a value — it's the absence of one. You can't test it with = because NULL = NULL is undefined in SQL. IS NULL is the correct operator: 'this field has no data'.",
+      analogy: "Like asking 'who handed in a blank form?' — you can't search for a blank by typing an answer; you have to ask specifically for forms with nothing written."
+    },
+    onTheJob: {
+      uses: "Missing data is everywhere — optional fields, failed lookups, late entries. IS NULL finds the gaps; IS NOT NULL filters to only rows with data.",
+      example: "\"Which customers haven't provided a phone number?\" — WHERE phone IS NULL."
+    },
+    schema: `
+      CREATE TABLE enemies (id INTEGER, name TEXT, type TEXT, health INTEGER, weakness TEXT);
+      INSERT INTO enemies VALUES
+        (1,'Vex','Raider',60,'plasma'),
+        (2,'Pip','Scout',25,NULL),
+        (3,'Maul','Raider',70,NULL),
+        (4,'Glider','Scout',30,'cryo');
+    `,
+    hints: [
+      "Two enemies have no weakness recorded. NULL means the data is missing — not zero.",
+      "IS NULL tests for missing data: WHERE weakness IS NULL",
+      "SELECT * FROM enemies WHERE weakness IS NULL;"
+    ],
+    terms: ["NULL", "IS NULL", "IS NOT NULL", "missing data"]
+  },
+
   /* ── TIER 2 — refine filters & first aggregates ─────────────────────────── */
 
   {
-    id: 10,
+    id: 13,
     concept: "IN",
     enemyArch: "raider",
     title: "The Wanted Set",
@@ -423,7 +542,7 @@ window.WAVES = [
   },
 
   {
-    id: 11,
+    id: 14,
     concept: "BETWEEN",
     enemyArch: "warden",
     title: "Threat Window",
@@ -463,7 +582,7 @@ window.WAVES = [
   },
 
   {
-    id: 12,
+    id: 15,
     concept: "LIKE",
     enemyArch: "warden",
     title: "Pattern Match",
@@ -503,7 +622,7 @@ window.WAVES = [
   },
 
   {
-    id: 13,
+    id: 16,
     concept: "COUNT",
     enemyArch: "warden",
     title: "Body Count",
@@ -543,7 +662,7 @@ window.WAVES = [
   },
 
   {
-    id: 14,
+    id: 17,
     concept: "SUM / AVG",
     enemyArch: "warden",
     title: "Total Threat",
@@ -582,7 +701,7 @@ window.WAVES = [
   },
 
   {
-    id: 15,
+    id: 18,
     concept: "MIN / MAX",
     enemyArch: "warden",
     title: "Worst-Case Read",
@@ -623,7 +742,7 @@ window.WAVES = [
   /* ── TIER 3 — grouping ──────────────────────────────────────────────────── */
 
   {
-    id: 16,
+    id: 19,
     concept: "GROUP BY",
     enemyArch: "warden",
     title: "Per-Class Census",
@@ -664,7 +783,7 @@ window.WAVES = [
   },
 
   {
-    id: 17,
+    id: 20,
     concept: "HAVING",
     enemyArch: "warden",
     title: "Squads Only",
@@ -705,7 +824,7 @@ window.WAVES = [
   },
 
   {
-    id: 18,
+    id: 21,
     concept: "AS / alias + ORDER BY aggregate",
     enemyArch: "warden",
     title: "Top Class",
@@ -749,7 +868,7 @@ window.WAVES = [
   /* ── PHASE ENCOUNTERS — boss-style 2-phase waves ────────────────────────── */
 
   {
-    id: 19,
+    id: 22,
     concept: "WHERE → AND",
     enemyArch: "warden",
     title: "Warden Protocol",
@@ -801,7 +920,7 @@ window.WAVES = [
   },
 
   {
-    id: 20,
+    id: 23,
     concept: "WHERE → OR",
     enemyArch: "scout",
     title: "Broken Escort",
