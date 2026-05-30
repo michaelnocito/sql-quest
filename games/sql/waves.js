@@ -744,5 +744,111 @@ window.WAVES = [
       "SELECT type, COUNT(*) AS n FROM enemies GROUP BY type ORDER BY n DESC;"
     ],
     terms: ["AS", "alias", "ORDER BY aggregate"]
+  },
+
+  /* ── PHASE ENCOUNTERS — boss-style 2-phase waves ────────────────────────── */
+
+  {
+    id: 19,
+    concept: "WHERE → AND",
+    enemyArch: "warden",
+    title: "Warden Protocol",
+    briefing: "Warden-class contacts detected. Their energy shields deflect targeting locks — two queries to bring them down. Phase 1: lock onto all Wardens to map the shield grid.",
+    objective: "Lock onto all Wardens. Hint: WHERE type = '...' filters rows by a text value.",
+    realWorld: "Multi-step targeting mirrors real analysis — find the right slice first, then narrow further with AND to act on the exact subset.",
+    layer: "modify",
+    rounds: 3,
+    creep: 0,
+    reinforces: ["WHERE", "AND"],
+    starter: "SELECT * FROM enemies WHERE type = '____';",
+    solution: "SELECT * FROM enemies WHERE type = 'Warden' AND health > 60;",
+    phases: [
+      {
+        briefing: "Warden-class contacts detected. Their energy shields deflect targeting locks — calibrate first. Lock onto <b>all Warden contacts</b> to map the shield grid.",
+        objective: "Lock onto all Wardens. Hint: WHERE type = '...' filters rows by a text value."  ,
+        solution: "SELECT * FROM enemies WHERE type = 'Warden';"
+      },
+      {
+        briefing: "Shields fractured. Heavy armor still standing — only the strongest Wardens (<code>health > 60</code>) remain a real threat. Finish them.",
+        objective: "Finish Wardens with more than 60 health. Hint: add AND health > 60 after your type filter.",
+        solution: "SELECT * FROM enemies WHERE type = 'Warden' AND health > 60;"
+      }
+    ],
+    explain: {
+      simple: "AND chains two WHERE conditions — a row must pass BOTH. Here, type = 'Warden' isolates the class; AND health > 60 sharpens the lock to only the dangerous ones.",
+      analogy: "Like a keycard that needs both a code AND a fingerprint — only rows that clear both gates make the final list."
+    },
+    onTheJob: {
+      uses: "Layering conditions with AND is how analysts zero in on an exact segment — one filter for category, another for threshold, a third for time range.",
+      example: "\"High-value pending orders from this quarter\" — that's WHERE status = 'pending' AND amount > 1000 AND order_date >= '2026-01-01'."
+    },
+    schema: `
+      CREATE TABLE enemies (id INTEGER, name TEXT, type TEXT, health INTEGER);
+      INSERT INTO enemies VALUES
+        (1,'Aegis','Warden',120),
+        (2,'Medic Owl','Ally',40),
+        (3,'Bulwark','Warden',50),
+        (4,'Scout Fenn','Ally',30),
+        (5,'Rampart','Warden',90),
+        (6,'Shard','Warden',45);
+    `,
+    hints: [
+      "Phase 1: pull all Wardens first to break the shields. Phase 2: tighten with AND.",
+      "Phase 1: WHERE type = 'Warden'. Phase 2: add AND health > 60",
+      "Phase 2: SELECT * FROM enemies WHERE type = 'Warden' AND health > 60;"
+    ],
+    terms: ["WHERE", "AND", "two-phase query", "compound condition"]
+  },
+
+  {
+    id: 20,
+    concept: "WHERE → OR",
+    enemyArch: "scout",
+    title: "Broken Escort",
+    briefing: "Scout drones are shielding a Raider-Warden strike force. You can't lock the heavies until the escort is cleared. Phase 1: clear the Scouts.",
+    objective: "Clear the Scout escort. Hint: WHERE type = '...' isolates a single class.",
+    realWorld: "Sometimes a query needs to run in stages — identify one subset first, then pivot to a broader filter to finish the job.",
+    layer: "modify",
+    rounds: 3,
+    creep: 0,
+    reinforces: ["WHERE", "OR"],
+    starter: "SELECT * FROM enemies WHERE type = '____';",
+    solution: "SELECT * FROM enemies WHERE type = 'Raider' OR type = 'Warden';",
+    phases: [
+      {
+        briefing: "Scout drones are shielding the Raiders and Wardens. Their jamming blocks targeting locks on the heavies. <b>Clear the Scout escort first.</b>",
+        objective: "Clear the Scout escort. Hint: WHERE type = '...' isolates one class.",
+        solution: "SELECT * FROM enemies WHERE type = 'Scout';"
+      },
+      {
+        briefing: "Escort down — jamming cleared. <b>Raiders and Wardens are fully exposed.</b> Both are hostile; take them all in one query.",
+        objective: "Take down Raiders or Wardens. Hint: WHERE type = '...' OR type = '...' lets either class through.",
+        solution: "SELECT * FROM enemies WHERE type = 'Raider' OR type = 'Warden';"
+      }
+    ],
+    explain: {
+      simple: "OR widens a WHERE — a row passes when EITHER condition is true. type = 'Raider' OR type = 'Warden' catches both hostile classes in one filter.",
+      analogy: "Like a checkpoint that lets through anyone on List A OR List B — you don't need to be on both; either one is enough."
+    },
+    onTheJob: {
+      uses: "OR pulls multiple acceptable values at once — a handful of regions, a set of statuses, two product lines — without running a separate query for each.",
+      example: "\"Orders from either the East or West region\" — WHERE region = 'East' OR region = 'West'."
+    },
+    schema: `
+      CREATE TABLE enemies (id INTEGER, name TEXT, type TEXT, health INTEGER);
+      INSERT INTO enemies VALUES
+        (1,'Pip','Scout',25),
+        (2,'Vex','Raider',60),
+        (3,'Buzzer','Scout',20),
+        (4,'Aegis','Warden',120),
+        (5,'Glider','Scout',30),
+        (6,'Medic Owl','Ally',40);
+    `,
+    hints: [
+      "Phase 1: target only the Scouts. Phase 2: both Raiders and Wardens are hostile.",
+      "Phase 1: WHERE type = 'Scout'. Phase 2: WHERE type = 'Raider' OR type = 'Warden'",
+      "Phase 2: SELECT * FROM enemies WHERE type = 'Raider' OR type = 'Warden';"
+    ],
+    terms: ["WHERE", "OR", "two-phase query", "either/or condition"]
   }
 ];

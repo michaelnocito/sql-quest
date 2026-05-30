@@ -233,6 +233,11 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 @keyframes shock-expand{0%{r:6;opacity:.9;stroke-width:2.5}100%{r:46;opacity:0;stroke-width:.6}}
 .base-core.volley-pulse{animation:volley-pulse .62s ease-out}
 @keyframes volley-pulse{0%{filter:drop-shadow(0 0 0 rgba(125,191,184,0));transform:scale(1)}45%{filter:drop-shadow(0 0 14px rgba(125,191,184,.85));transform:scale(1.18)}100%{filter:drop-shadow(0 0 0 rgba(125,191,184,0));transform:scale(1)}}
+/* Phase mechanic: shielded enemies in phase-1 show a pulsing teal ring */
+.shield-ring{animation:shield-pulse 1.6s ease-in-out infinite}
+@keyframes shield-pulse{0%,100%{stroke-opacity:0.3;stroke-width:2}50%{stroke-opacity:0.85;stroke-width:3.5}}
+/* Phase indicator chip in the briefing */
+.phase-chip{display:inline-flex;align-items:center;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--yellow);background:var(--surf2);border:1px solid rgba(212,168,73,.45);padding:2px 9px;border-radius:4px;margin-top:6px;gap:5px}
 /* Reactive whole-Oracle keystroke glow is driven by the Web Animations API
    (see the editor `input` handler) — CSS class-toggle restart fails on SVG
    elements because they don't expose offsetWidth, so we can't force a reflow. */
@@ -289,6 +294,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
       <span class="tag" id="b-tag">SELECT</span><span class="ttl" id="b-title">First Contact</span>
       <p id="b-text"></p>
       <div class="obj">🎯 <b id="b-obj"></b></div>
+      <div id="phase-indicator" class="phase-chip" style="display:none" aria-live="polite"></div>
       <div class="help-row">
         <button class="help-chip" id="b-job-btn" onclick="showJob()" title="Where this concept gets used on the job">💼 On the job</button>
         <span class="help-chip recall" id="b-recall" title="Earlier concepts this wave makes you reuse">🔁 Recall: <span id="b-recall-text"></span></span>
@@ -346,9 +352,9 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 30, 2026 · 9:14 AM ET";
+const BUILD_TS = "May 30, 2026 · 10:02 AM ET";
 const state = {
-  wave: 0, baseHP: 100, devMode: true, music: false, sfx: true, melody: false, theme: 'dark',
+  wave: 0, phase: 0, baseHP: 100, devMode: true, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
 };
 let SQLjs = null;          // initSqlJs module
@@ -421,9 +427,15 @@ function isSafe(sql){
 
 /* ─── WAVE LOADING ───────────────────────────────────────────────────────── */
 function currentWave(){ return WAVES[state.wave]; }
+// For phased waves returns the active phase's solution; falls back to w.solution.
+function currentPhaseSolution(){
+  const w = currentWave();
+  return (w.phases && w.phases[state.phase]) ? w.phases[state.phase].solution : w.solution;
+}
 
 function loadWave(){
   const w = currentWave();
+  state.phase = 0;
   hintLevel = 0;
   waveTries = 0;
   revealFrac = 0;
@@ -433,8 +445,11 @@ function loadWave(){
   document.getElementById('wave-concept').textContent = w.concept;
   document.getElementById('b-tag').textContent = w.concept;
   document.getElementById('b-title').textContent = w.title;
-  document.getElementById('b-text').innerHTML = w.briefing;
-  document.getElementById('b-obj').textContent = w.objective;
+  // Phased waves use phase-0 briefing/objective; regular waves use top-level fields.
+  const ph0 = w.phases ? w.phases[0] : null;
+  document.getElementById('b-text').innerHTML = ph0 ? ph0.briefing : w.briefing;
+  document.getElementById('b-obj').textContent = ph0 ? ph0.objective : w.objective;
+  updatePhaseIndicator();
   // On-the-job context is shown on demand via the 💼 chip (see showJob); hide
   // the chip if a wave has no career context authored.
   document.getElementById('b-job-btn').style.display = (w.onTheJob || w.realWorld) ? 'inline-flex' : 'none';
@@ -462,19 +477,22 @@ function loadWave(){
   // Schema chips
   renderSchema(w.schema);
 
-  // Build the lane = solution's result rows.
+  // Build the lane from the active phase solution (phase 0 for regular waves).
   const db = freshDB(w.schema);
-  const sol = execQuery(db, w.solution);
+  const sol = execQuery(db, currentPhaseSolution());
   db.close();
   // Derive each enemy's archetype from its `type` column when present, so a
   // mixed-type lane (e.g. Wave 6's Raiders OR Wardens) actually LOOKS mixed.
   // Falls back to the wave's enemyArch for waves whose result has no type.
+  // Phase-0 enemies are marked shielded so they render with the shield ring.
+  const isPhased = !!(w.phases);
   enemiesLive = sol.rows.map((row, i) => {
     const obj = {}; sol.columns.forEach((c,j)=>obj[c]=row[j]);
     return {
       name: obj.name || obj.id || ('Target '+(i+1)),
       archetype: archFromType(obj.type) || w.enemyArch || 'warden',
-      maxHp: ENEMY_MAXHP, hp: ENEMY_MAXHP, advance: 0, alive: true
+      maxHp: ENEMY_MAXHP, hp: ENEMY_MAXHP, advance: 0, alive: true,
+      shielded: isPhased   // phase-1 enemies carry shields until the transition
     };
   });
   document.getElementById('field-status').textContent =
@@ -518,7 +536,7 @@ function renderSchema(schema){
 // Player-mode reveal: split the solution into words and uncover the first
 // `frac` of them, masking the rest with dots so the shape of the query shows.
 function maskedSolution(frac){
-  const parts = currentWave().solution.split(/(\s+)/);   // keep the whitespace
+  const parts = currentPhaseSolution().split(/(\s+)/);   // keep the whitespace
   const words = parts.filter(p=>p.trim().length).length;
   const reveal = Math.max(1, Math.ceil(words * frac));
   let shown = 0;
@@ -528,7 +546,7 @@ function maskedSolution(frac){
   }).join('');
 }
 function revealedPrefix(frac){
-  const words = currentWave().solution.split(/\s+/);
+  const words = currentPhaseSolution().split(/\s+/);
   const reveal = Math.max(1, Math.ceil(words.length * frac));
   return words.slice(0, reveal).join(' ');
 }
@@ -536,7 +554,7 @@ function updateGhost(){
   const ghost = document.getElementById('ghost');
   const ed = document.getElementById('sql');
   if(state.devMode && !ed.value){
-    ghost.textContent = currentWave().solution;
+    ghost.textContent = currentPhaseSolution();
     ghost.style.display = 'block';
     ed.placeholder = '';                 // avoid overlap with the ghost answer
   } else if(!state.devMode && revealFrac > 0 && !ed.value){
@@ -567,7 +585,7 @@ document.getElementById('sql').addEventListener('keydown', e => {
     e.preventDefault();
     // Dev mode inserts the whole answer; player mode inserts only the part
     // that's been uncovered so far, leaving the rest to recall.
-    e.target.value = state.devMode ? currentWave().solution : revealedPrefix(revealFrac);
+    e.target.value = state.devMode ? currentPhaseSolution() : revealedPrefix(revealFrac);
     // Tab-borrow does NOT flip waveFriction:
     //   - DEV mode: it's the dev's convenience and should still earn fatality.
     //   - Player mode: Tab is only available when revealFrac > 0, which can
@@ -713,7 +731,7 @@ function runQuery(){
   const db = freshDB(w.schema);
   try{
     player = execQuery(db, sql);
-    expected = execQuery(db, w.solution);
+    expected = execQuery(db, currentPhaseSolution());
   }catch(e){
     db.close();
     // Tier 2: syntax error — a failed attempt, lightly punished.
@@ -733,7 +751,7 @@ function runQuery(){
   playMelodyExecute(sql);
   showResult(player);
 
-  const ordered = /\border\s+by\b/i.test(w.solution);
+  const ordered = /\border\s+by\b/i.test(currentPhaseSolution());
   if(sameResult(player, expected, ordered)){
     state.correct++;
     if(!waveFriction){
@@ -1007,8 +1025,12 @@ function enemyFigure(x, y, en){
     ? `<circle class="charge-warn" cx="${x}" cy="${y}" r="66" fill="none" stroke="var(--yellow)" stroke-width="3"/>`
       + `<text x="${x}" y="${y-74}" fill="var(--yellow)" font-size="22" text-anchor="middle">⚡</text>`
     : '';
+  const shield = (en && en.shielded)
+    ? `<circle class="shield-ring" cx="${x}" cy="${y}" r="${a.ro + 26}" fill="none" stroke="var(--accent2)" stroke-width="2.5"/>`
+    : '';
   return `<circle cx="${x}" cy="${y}" r="66" fill="url(#${a.halo})"/>`
     + warn
+    + shield
     + `<g class="spin-self ${a.spin}"><polygon class="mote-core" points="${starPts(x,y,a.spikes,a.ro,a.ri)}" fill="#160f1e" stroke="${a.stroke}" stroke-width="3" stroke-opacity="0.85"/></g>`
     + `<g class="spin-self ${a.inner}"><polygon points="${polyPts(x,y,a.glyph,28,-Math.PI/2)}" fill="none" stroke="${a.stroke}" stroke-opacity="0.55" stroke-width="1.5"/></g>`
     + `<circle cx="${x}" cy="${y}" r="11" fill="${a.nucleus}" fill-opacity="0.9"/>`
@@ -1073,7 +1095,7 @@ function volley(){
   const hit = correctHit();
   // Layered attack: tier-1 waves get a single bolt; richer queries get
   // more beams, a base halo pulse, and impact shockwaves. Same combat math.
-  const tier = attackTier(currentWave().solution);
+  const tier = attackTier(currentPhaseSolution());
   const beamsPerTarget = Math.min(tier, 4);
   const strokeW = tier >= 4 ? 4 : 3;
   const targets = [];
@@ -1131,7 +1153,9 @@ function volley(){
     if(cleared){
       drawField();
       busy = false;
-      waveCleared();
+      const wc = currentWave();
+      if(wc.phases && state.phase < wc.phases.length - 1){ phaseTransition(); }
+      else { waveCleared(); }
     } else {
       drawField();
       // Clear the editor so the next volley is re-typed from memory — the drill.
@@ -1153,7 +1177,7 @@ function fatality(){
   // Sharper chord — fatality earns its own voice in the audio mix.
   beep(880, 70); setTimeout(()=>beep(1175,80),70); setTimeout(()=>beep(1568,140),150);
   // Layered: a fatality on a higher-tier wave gets more impact rings + glow.
-  const tier = attackTier(currentWave().solution);
+  const tier = attackTier(currentPhaseSolution());
   // Oracle halo pulse — bigger for fatalities than regular volleys.
   const core = document.getElementById('base-core');
   if(core){ core.classList.add('volley-pulse'); setTimeout(()=>core.classList.remove('volley-pulse'), 720); }
@@ -1182,7 +1206,9 @@ function fatality(){
     enemiesLive.forEach(en=>{ en.alive = false; });
     drawField();
     busy = false;
-    waveCleared(true);
+    const wf = currentWave();
+    if(wf.phases && state.phase < wf.phases.length - 1){ phaseTransition(); }
+    else { waveCleared(true); }
   }, settle);
 }
 
@@ -1277,7 +1303,7 @@ function applyMissAssist(){
 // non-tech analogy, then hands back so the player fires it themselves.
 function autopilot(){
   const ed = document.getElementById('sql');
-  ed.value = currentWave().solution;
+  ed.value = currentPhaseSolution();
   revealFrac = 1;
   updateGhost();
   if(autopiloted) return;                   // explain once per wave
@@ -1360,6 +1386,78 @@ function replayWave(){
   save();
   loadWave();
 }
+/* ─── PHASE MECHANIC ─────────────────────────────────────────────────────── */
+// Update the Phase N/N chip in the briefing — hidden for single-phase waves.
+function updatePhaseIndicator(){
+  const w = currentWave();
+  const el = document.getElementById('phase-indicator');
+  if(w.phases && w.phases.length > 1){
+    el.style.display = 'inline-flex';
+    el.textContent = `⚡ Phase ${state.phase + 1} / ${w.phases.length}`;
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+// Called when the player clears phase N and a next phase exists.
+// Flashes "SHIELDS DOWN", resets per-phase counters, loads phase N+1 enemies.
+function phaseTransition(){
+  busy = true;
+  const svg = document.getElementById('field');
+  // Spawn the "SHIELDS DOWN" flash text over the field.
+  const flashEl = document.createElementNS('http://www.w3.org/2000/svg','text');
+  flashEl.setAttribute('x', String(FIELD_W / 2));
+  flashEl.setAttribute('y', String(FIELD_H / 2));
+  flashEl.setAttribute('text-anchor','middle');
+  flashEl.setAttribute('dominant-baseline','middle');
+  flashEl.setAttribute('fill','var(--yellow)');
+  flashEl.setAttribute('font-size','30');
+  flashEl.setAttribute('font-weight','700');
+  flashEl.setAttribute('font-family','var(--font)');
+  flashEl.setAttribute('pointer-events','none');
+  flashEl.textContent = '⚡ SHIELDS DOWN';
+  svg.appendChild(flashEl);
+  flashEl.animate([{opacity:0},{opacity:1,offset:.08},{opacity:1,offset:.65},{opacity:0}],{duration:950,easing:'ease-out'});
+  beep(660, 60); setTimeout(()=>beep(880,90),90); setTimeout(()=>beep(1100,120),180);
+
+  setTimeout(()=>{
+    if(flashEl.parentNode) flashEl.remove();
+    const w = currentWave();
+    state.phase++;
+    // Reset all per-phase counters — the player starts phase 2 fresh.
+    waveTries = 0; revealFrac = 0; autopiloted = false; waveFriction = false;
+    hintLevel = 0;
+    document.getElementById('sql').value = '';
+    document.getElementById('hint').className = 'hint';
+    document.getElementById('hint').innerHTML = '';
+    const hb = document.getElementById('hint-btn'); hb.textContent = 'Show hint'; hb.disabled = false;
+    // Rebuild enemies from phase-2 solution — no shields this time.
+    const db = freshDB(w.schema);
+    const sol = execQuery(db, w.phases[state.phase].solution);
+    db.close();
+    enemiesLive = sol.rows.map((row,i)=>{
+      const obj={}; sol.columns.forEach((c,j)=>obj[c]=row[j]);
+      return {
+        name: obj.name || obj.id || ('Target '+(i+1)),
+        archetype: archFromType(obj.type) || w.enemyArch || 'warden',
+        maxHp: ENEMY_MAXHP, hp: ENEMY_MAXHP, advance: 0, alive: true,
+        shielded: false
+      };
+    });
+    // Update briefing and objective to the new phase.
+    const ph = w.phases[state.phase];
+    document.getElementById('b-text').innerHTML = ph.briefing;
+    document.getElementById('b-obj').textContent = ph.objective;
+    updatePhaseIndicator();
+    updateGhost();
+    setFb('ok', '⚡ Shields down — phase 2 begins. Write your next query and fire.');
+    document.getElementById('field-status').textContent =
+      `${enemiesLive.length} exposed contact${enemiesLive.length!==1?'s':''} — finish them.`;
+    drawField();
+    busy = false;
+  }, 980);
+}
+
 // Full campaign reset — back to wave 1, no cleared waves, fresh stats.
 function resetCampaign(){
   state.wave = 0;
