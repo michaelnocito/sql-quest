@@ -72,7 +72,11 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 .track-step.current .dot{background:var(--accent);color:#0e1f1e}
 
 /* BRIEFING */
-.briefing{background:var(--surf);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--r2);padding:11px 14px;margin-bottom:10px;font-size:13.5px}
+.briefing{background:var(--surf);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--r2);padding:11px 14px;margin-bottom:10px;font-size:13.5px;transition:border-left-color .3s}
+@keyframes phase-flash{0%{border-left-color:var(--yellow);box-shadow:inset 3px 0 0 var(--yellow),0 0 18px rgba(212,168,73,.25)}60%{border-left-color:var(--yellow)}100%{border-left-color:var(--accent);box-shadow:none}}
+.briefing.phase-new{animation:phase-flash 1.4s ease-out forwards}
+@keyframes chip-pop{0%,100%{transform:scale(1)}35%{transform:scale(1.22);background:rgba(212,168,73,.35);color:#0e1a0a}}
+#phase-indicator.pop{animation:chip-pop .55s ease-out}
 .briefing .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--accent);background:var(--surf2);padding:2px 8px;border-radius:4px;margin-right:8px}
 .briefing .ttl{font-weight:700}
 .briefing p{margin-top:6px;color:var(--text)}
@@ -373,7 +377,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 30, 2026 · 7:21 PM ET";
+const BUILD_TS = "May 30, 2026 · 8:09 PM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, devMode: true, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, fatalities: 0, hintsUsed: 0, started: Date.now()
@@ -1302,19 +1306,19 @@ function enemyAttack(){
 function missTurn(falsePos){
   busy = true;
   // Dissonant tritone stab — immediate "that was wrong" audio signal.
-  // A3 + Eb4 = the most dissonant interval in Western music (diminished fifth).
-  // Fires before the enemy attack animation so feedback is instant.
+  // C5 + F#5 (523 + 740 Hz): bright register cuts through the low bass hits.
+  // Sawtooth for bite; both notes fire together as a sharp dissonant chord.
   if(state.sfx){
     const c = audioCtx();
-    [220.00, 311.13].forEach((f, i)=>{
+    [523.25, 739.99].forEach((f, i)=>{
       const o = c.createOscillator(), g = c.createGain();
       o.type = 'sawtooth'; o.frequency.value = f;
-      const t = c.currentTime + i * 0.012;
+      const t = c.currentTime + i * 0.006;
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.038, t + 0.005);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.20);
+      g.gain.exponentialRampToValueAtTime(0.055, t + 0.004);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
       o.connect(g); g.connect(c.destination);
-      o.start(t); o.stop(t + 0.24);
+      o.start(t); o.stop(t + 0.20);
     });
   }
   enemyAttack();                                 // the swarm hits back
@@ -1468,24 +1472,28 @@ function updatePhaseIndicator(){
 function phaseTransition(){
   busy = true;
   const svg = document.getElementById('field');
-  // Spawn the "SHIELDS DOWN" flash text over the field.
-  const flashEl = document.createElementNS('http://www.w3.org/2000/svg','text');
-  flashEl.setAttribute('x', String(FIELD_W / 2));
-  flashEl.setAttribute('y', String(FIELD_H / 2));
-  flashEl.setAttribute('text-anchor','middle');
-  flashEl.setAttribute('dominant-baseline','middle');
-  flashEl.setAttribute('fill','var(--yellow)');
-  flashEl.setAttribute('font-size','30');
-  flashEl.setAttribute('font-weight','700');
-  flashEl.setAttribute('font-family','var(--font)');
-  flashEl.setAttribute('pointer-events','none');
-  flashEl.textContent = '⚡ SHIELDS DOWN';
-  svg.appendChild(flashEl);
-  flashEl.animate([{opacity:0},{opacity:1,offset:.08},{opacity:1,offset:.65},{opacity:0}],{duration:950,easing:'ease-out'});
-  beep(660, 60); setTimeout(()=>beep(880,90),90); setTimeout(()=>beep(1100,120),180);
+  // Big two-line flash: "⚡ SHIELDS DOWN" + "— PHASE 2 —" below it.
+  const mkTxt = (txt, y, sz, fill) => {
+    const el = document.createElementNS('http://www.w3.org/2000/svg','text');
+    el.setAttribute('x', String(FIELD_W / 2)); el.setAttribute('y', String(y));
+    el.setAttribute('text-anchor','middle'); el.setAttribute('dominant-baseline','middle');
+    el.setAttribute('fill', fill); el.setAttribute('font-size', String(sz));
+    el.setAttribute('font-weight','700'); el.setAttribute('font-family','var(--font)');
+    el.setAttribute('pointer-events','none'); el.textContent = txt;
+    return el;
+  };
+  const flashEl  = mkTxt('⚡ SHIELDS DOWN',  FIELD_H/2 - 18, 48, 'var(--yellow)');
+  const flashEl2 = mkTxt('— PHASE 2 —', FIELD_H/2 + 30, 22, 'var(--accent2)');
+  svg.appendChild(flashEl); svg.appendChild(flashEl2);
+  const anim = [{opacity:0},{opacity:1,offset:.07},{opacity:1,offset:.68},{opacity:0}];
+  flashEl.animate(anim,  {duration:1350, easing:'ease-out'});
+  flashEl2.animate(anim, {duration:1350, easing:'ease-out', delay:60});
+  // Triumphant ascending sting for the phase break
+  beep(523,70); setTimeout(()=>beep(659,80),80); setTimeout(()=>beep(784,100),170); setTimeout(()=>beep(1047,140),280);
 
   setTimeout(()=>{
-    if(flashEl.parentNode) flashEl.remove();
+    if(flashEl.parentNode)  flashEl.remove();
+    if(flashEl2.parentNode) flashEl2.remove();
     const w = currentWave();
     state.phase++;
     // Reset all per-phase counters — the player starts phase 2 fresh.
@@ -1508,18 +1516,24 @@ function phaseTransition(){
         shielded: false
       };
     });
-    // Update briefing and objective to the new phase.
+    // Update briefing and objective — flash the card border + pop the chip.
     const ph = w.phases[state.phase];
     document.getElementById('b-text').innerHTML = ph.briefing;
     document.getElementById('b-obj').textContent = ph.objective;
     updatePhaseIndicator();
+    // Visual "you are in a new phase" cues: briefing border flashes yellow,
+    // phase chip pops to draw the eye.
+    const bc = document.querySelector('.briefing');
+    if(bc){ bc.classList.remove('phase-new'); void bc.offsetWidth; bc.classList.add('phase-new'); }
+    const pi = document.getElementById('phase-indicator');
+    if(pi){ pi.classList.remove('pop'); void pi.offsetWidth; pi.classList.add('pop'); }
     updateGhost();
-    setFb('ok', '⚡ Shields down — phase 2 begins. Write your next query and fire.');
+    setFb('ok', '⚡ Shields fractured — <b style="color:var(--yellow)">Phase 2 begins.</b> Write your next query and fire.');
     document.getElementById('field-status').textContent =
       `${enemiesLive.length} exposed contact${enemiesLive.length!==1?'s':''} — finish them.`;
     drawField();
     busy = false;
-  }, 980);
+  }, 1400);
 }
 
 // Full campaign reset — back to wave 1, no cleared waves, fresh stats.
