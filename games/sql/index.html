@@ -277,6 +277,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
   <select class="dev-jump" id="dev-jump" aria-label="Jump to wave (dev mode)" title="Jump to any wave (dev)" onchange="jumpToWave(this.value)"></select>
   <button class="icon-btn" id="music-btn" title="Background music on/off" onclick="toggleMusic()">🎵</button>
   <button class="icon-btn" id="sfx-btn" title="Sound effects on/off" onclick="toggleSfx()">🔔</button>
+  <button class="icon-btn" id="melody-btn" title="Code-as-melody: typing tones + keyword chimes + execute chord (opt-in; requires SFX on)" onclick="toggleMelody()">🎼</button>
   <button class="icon-btn" id="theme-btn" title="Theme" onclick="toggleTheme()">◐</button>
   <button class="icon-btn" id="reset-btn" title="Reset (this wave or all progress)" onclick="showResetOverlay()">↻</button>
 </header>
@@ -345,9 +346,9 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 29, 2026 · 9:13 PM ET";
+const BUILD_TS = "May 29, 2026 · 9:20 PM ET";
 const state = {
-  wave: 0, baseHP: 100, devMode: true, music: false, sfx: true, theme: 'dark',
+  wave: 0, baseHP: 100, devMode: true, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
 };
 let SQLjs = null;          // initSqlJs module
@@ -371,7 +372,7 @@ function load(){
 function save(){
   localStorage.setItem(LS, JSON.stringify({
     wave: state.wave, baseHP: state.baseHP, devMode: state.devMode,
-    music: state.music, sfx: state.sfx, theme: state.theme, cleared: state.cleared,
+    music: state.music, sfx: state.sfx, melody: state.melody, theme: state.theme, cleared: state.cleared,
     attempts: state.attempts, correct: state.correct
   }));
 }
@@ -573,6 +574,16 @@ document.getElementById('sql').addEventListener('keydown', e => {
   } else if((e.key === 'F' || e.key === 'f') && e.altKey && e.shiftKey){
     e.preventDefault();
     formatSQL();
+  } else if(e.key && e.key.length === 1){
+    // Code-as-melody Tier 1: a soft pentatonic ping per printable keystroke.
+    playMelodyType(e.key);
+    // Code-as-melody Tier 2: brighter chime when a SQL keyword just finished.
+    // Word-boundary chars (space, ; , ( ) .) end a word — peek at the last word
+    // already in the editor (this keydown hasn't appended its char yet).
+    if(' ;,().'.includes(e.key)){
+      const m = (e.target.value || '').match(/(\w+)\s*$/);
+      if(m && SQL_KEYWORDS.includes(m[1].toUpperCase())) setTimeout(playMelodyKeyword, 35);
+    }
   }
 });
 
@@ -712,6 +723,9 @@ function runQuery(){
   }
   db.close();
 
+  // Code-as-melody Tier 3: a pleasant chord on every successful Execute,
+  // richness scales with the query's attackTier (no chord on syntax/banned errors).
+  playMelodyExecute(sql);
   showResult(player);
 
   const ordered = /\border\s+by\b/i.test(w.solution);
@@ -1413,8 +1427,10 @@ function beep(freq, ms){
 function updateAudioBtns(){
   const mb = document.getElementById('music-btn');
   const sb = document.getElementById('sfx-btn');
+  const melb = document.getElementById('melody-btn');
   if(mb){ mb.classList.toggle('on', state.music); mb.classList.toggle('off', !state.music); }
   if(sb){ sb.textContent = state.sfx ? '🔔' : '🔕'; sb.classList.toggle('on', state.sfx); sb.classList.toggle('off', !state.sfx); }
+  if(melb){ melb.classList.toggle('on', state.melody); melb.classList.toggle('off', !state.melody); }
 }
 function toggleMusic(){
   state.music = !state.music;
@@ -1427,6 +1443,66 @@ function toggleSfx(){
   if(state.sfx){ audioCtx(); beep(660,90); }   // unlock + a tiny confirmation blip
   updateAudioBtns();
   save();
+}
+function toggleMelody(){
+  state.melody = !state.melody;
+  if(state.melody){ audioCtx(); playMelodyKeyword(); }   // tiny confirmation chime
+  updateAudioBtns();
+  save();
+}
+
+/* ─── CODE-AS-MELODY (opt-in; requires SFX on) ──────────────────────────────
+   Three tiers of auditory feedback that stay in key with the background music:
+   - Tier 1: a soft pentatonic ping per keystroke (always in A-minor's orbit)
+   - Tier 2: a brighter "ting" when a SQL keyword is completed at a word boundary
+   - Tier 3: a pleasant chord on Execute whose richness scales with attackTier()
+   Defaults OFF so the calm focus mode stays default — Mike opts in via 🎼. */
+const MELODY_SCALE = [220.00, 261.63, 293.66, 329.63, 392.00]; // A3 C4 D4 E4 G4 — A-minor pentatonic
+function playMelodyType(ch){
+  if(!state.melody || !state.sfx) return;
+  const c = audioCtx();
+  const code = (ch || '').toLowerCase().charCodeAt(0) || 0;
+  const f = MELODY_SCALE[code % MELODY_SCALE.length];
+  const o = c.createOscillator(), g = c.createGain();
+  o.type = 'sine'; o.frequency.value = f;
+  g.gain.setValueAtTime(0.0001, c.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.018, c.currentTime + 0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.09);
+  o.connect(g); g.connect(c.destination);
+  o.start(); o.stop(c.currentTime + 0.11);
+}
+function playMelodyKeyword(){
+  if(!state.melody || !state.sfx) return;
+  const c = audioCtx();
+  // A bright fifth above the typing range — feels like a confirmation bell.
+  [659.25, 987.77].forEach((f, i)=>{
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = 'sine'; o.frequency.value = f;
+    const t0 = c.currentTime + i*0.018;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.045, t0 + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.28);
+    o.connect(g); g.connect(c.destination);
+    o.start(t0); o.stop(t0 + 0.3);
+  });
+}
+function playMelodyExecute(sql){
+  if(!state.melody || !state.sfx) return;
+  const c = audioCtx();
+  const tier = (typeof attackTier === 'function') ? attackTier(sql) : 1;
+  // A-minor chord built up by tier: root → +5 → +octave → +third → +seventh
+  const chord = [220.00, 329.63, 440.00, 523.25, 659.25];
+  const n = Math.min(chord.length, Math.max(1, tier));
+  for(let i = 0; i < n; i++){
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = 'sine'; o.frequency.value = chord[i];
+    const t0 = c.currentTime + i * 0.025;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.04, t0 + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.85);
+    o.connect(g); g.connect(c.destination);
+    o.start(t0); o.stop(t0 + 0.9);
+  }
 }
 
 /* ─── BACKGROUND MUSIC (procedural, ~5 min through-composed) ─────────────────
