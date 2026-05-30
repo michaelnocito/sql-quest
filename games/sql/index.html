@@ -342,7 +342,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "May 29, 2026 · 8:30 PM ET";
+const BUILD_TS = "May 29, 2026 · 8:37 PM ET";
 const state = {
   wave: 0, baseHP: 100, devMode: true, music: false, sfx: true, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, started: Date.now()
@@ -751,7 +751,21 @@ function showResult(r){
 }
 
 /* ─── BATTLEFIELD (SVG) ──────────────────────────────────────────────────── */
-const FIELD_W = 800, FIELD_H = 320, BASE_X = 720, LANE_TOP = 50, LANE_GAP = 56;
+const FIELD_W = 800, FIELD_H = 320, BASE_X = 720, ORACLE_X = 710, LANE_TOP = 50, LANE_GAP = 56;
+// 2-row enemy formation centered on the advance line; columns are spaced so the
+// bigger silhouettes don't overlap. Solo enemies (aggregate waves) center vertically.
+function enemyPos(i, en){
+  if(enemiesLive.length === 1) return { x: enemyX(en.advance), y: FIELD_H/2 };
+  const row = i % 2;
+  const col = Math.floor(i / 2);
+  const totalCols = Math.ceil(enemiesLive.length / 2);
+  const centerCol = (totalCols - 1) / 2;
+  const ROW_OFFSET = 64, COL_OFFSET = 58;
+  return {
+    x: enemyX(en.advance) + (centerCol - col) * COL_OFFSET,
+    y: FIELD_H/2 + (row === 0 ? -ROW_OFFSET : ROW_OFFSET)
+  };
+}
 const ENEMY_MAXHP = 100;   // every enemy starts here; a correct volley chips maxHp/rounds
 const FF_DMG = 4;          // friendly-fire: base HP lost per over-broad (false-positive) row
 const BASE_REACH_DMG = 14; // base HP lost for each enemy that creeps all the way in
@@ -872,19 +886,21 @@ function drawField(){
   buildFieldBg();   // ensure the persistent animated backdrop exists
   let s = fieldDefs();
   // the Oracle — your geometric celestial being on the right (was the Spire)
-  s += heroFigure(BASE_X+23, FIELD_H/2);
-  // lane guides — faint star-paths the void-motes drift along
+  s += heroFigure(ORACLE_X, FIELD_H/2);
+  // lane guides — faint star-paths drawn under each enemy's row
+  const seenRows = new Set();
   enemiesLive.forEach((en,i)=>{
-    const y = laneY(i % Math.max(1,Math.min(enemiesLive.length,5)));
+    const { y } = enemyPos(i, en);
+    if(seenRows.has(y)) return;
+    seenRows.add(y);
     s += `<line x1="70" y1="${y}" x2="${BASE_X}" y2="${y}" stroke="var(--accent)" stroke-opacity="0.14" stroke-dasharray="2 8" stroke-width="1"/>`;
   });
-  // void-motes — eclipse fragments drifting toward the Spire
+  // void-motes — eclipse fragments drifting toward the Oracle
   enemiesLive.forEach((en,i)=>{
     if(!en.alive) return;
-    const y = laneY(i % Math.max(1,Math.min(enemiesLive.length,5)));
-    const x = enemyX(en.advance);
+    const { x, y } = enemyPos(i, en);
     const frac = Math.max(0, en.hp) / en.maxHp;
-    const barW = 34, barH = 4, barX = x - barW/2, barY = y - 28;
+    const barW = 34, barH = 4, barX = x - barW/2, barY = y - 32;
     const hpCol = frac > 0.5 ? 'var(--green)' : frac > 0.25 ? 'var(--yellow)' : 'var(--red)';
     s += `<g class="enemy" data-i="${i}">`
       + enemyFigure(x, y, en)
@@ -911,16 +927,16 @@ function starPts(cx, cy, spikes, ro, ri){
 // starburst halo, counter-rotating orbit ring, inner hexagon + glowing core.
 function heroFigure(hx, hy){
   let spokes = '';
-  for(let i=0;i<12;i++){ const a=i/12*Math.PI*2; spokes += `<line x1="${(hx+Math.cos(a)*20).toFixed(1)}" y1="${(hy+Math.sin(a)*20).toFixed(1)}" x2="${(hx+Math.cos(a)*52).toFixed(1)}" y2="${(hy+Math.sin(a)*52).toFixed(1)}" stroke="var(--accent2)" stroke-opacity="0.5" stroke-width="1.8"/>`; }
+  for(let i=0;i<12;i++){ const a=i/12*Math.PI*2; spokes += `<line x1="${(hx+Math.cos(a)*30).toFixed(1)}" y1="${(hy+Math.sin(a)*30).toFixed(1)}" x2="${(hx+Math.cos(a)*78).toFixed(1)}" y2="${(hy+Math.sin(a)*78).toFixed(1)}" stroke="var(--accent2)" stroke-opacity="0.5" stroke-width="2"/>`; }
   let nodes = '';
-  for(let i=0;i<6;i++){ const a=i/6*Math.PI*2; nodes += `<circle cx="${(hx+Math.cos(a)*38).toFixed(1)}" cy="${(hy+Math.sin(a)*38).toFixed(1)}" r="3" fill="var(--accent2)"/>`; }
-  return `<ellipse class="breathe" cx="${hx}" cy="${hy}" rx="60" ry="80" fill="url(#spireGlow)"/>`
-    + `<g class="spin-self s-cw-28"><polygon points="${starPts(hx,hy,6,50,22)}" fill="none" stroke="var(--accent)" stroke-opacity="0.55" stroke-width="1.8"/>${spokes}</g>`
-    + `<g class="spin-self s-ccw-22"><circle cx="${hx}" cy="${hy}" r="38" fill="none" stroke="var(--accent)" stroke-opacity="0.35" stroke-width="1.2"/>${nodes}</g>`
-    + `<polygon points="${polyPts(hx,hy,6,19,Math.PI/6)}" fill="var(--surf2)" stroke="var(--accent)" stroke-width="2.2"/>`
-    + `<circle id="base-core" class="base-core" cx="${hx}" cy="${hy}" r="14" fill="var(--accent)"/>`
-    + `<polygon points="${polyPts(hx,hy-1,3,8,-Math.PI/2)}" fill="var(--bg)" fill-opacity="0.55"/>`
-    + `<text x="${hx}" y="${FIELD_H-8}" fill="var(--muted)" font-size="12" text-anchor="middle" font-family="var(--mono)">ORACLE</text>`;
+  for(let i=0;i<6;i++){ const a=i/6*Math.PI*2; nodes += `<circle cx="${(hx+Math.cos(a)*57).toFixed(1)}" cy="${(hy+Math.sin(a)*57).toFixed(1)}" r="4" fill="var(--accent2)"/>`; }
+  return `<ellipse class="breathe" cx="${hx}" cy="${hy}" rx="88" ry="118" fill="url(#spireGlow)"/>`
+    + `<g class="spin-self s-cw-28"><polygon points="${starPts(hx,hy,6,75,33)}" fill="none" stroke="var(--accent)" stroke-opacity="0.55" stroke-width="2"/>${spokes}</g>`
+    + `<g class="spin-self s-ccw-22"><circle cx="${hx}" cy="${hy}" r="57" fill="none" stroke="var(--accent)" stroke-opacity="0.35" stroke-width="1.4"/>${nodes}</g>`
+    + `<polygon points="${polyPts(hx,hy,6,29,Math.PI/6)}" fill="var(--surf2)" stroke="var(--accent)" stroke-width="2.6"/>`
+    + `<circle id="base-core" class="base-core" cx="${hx}" cy="${hy}" r="21" fill="var(--accent)"/>`
+    + `<polygon points="${polyPts(hx,hy-1,3,12,-Math.PI/2)}" fill="var(--bg)" fill-opacity="0.55"/>`
+    + `<text x="${hx}" y="${FIELD_H-6}" fill="var(--muted)" font-size="14" text-anchor="middle" font-family="var(--mono)">ORACLE</text>`;
 }
 // Void-being archetypes — each wave's foes get a distinct silhouette so the
 // player reads the threat at a glance. Scouts are nimble 3-point shards,
@@ -1035,8 +1051,8 @@ function volley(){
   enemiesLive.forEach((en,i)=>{
     if(!en.alive) return;
     en.hp -= hit;
-    const y = laneY(i % Math.max(1,Math.min(enemiesLive.length,5)));
-    targets.push({ i, x: enemyX(en.advance), y, dead: en.hp <= 0 });
+    const p = enemyPos(i, en);
+    targets.push({ i, x: p.x, y: p.y, dead: en.hp <= 0 });
   });
   // Sound sting layers with tier — same melody, more harmonics.
   beep(660, 70); setTimeout(()=>beep(880,90),90);
@@ -1056,7 +1072,7 @@ function volley(){
       const off = (b - (beamsPerTarget-1)/2) * 12;
       setTimeout(()=>{
         const beam = document.createElementNS(SVGNS,'line');
-        beam.setAttribute('x1', BASE_X); beam.setAttribute('y1', FIELD_H/2 + off);
+        beam.setAttribute('x1', ORACLE_X); beam.setAttribute('y1', FIELD_H/2 + off);
         beam.setAttribute('x2', t.x); beam.setAttribute('y2', t.y + off * 0.5);
         beam.setAttribute('stroke', 'var(--accent2)');
         beam.setAttribute('stroke-width', strokeW);
@@ -1118,8 +1134,8 @@ function fatality(){
   enemiesLive.forEach((en,i)=>{
     if(!en.alive) return;
     en.hp = 0;
-    const y = laneY(i % Math.max(1,Math.min(enemiesLive.length,5)));
-    targets.push({ i, x: enemyX(en.advance), y });
+    const p = enemyPos(i, en);
+    targets.push({ i, x: p.x, y: p.y });
   });
   const STEP = 50;   // tight stagger so it reads as one decisive strike
   targets.forEach((t, idx)=>{
@@ -1162,13 +1178,12 @@ function enemyAttack(){
   }
   enemiesLive.forEach(en=>{ en.primed = (en === atk.en) && a.charge > 0 && (en.charge === a.charge - 1); });
 
-  const y = laneY(atk.i % Math.max(1,Math.min(enemiesLive.length,5)));
-  const x = enemyX(atk.en.advance);
+  const { x, y } = enemyPos(atk.i, atk.en);
   const node = svg.querySelector(`.enemy[data-i="${atk.i}"]`);
   if(node) node.classList.add('lunge');
   const bolt = document.createElementNS(SVGNS,'line');
   bolt.setAttribute('x1', x); bolt.setAttribute('y1', y);
-  bolt.setAttribute('x2', BASE_X); bolt.setAttribute('y2', FIELD_H/2);
+  bolt.setAttribute('x2', ORACLE_X); bolt.setAttribute('y2', FIELD_H/2);
   bolt.setAttribute('stroke', heavy ? '#ffb648' : 'var(--red)');
   bolt.setAttribute('stroke-width', heavy ? '6' : '3');
   bolt.setAttribute('class', heavy ? 'charge-bolt' : 'enemy-bolt');
@@ -1178,7 +1193,7 @@ function enemyAttack(){
     bolt.remove();
     const core = document.getElementById('base-core');
     if(core){ const cls = heavy ? 'base-hit-heavy' : 'base-hit'; core.classList.add(cls); setTimeout(()=>core.classList.remove(cls), heavy ? 520 : 360); }
-    spawnDmg(svg, BASE_X + 23, FIELD_H/2, '-' + dmg + (heavy ? ' ⚡' : ''), heavy ? 'dmg-charged' : 'dmg-ff');
+    spawnDmg(svg, ORACLE_X, FIELD_H/2, '-' + dmg + (heavy ? ' ⚡' : ''), heavy ? 'dmg-charged' : 'dmg-ff');
     applyBaseDmg(dmg);
     if(!heavy) drawField();   // refresh so a new telegraph ring shows on the primed foe
   }, 220);
@@ -1217,7 +1232,7 @@ function syntaxHit(){
   const svg = document.getElementById('field');
   const core = document.getElementById('base-core');
   if(core){ core.classList.add('base-hit'); setTimeout(()=>core.classList.remove('base-hit'), 360); }
-  spawnDmg(svg, BASE_X + 23, FIELD_H/2, '-' + dmg, 'dmg-ff');
+  spawnDmg(svg, ORACLE_X, FIELD_H/2, '-' + dmg, 'dmg-ff');
   beep(150, 110);
   applyBaseDmg(dmg);
   if(state.baseHP <= 0) waveLost();
