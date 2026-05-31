@@ -33,6 +33,10 @@ window.WAVES = [
     concept: "SELECT",
     enemyArch: "scout",
     title: "First Contact",
+    oracle: {
+      intro: "I am the Oracle — the light these void-motes came to swallow. Your first query is already loaded; read it, then fire. Ask for everything, and I scatter everything.",
+      win: "The whole swarm, gone in one breath. You trusted the simple move — most who sit at this console never do."
+    },
     briefing: "A scout swarm breached the perimeter. Your turret fires on whatever your query returns — so return the whole <code>enemies</code> table to lock the entire swarm.",
     objective: "Return every row from the <code>enemies</code> table. Hint: it's your first query, so it's loaded for you — read it left to right, then fire. Nothing is filtered, so every contact lights up.",
     realWorld: "SELECT is the first thing an analyst writes — it pulls raw rows out of a table so you can see what you're working with.",
@@ -66,6 +70,10 @@ window.WAVES = [
     concept: "SELECT columns",
     enemyArch: "scout",
     title: "Just the Essentials",
+    oracle: {
+      intro: "You don't need every reading off a target to strike it. Name only what matters — two columns — and leave the rest in the dark.",
+      win: "Sharper. You took only what the moment asked for. That restraint is rarer than raw power."
+    },
     briefing: "You only need each contact's <b>name</b> and <b>class</b>, not the full readout. Name those two columns instead of using <code>*</code>.",
     objective: "Return only the <code>name</code> and <code>type</code> columns. Hint: instead of grabbing everything, name the two columns you actually want — what separates one from the next in a list?",
     realWorld: "Analysts almost never want every column — you pick the handful that answer the question, which keeps results readable and queries fast.",
@@ -99,6 +107,10 @@ window.WAVES = [
     concept: "SELECT DISTINCT",
     enemyArch: "raider",
     title: "Sensor Noise",
+    oracle: {
+      intro: "The sensors are seeing double — the same mote logged again and again. Collapse the echoes for me; I cannot lock onto a ghost.",
+      win: "One clean target where there were phantoms. You cut the noise — the console feels clearer already."
+    },
     briefing: "The sensor array logged every contact more than once. Collapse the duplicate rows into one clean target each.",
     objective: "Return each enemy once — no duplicate rows. Hint: the de-dupe keyword is already in the starter — just fill in the two columns that identify each contact.",
     realWorld: "Real tables accumulate duplicates through event logs, joins, and ETL pipelines. SELECT DISTINCT is how you cut through to the unique values.",

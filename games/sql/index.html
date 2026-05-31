@@ -111,6 +111,16 @@ main{flex:1;display:flex;flex-direction:column;min-height:0;position:relative}
 .obj-hint code{font-family:var(--mono);font-size:.9em;color:var(--accent2)}
 .obj-hint:empty{display:none}
 .intel .schema-row{margin:0}
+/* Oracle mentor voice — the recurring character speaks to you (SQL TD New blend
+   of the Archaeology sim's mentor pattern). Compact card below the dossier;
+   data-driven via each wave's optional `oracle` field. */
+.oracle-voice{display:flex;gap:9px;align-items:flex-start;background:var(--surf);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:var(--r2);padding:9px 12px;margin-bottom:10px}
+.oracle-voice .orc-avatar{flex:0 0 auto;font-size:18px;line-height:1.4}
+.oracle-voice .orc-speech{flex:1 1 auto;min-width:0;font-size:13px;line-height:1.5}
+.oracle-voice .orc-name{display:block;font-weight:700;color:var(--accent2);font-size:11px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px}
+.oracle-voice .orc-line{color:var(--text);font-style:italic}
+.orc-overlay-line{color:var(--accent2);font-style:italic;font-size:14px;line-height:1.5;margin-bottom:10px}
+.splash-oracle{color:var(--muted);font-style:italic;font-size:13.5px;line-height:1.6;margin:-12px 0 22px}
 /* Briefing context-toggle (ⓘ) — collapses the lore prose so the player gets
    only the 🎯 objective by default. Forces learn-by-typing over learn-by-reading.
    Visible only when there's prose to expand. */
@@ -390,6 +400,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
   <div class="splash-card">
     <div class="splash-logo">SQL <span class="q">Quest</span></div>
     <p class="splash-tag">Command your turret with real SQL. Each query is an attack — clear the swarm, learn the language analysts get hired for.</p>
+    <p class="splash-oracle">🔮 <span>“I am the Oracle — the light these void-motes came to swallow. Sit. Write true, and we hold the dark together.”</span></p>
     <button class="btn btn-primary splash-start" onclick="startGame()">▶ Start Campaign</button>
     <a class="btn btn-ghost splash-start" href="guide.html" style="font-size:13px;margin-top:-4px">📖 Study Guide — all 23 concepts explained</a>
     <div class="splash-build">Build · <span id="build-ts">—</span></div>
@@ -441,6 +452,15 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
         <button class="help-chip" id="b-job-btn" onclick="showJob()" title="Where this concept gets used on the job">💼 On the job</button>
         <span class="help-chip recall" id="b-recall" title="Earlier concepts this wave makes you reuse">🔁 Recall: <span id="b-recall-text"></span></span>
       </div>
+    </div>
+
+    <!-- ORACLE VOICE — the recurring mentor character speaks to you. Populated
+         per-wave from w.oracle.intro in loadWave(); hidden when a wave has none.
+         Sits below the dossier so the 🎯 Objective still leads. (SQL TD New
+         blend — borrows the Archaeology sim's mentor-voice pattern.) -->
+    <div class="oracle-voice" id="oracle-voice" style="display:none">
+      <span class="orc-avatar" aria-hidden="true">🔮</span>
+      <div class="orc-speech"><span class="orc-name">The Oracle</span><span class="orc-line" id="oracle-line"></span></div>
     </div>
 
     <div class="ed-wrap">
@@ -644,6 +664,13 @@ function loadWave(){
     document.getElementById('b-recall-text').innerHTML = rec.map(c=>`<span class="rk">${esc(c)}</span>`).join('');
     recEl.style.display = 'inline-flex';
   } else { recEl.style.display = 'none'; }
+  // Oracle mentor voice (SQL TD New blend): the recurring character greets you
+  // into the wave. Data-driven + optional — hidden when a wave has no `oracle`.
+  const orcEl = document.getElementById('oracle-voice');
+  if(w.oracle && w.oracle.intro){
+    document.getElementById('oracle-line').innerHTML = w.oracle.intro;
+    orcEl.style.display = 'flex';
+  } else { orcEl.style.display = 'none'; }
   renderTrack();
   document.getElementById('feedback').textContent = '';
   document.getElementById('feedback').className = 'feedback';
@@ -1621,11 +1648,15 @@ function waveCleared(wasFatality){
   const next = WAVES[state.wave + 1];
   const overlayTitle = isVisionWin ? "Oracle's Vision" : 'Wave Cleared';
   const overlayIcon  = isVisionWin ? '👁' : (isColdFatality ? '⚡' : '🏆');
-  const body = isVisionWin
+  // Oracle reacts to the win (SQL TD New blend) — her voice opens the clear
+  // screen, mirroring the Archaeology mentor's win line. Optional per wave.
+  const orcWin = (w.oracle && w.oracle.win)
+    ? `<div class="orc-overlay-line">🔮 “${esc(w.oracle.win)}”</div>` : '';
+  const body = orcWin + (isVisionWin
     ? `You channeled the Vision and finished the wave. <b style="color:var(--accent2)">${esc(w.concept)}</b> is yours now — next time, try it cold.`
       + `<br><span style="color:var(--muted);font-size:13px">Next up — Wave ${next.id}: <b style="color:var(--text)">${esc(next.concept)}</b> · ${esc(next.title)}</span>`
     : `Concept locked in: <b style="color:var(--accent2)">${esc(w.concept)}</b>. Accuracy: ${accuracy()}%.`
-      + `<br><span style="color:var(--muted);font-size:13px">Next up — Wave ${next.id}: <b style="color:var(--text)">${esc(next.concept)}</b> · ${esc(next.title)}</span>`;
+      + `<br><span style="color:var(--muted);font-size:13px">Next up — Wave ${next.id}: <b style="color:var(--text)">${esc(next.concept)}</b> · ${esc(next.title)}</span>`);
   showOverlay(overlayIcon, overlayTitle, body, `Start Wave ${next.id}: ${next.concept} →`);
   // Fatality badge — only for cold-recall wins. Vision wins are recognized
   // by the overlay title itself (no double-badge needed).
