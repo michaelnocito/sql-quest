@@ -98,12 +98,18 @@ main{flex:1;display:flex;flex-direction:column;min-height:0;position:relative}
 .briefing.expanded p{display:block;margin-top:8px;font-size:12.5px;line-height:1.55;color:var(--muted);font-style:italic;border-left:2px solid var(--border);padding-left:9px}
 /* INTELLIGENCE SHEET — Target is the star. Tables and chips support it. */
 .intel-h{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
-.intel-target{margin-top:11px;padding:10px 12px;background:var(--surf2);border:1px solid rgba(212,168,73,.3);border-left:3px solid var(--yellow);border-radius:6px}
+.intel-target{margin-top:11px;padding:13px 15px;background:var(--surf2);border:1px solid rgba(212,168,73,.35);border-left:4px solid var(--yellow);border-radius:6px;box-shadow:0 0 14px rgba(212,168,73,.10)}
 .intel-tables{margin-top:9px;padding-top:8px;border-top:1px solid var(--border)}
 .intel-lbl{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
 .intel-target .intel-lbl{color:var(--yellow)}
-.intel .obj{font-size:16px;font-weight:600;color:var(--text);line-height:1.45;padding:0;margin:0;border:0}
+.intel .obj{font-size:19px;font-weight:700;color:var(--text);line-height:1.35;padding:0;margin:0;border:0}
 .intel .obj b{color:var(--yellow)}
+.intel .obj code{font-family:var(--mono);font-size:.82em;background:var(--surf);color:var(--yellow);padding:1px 5px;border-radius:4px}
+/* Hint sits UNDER the goal — present but clearly secondary, so the goal reads first. */
+.obj-hint{font-size:12.5px;line-height:1.5;color:var(--muted);margin-top:7px}
+.obj-hint::before{content:"💡 ";opacity:.8}
+.obj-hint code{font-family:var(--mono);font-size:.9em;color:var(--accent2)}
+.obj-hint:empty{display:none}
 .intel .schema-row{margin:0}
 /* Briefing context-toggle (ⓘ) — collapses the lore prose so the player gets
    only the 🎯 objective by default. Forces learn-by-typing over learn-by-reading.
@@ -336,7 +342,8 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
   /* Compact briefing — lore prose collapses behind ⓘ (learn-by-typing). */
   .briefing{padding:8px 11px;font-size:13px;margin-bottom:8px}
   /* (prose default-hide + expanded styling now lives in the base CSS) */
-  .intel .obj{font-size:15px;line-height:1.35}
+  .intel .obj{font-size:17px;line-height:1.3}
+  .obj-hint{font-size:12px;margin-top:6px}
   .intel-target{margin-top:7px;padding-top:6px}
   .intel-tables{margin-top:7px;padding-top:6px}
   .help-row{margin-top:6px;gap:5px}
@@ -422,8 +429,9 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
       </header>
       <p id="b-text"></p>
       <div class="intel-target">
-        <div class="intel-lbl">🎯 Target</div>
-        <div class="obj"><b id="b-obj"></b></div>
+        <div class="intel-lbl">🎯 Objective</div>
+        <div class="obj" id="b-obj"></div>
+        <div class="obj-hint" id="b-hint"></div>
       </div>
       <div class="intel-tables">
         <div class="intel-lbl">📋 Tables</div>
@@ -585,6 +593,18 @@ function isSafe(sql){
 
 /* ─── WAVE LOADING ───────────────────────────────────────────────────────── */
 function currentWave(){ return WAVES[state.wave]; }
+// Task #72 — Intel Sheet clarity. Split an objective into its crisp GOAL (the
+// big yellow line) and an optional HINT (the small line under it). Authors write
+// "Goal. Hint: nudge." — the goal is what the player must accomplish; the hint
+// nudges toward the syntax. Keeps the Objective unmissable and the prose crisp.
+function setObjective(text){
+  const t = text || '';
+  const i = t.indexOf('Hint:');
+  const goal = (i === -1 ? t : t.slice(0, i)).trim();
+  const hint = (i === -1 ? '' : t.slice(i + 5)).trim();
+  document.getElementById('b-obj').innerHTML = goal;
+  document.getElementById('b-hint').innerHTML = hint;
+}
 // For phased waves returns the active phase's solution; falls back to w.solution.
 function currentPhaseSolution(){
   const w = currentWave();
@@ -612,7 +632,7 @@ function loadWave(){
   // Phased waves use phase-0 briefing/objective; regular waves use top-level fields.
   const ph0 = w.phases ? w.phases[0] : null;
   document.getElementById('b-text').innerHTML = ph0 ? ph0.briefing : w.briefing;
-  document.getElementById('b-obj').textContent = ph0 ? ph0.objective : w.objective;
+  setObjective(ph0 ? ph0.objective : w.objective);
   updatePhaseIndicator();
   // On-the-job context is shown on demand via the 💼 chip (see showJob); hide
   // the chip if a wave has no career context authored.
@@ -1713,7 +1733,7 @@ function phaseTransition(){
     // Update briefing and objective — flash the card border + pop the chip.
     const ph = w.phases[state.phase];
     document.getElementById('b-text').innerHTML = ph.briefing;
-    document.getElementById('b-obj').textContent = ph.objective;
+    setObjective(ph.objective);
     updatePhaseIndicator();
     // Visual "you are in a new phase" cues: briefing border flashes yellow,
     // phase chip pops to draw the eye.
