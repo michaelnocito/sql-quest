@@ -58,11 +58,6 @@ window.WAVES = [
         (3,'Buzzer','Scout',20),
         (4,'Glider','Scout',35);
     `,
-    hints: [
-      "The turret fires on whatever rows come back. You want ALL of them.",
-      "Use the * wildcard to grab every column: SELECT * FROM ...",
-      "SELECT * FROM enemies;"
-    ],
     terms: ["SELECT", "table", "row", "result set", "wildcard *"]
   },
 
@@ -96,11 +91,6 @@ window.WAVES = [
         (3,'Pip','Scout',28),
         (4,'Glider','Scout',35);
     `,
-    hints: [
-      "Don't use *. List the columns you want instead.",
-      "Separate column names with a comma: SELECT colA, colB FROM ...",
-      "SELECT name, type FROM enemies;"
-    ],
     terms: ["column list", "projection", "comma-separated columns"]
   },
 
@@ -137,11 +127,6 @@ window.WAVES = [
         (4,'Glider','Scout',30),
         (4,'Glider','Scout',30);
     `,
-    hints: [
-      "The table has duplicate rows — you want one entry per unique contact.",
-      "DISTINCT goes right after SELECT: SELECT DISTINCT name, type FROM ...",
-      "SELECT DISTINCT name, type FROM enemies;"
-    ],
     terms: ["SELECT DISTINCT", "deduplication", "unique values"]
   },
 
@@ -176,11 +161,6 @@ window.WAVES = [
         (4,'Scout Fenn','Ally',30),
         (5,'Maul','Raider',70);
     `,
-    hints: [
-      "You only want the Raiders. WHERE lets you keep rows that match a condition.",
-      "Match the text exactly, in quotes: WHERE type = 'Raider'",
-      "SELECT * FROM enemies WHERE type = 'Raider';"
-    ],
     terms: ["WHERE", "filter", "condition", "string literal"]
   },
 
@@ -215,11 +195,6 @@ window.WAVES = [
         (4,'Husk','Raider',35),
         (5,'Maul','Raider',70);
     `,
-    hints: [
-      "You want the high-health ones. Compare the health column to a number.",
-      "Use > for “greater than”, and don't put quotes around a number: WHERE health > 50",
-      "SELECT * FROM enemies WHERE health > 50;"
-    ],
     terms: ["comparison operator", "> < >= <=", "numeric filter"]
   },
 
@@ -254,11 +229,6 @@ window.WAVES = [
         (4,'Husk','Raider',75),
         (5,'Scout Fenn','Ally',30);
     `,
-    hints: [
-      "Two conditions must both hold: the right type, and enough health.",
-      "Join them with AND: WHERE type = 'Raider' AND health > 50",
-      "SELECT * FROM enemies WHERE type = 'Raider' AND health > 50;"
-    ],
     terms: ["AND", "compound condition", "logical operator"]
   },
 
@@ -294,11 +264,6 @@ window.WAVES = [
         (5,'Bulwark','Warden',140),
         (6,'Scout Fenn','Ally',30);
     `,
-    hints: [
-      "You want two different types to both count. Either one should match.",
-      "Use OR between the two conditions: WHERE type = 'Raider' OR type = 'Warden'",
-      "SELECT * FROM enemies WHERE type = 'Raider' OR type = 'Warden';"
-    ],
     terms: ["OR", "IN", "either/or condition"]
   },
 
@@ -333,11 +298,6 @@ window.WAVES = [
         (4,'Husk','Raider',30),
         (5,'Maul','Raider',95);
     `,
-    hints: [
-      "Same rows, but the order matters now — sort them by health.",
-      "ORDER BY sorts; add DESC for highest first: ORDER BY health DESC",
-      "SELECT * FROM enemies ORDER BY health DESC;"
-    ],
     terms: ["ORDER BY", "ASC / DESC", "sort"]
   },
 
@@ -373,11 +333,6 @@ window.WAVES = [
         (5,'Maul','Warden',95),
         (6,'Aegis','Warden',70);
     `,
-    hints: [
-      "Sort by health first so the biggest are on top — then keep only the first three.",
-      "Add LIMIT after the sort: ORDER BY health DESC LIMIT 3",
-      "SELECT * FROM enemies ORDER BY health DESC LIMIT 3;"
-    ],
     terms: ["LIMIT", "top N", "sample"]
   },
 
@@ -413,11 +368,6 @@ window.WAVES = [
       CREATE TABLE bounties (enemy_id INTEGER, reward INTEGER);
       INSERT INTO bounties VALUES (1,500),(3,750);
     `,
-    hints: [
-      "A JOIN stitches two tables together on a shared key.",
-      "enemies.id lines up with bounties.enemy_id — join ON that match.",
-      "SELECT e.id, e.name, e.type, e.health FROM enemies e JOIN bounties b ON e.id = b.enemy_id;"
-    ],
     terms: ["JOIN", "key", "ON", "table alias"]
   },
 
@@ -453,11 +403,6 @@ window.WAVES = [
       CREATE TABLE rewards (enemy_id INTEGER, bounty INTEGER);
       INSERT INTO rewards VALUES (1,500),(3,750);
     `,
-    hints: [
-      "You need all 4 contacts in the result — even Pip and Glider who have no bounty.",
-      "LEFT JOIN keeps all left-table rows: FROM enemies e LEFT JOIN rewards r ON e.id = r.enemy_id",
-      "SELECT e.id, e.name, e.type, e.health FROM enemies e LEFT JOIN rewards r ON e.id = r.enemy_id;"
-    ],
     terms: ["LEFT JOIN", "outer join", "NULL for no match", "unmatched rows"]
   },
 
@@ -491,11 +436,6 @@ window.WAVES = [
         (3,'Maul','Raider',70,NULL),
         (4,'Glider','Scout',30,'cryo');
     `,
-    hints: [
-      "Two enemies have no weakness recorded. NULL means the data is missing — not zero.",
-      "IS NULL tests for missing data: WHERE weakness IS NULL",
-      "SELECT * FROM enemies WHERE weakness IS NULL;"
-    ],
     terms: ["NULL", "IS NULL", "IS NOT NULL", "missing data"]
   },
 
@@ -533,11 +473,6 @@ window.WAVES = [
         (5,'Bulwark','Warden',140),
         (6,'Scout Fenn','Ally',30);
     `,
-    hints: [
-      "You want a set of acceptable types, both should count.",
-      "IN takes a parenthesized list: WHERE type IN ('Raider', 'Warden')",
-      "SELECT * FROM enemies WHERE type IN ('Raider', 'Warden');"
-    ],
     terms: ["IN", "set membership", "list of values"]
   },
 
@@ -573,11 +508,6 @@ window.WAVES = [
         (5,'Husk','Raider',50),
         (6,'Bulwark','Warden',100);
     `,
-    hints: [
-      "You want a range of health values, including the edges.",
-      "BETWEEN 50 AND 100 covers both endpoints.",
-      "SELECT * FROM enemies WHERE health BETWEEN 50 AND 100;"
-    ],
     terms: ["BETWEEN", "range filter", "inclusive bounds"]
   },
 
@@ -613,11 +543,6 @@ window.WAVES = [
         (5,'Vortex','Warden',110),
         (6,'Bulwark','Warden',140);
     `,
-    hints: [
-      "You want every name beginning with V — that's a pattern, not an exact match.",
-      "LIKE with % matches any tail: WHERE name LIKE 'V%'",
-      "SELECT * FROM enemies WHERE name LIKE 'V%';"
-    ],
     terms: ["LIKE", "% wildcard", "pattern matching"]
   },
 
@@ -653,11 +578,6 @@ window.WAVES = [
         (5,'Maul','Raider',70),
         (6,'Aegis','Warden',120);
     `,
-    hints: [
-      "You don't want the rows themselves — just how many there are.",
-      "COUNT(*) tallies matching rows. Keep your WHERE.",
-      "SELECT COUNT(*) FROM enemies WHERE type = 'Raider';"
-    ],
     terms: ["COUNT", "aggregate function", "scalar result"]
   },
 
@@ -692,11 +612,6 @@ window.WAVES = [
         (4,'Bulwark','Warden',140),
         (5,'Pip','Scout',25);
     `,
-    hints: [
-      "You don't want a count — you want the total of a numeric column.",
-      "SUM(column_name) adds the values. AVG(column_name) averages them.",
-      "SELECT SUM(health) FROM enemies;"
-    ],
     terms: ["SUM", "AVG", "numeric aggregate"]
   },
 
@@ -731,11 +646,6 @@ window.WAVES = [
         (4,'Aegis','Warden',140),
         (5,'Husk','Raider',50);
     `,
-    hints: [
-      "You want a single value — the biggest one in the column.",
-      "MAX(column) returns the largest. MIN does the smallest.",
-      "SELECT MAX(health) FROM enemies;"
-    ],
     terms: ["MIN", "MAX", "extremes"]
   },
 
@@ -774,11 +684,6 @@ window.WAVES = [
         (6,'Pip','Scout',25),
         (7,'Skitter','Scout',30);
     `,
-    hints: [
-      "You want one row per type, not one row total. Bucket by the type column first.",
-      "Combine SELECT type, COUNT(*) with GROUP BY type.",
-      "SELECT type, COUNT(*) FROM enemies GROUP BY type;"
-    ],
     terms: ["GROUP BY", "bucketing", "one row per group"]
   },
 
@@ -815,11 +720,6 @@ window.WAVES = [
         (6,'Bulwark','Warden',140),
         (7,'Pip','Scout',25);
     `,
-    hints: [
-      "You can't put COUNT(*) inside WHERE — try HAVING instead.",
-      "GROUP BY first, then HAVING filters the groups.",
-      "SELECT type, COUNT(*) FROM enemies GROUP BY type HAVING COUNT(*) >= 3;"
-    ],
     terms: ["HAVING", "filter groups", "post-aggregate filter"]
   },
 
@@ -857,11 +757,6 @@ window.WAVES = [
         (7,'Pip','Scout',25),
         (8,'Skitter','Scout',30);
     `,
-    hints: [
-      "Give COUNT(*) a name with AS, then sort by that name.",
-      "ORDER BY can sort by the alias you defined: ORDER BY n DESC.",
-      "SELECT type, COUNT(*) AS n FROM enemies GROUP BY type ORDER BY n DESC;"
-    ],
     terms: ["AS", "alias", "ORDER BY aggregate"]
   },
 
@@ -911,11 +806,6 @@ window.WAVES = [
         (5,'Rampart','Warden',90),
         (6,'Shard','Warden',45);
     `,
-    hints: [
-      "Phase 1: pull all Wardens first to break the shields. Phase 2: tighten with AND.",
-      "Phase 1: WHERE type = 'Warden'. Phase 2: add AND health > 60",
-      "Phase 2: SELECT * FROM enemies WHERE type = 'Warden' AND health > 60;"
-    ],
     terms: ["WHERE", "AND", "two-phase query", "compound condition"]
   },
 
@@ -963,11 +853,6 @@ window.WAVES = [
         (5,'Glider','Scout',30),
         (6,'Medic Owl','Ally',40);
     `,
-    hints: [
-      "Phase 1: target only the Scouts. Phase 2: both Raiders and Wardens are hostile.",
-      "Phase 1: WHERE type = 'Scout'. Phase 2: WHERE type = 'Raider' OR type = 'Warden'",
-      "Phase 2: SELECT * FROM enemies WHERE type = 'Raider' OR type = 'Warden';"
-    ],
     terms: ["WHERE", "OR", "two-phase query", "either/or condition"]
   }
 ];
