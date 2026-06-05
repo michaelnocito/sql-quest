@@ -6,17 +6,18 @@ A roguelike **tower-defense game where real SQL queries control your turret**. B
 
 ## Why this exists
 
-It's a free learning tool for people breaking into data analytics. Each wave teaches one core SQL concept in the order you'd meet it on the job:
+It's a free learning tool for people breaking into data analytics. **23 waves** introduce one new SQL concept at a time, in the order you'd meet them on the job, then layer earlier ideas back in so you keep recalling them (spaced retrieval):
 
-| Wave | Concept | What you practice |
-|------|---------|-------------------|
-| 1 | `SELECT` | Pulling rows from a table |
-| 2 | `WHERE` | Filtering to the rows that matter |
-| 3 | `JOIN` | Combining two tables on a key |
-| 4 | `GROUP BY` + `HAVING` | Aggregating *(planned)* |
-| 5 | Subqueries | Nesting queries *(planned)* |
-| 6 | CTEs (`WITH`) | Readable multi-step queries *(planned)* |
-| 7 | Window functions | `RANK`, `ROW_NUMBER` *(planned)* |
+| Tier | Waves | Concepts |
+|------|-------|----------|
+| **Reading rows** | 1–3 | `SELECT *` · `SELECT` columns · `SELECT DISTINCT` |
+| **Filtering** | 4–9 | `WHERE` (text) · `WHERE` (numbers) · `AND` · `OR` · `ORDER BY` · `LIMIT` |
+| **Combining tables** | 10–12 | `JOIN` · `LEFT JOIN` · `IS NULL` |
+| **Matching sets** | 13–15 | `IN` · `BETWEEN` · `LIKE` |
+| **Aggregating** | 16–21 | `COUNT` · `SUM`/`AVG` · `MIN`/`MAX` · `GROUP BY` · `HAVING` · `AS` alias + `ORDER BY` an aggregate |
+| **Boss waves** | 22–23 | Multi-phase fights that recombine filtering logic (`WHERE` → `AND` / `OR`) under pressure |
+
+Each wave's `solution` deliberately reuses verbs from earlier waves, and a "🔁 Recall drill" chip in the briefing names which earlier concepts it makes you reuse.
 
 ## How a wave works
 
@@ -45,8 +46,10 @@ Future packs (Python, Excel, BI) live under `games/<name>/` and reuse the same b
 
 ## Roadmap
 
-- [x] Wave 1–3 (SELECT, WHERE, JOIN)
-- [ ] Waves 4–7 (GROUP BY, subqueries, CTEs, window functions)
+- [x] Waves 1–21 (reading, filtering, joins, set matching, aggregation)
+- [x] Waves 22–23 — multi-phase boss fights
+- [x] Spaced-retrieval recall chips (earlier verbs resurface on a gap)
+- [ ] Next content: subqueries, CTEs (`WITH`), window functions (`RANK`, `ROW_NUMBER`)
 - [ ] Per-concept "codex" cards for the analyst vocabulary each wave introduces
 - [ ] Adaptive audio tied to wave difficulty + time of day (circadian toggle)
 - [ ] Training Ground (replay any cleared wave)
