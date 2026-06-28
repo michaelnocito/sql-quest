@@ -14,6 +14,8 @@
 <title>SQL Quest — SQL Tower Defense</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/themes/prism-tomorrow.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/plugins/line-numbers/prism-line-numbers.min.css">
 <style>
 :root{
   --bg:#171513;--surf:#201d1a;--surf2:#292520;
@@ -159,10 +161,17 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
    grey ghost shows THROUGH where the player hasn't typed yet. As they type,
    their bright text overlays the grey at the corresponding positions — the
    "type over the vision" effect Mike wants for both DEV and Oracle's Vision. */
-.ed-wrap{position:relative;background:var(--surf);border:1px solid var(--border);border-radius:var(--r2);transition:border-color .15s}
-.ed-wrap:focus-within{border-color:var(--accent)}
-#editor{width:100%;min-height:156px;resize:vertical;font-family:var(--mono);font-size:15.5px;line-height:1.7;color:var(--text);background:transparent;border:0;border-radius:var(--r2);padding:14px 16px;outline:none;position:relative;z-index:2}
-.ed-ghost{position:absolute;top:14px;left:16px;right:16px;font-family:var(--mono);font-size:15.5px;line-height:1.7;color:var(--muted);pointer-events:none;white-space:pre-wrap;display:none;z-index:1}
+.ed-wrap{position:relative;background:#0d0d0d;border:2px solid #0a9;border-radius:var(--r2);transition:border-color .15s;box-shadow:inset 0 0 0 1px rgba(0,170,136,.2)}
+.ed-wrap:focus-within{border-color:#00dd99;box-shadow:inset 0 0 0 1px rgba(0,221,153,.4)}
+#editor{width:100%;min-height:156px;resize:vertical;font-family:var(--mono);font-size:15.5px;line-height:1.7;color:rgba(232,224,212,.85);background:transparent;border:0;border-radius:0;padding:14px 16px;outline:none;position:relative;z-index:2}
+#editor::placeholder{color:rgba(154,143,130,.5);font-style:italic}
+.ed-ghost{position:absolute;top:14px;left:16px;right:16px;font-family:var(--mono);font-size:15.5px;line-height:1.7;color:rgba(90,170,150,.7);pointer-events:none;white-space:pre-wrap;overflow:hidden;z-index:1}
+.ed-ghost .token.keyword{color:#66d9ef;font-weight:600}
+.ed-ghost .token.string{color:#e6db74}
+.ed-ghost .token.number{color:#ae81ff}
+.ed-ghost .token.function{color:#a1efe4}
+.ed-ghost .token.operator{color:#f92672}
+.ed-ghost .token.comment{color:#75715e;font-style:italic}
 .ed-row{display:flex;gap:8px;align-items:center;margin-top:9px;flex-wrap:wrap}
 .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--r2);font:600 14px var(--font);cursor:pointer;border:none;transition:.15s}
 .btn-primary{background:var(--accent);color:#0e1f1e}
@@ -408,7 +417,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
   <div class="splash-card">
     <div class="splash-logo">SQL <span class="q">Quest</span></div>
     <p class="splash-tag">Command your turret with real SQL. Each query is an attack — clear the swarm, learn the language analysts get hired for.</p>
-    <p class="splash-oracle">🔮 <span>“I am the Oracle — the light these void-motes came to swallow. Sit. Write true, and we hold the dark together.”</span></p>
+    <p class=”splash-oracle”>🎖️ <span>”Chief, we're reading a massive cluster on our sensors. I need a full diagnostic — all contacts, every data point. Run a complete scan and show me what we're facing.”</span></p>
     <button class="btn btn-primary splash-start" onclick="startGame()">▶ Start Campaign</button>
     <a class="btn btn-ghost splash-start" href="guide.html" style="font-size:13px;margin-top:-4px">📖 Study Guide — all 23 concepts explained</a>
     <div class="splash-build">Build · <span id="build-ts">—</span></div>
@@ -467,8 +476,8 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
          Sits below the dossier so the 🎯 Objective still leads. (SQL TD New
          blend — borrows the Archaeology sim's mentor-voice pattern.) -->
     <div class="oracle-voice" id="oracle-voice" style="display:none">
-      <span class="orc-avatar" aria-hidden="true">🔮</span>
-      <div class="orc-speech"><span class="orc-name">The Oracle</span><span class="orc-line" id="oracle-line"></span></div>
+      <span class="orc-avatar" aria-hidden="true">🎖️</span>
+      <div class="orc-speech"><span class="orc-name">Captain's Briefing</span><span class="orc-line" id="oracle-line"></span></div>
     </div>
 
     <div class="ed-wrap">
@@ -477,7 +486,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
     </div>
 
     <div class="ed-row">
-      <button class="btn btn-primary" onclick="runQuery()">Execute Query <span class="kbd">Ctrl+↵</span></button>
+      <button class="btn btn-primary" onclick="runQuery()" style="font-family:var(--mono);letter-spacing:.02em">▶ Execute <span class="kbd">Ctrl+↵</span></button>
       <button class="btn btn-ghost btn-sm" onclick="formatSQL()" id="format-btn" title="Uppercase SQL keywords (Alt+Shift+F). SQL is case-insensitive — type lowercase, click Format.">Format <span class="kbd">⌥⇧F</span></button>
       <span class="spacer"></span>
       <span class="dev-note" id="dev-hint">Dev mode on — press <span class="kbd">Tab</span> to insert the answer</span>
@@ -2464,6 +2473,22 @@ async function init(){
   setFb('', '');
 }
 init();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/components/prism-sql.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
+<script>
+// Real-time syntax highlighting for the SQL editor (Prism.js)
+const editor = document.getElementById('editor');
+const highlighter = document.getElementById('ghost');
+
+editor.addEventListener('input', () => {
+  highlighter.textContent = editor.value;
+  Prism.highlightElement(highlighter);
+});
+
+// Apply Prism line numbers on init
+Prism.highlightElement(highlighter);
 </script>
 </body>
 </html>
