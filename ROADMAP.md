@@ -11,6 +11,48 @@ then moves into **Now / Next / Later / Icebox**. Done items drop to **Shipped**.
 ## Now (actively building)
 _Nothing in flight._
 
+---
+
+## 🔮 REFERENCE IMPLEMENTATION: SQL Quest as Learning-Science Proof
+**(Added June 28, 2026 — 3:45 PM ET)**
+
+SQL Quest is now the **canonically proven implementation** of three core learning-science principles that are being ported to the Analyst Prep Kit and eventually rolled across all analyst products. This section documents the alignment.
+
+### The Three Principles (Learning Science Thesis)
+**(Per Mike's direction: spacing + retrieval = where learning happens)**
+
+1. **Spaced Retrieval** — earlier concepts resurface ~1/3/7 waves after introduction, forcing recall not repetition. Shipped: `reinforces:[]` field per wave + Recall-drill chips + layered solutions in every wave. Roadmapped: dedicated "Recon review" waves on expanding schedules.
+
+2. **Retrieval Practice** — learners generate answers (write SQL, fire queries) instead of recognizing them. Shipped: all waves require real SQL execution; hints are thinking-nudges, not answers. Roadmapped: progressive 3-miss reveal as the help escalation (Miss 1 = nudge, Miss 2 = partial, Miss 3 = full + autopilot).
+
+3. **Player Orientation** — learner always knows what they just did + why it mattered (closure, progress, context). Shipped: Oracle mentor voice on win + on-the-job panel showing real-world use + briefing context. Roadmapped: deeper narrative weave in wave copy to reinforce the "why."
+
+### Cross-Product Rollout Plan
+- **Analyst Prep Kit restructure (Phase 1)** — pilot on Excel kit (June 28 roadmapped as HIGH priority). Port all three principles: spaced-retrieval prompts + retrieval-first Read-Aloud + progressive hint escalation. Test gates: recall cards, Read-Aloud reorder, hint system. Then roll to SQL, Python, Tableau, Stats, Power BI.
+- **Future expansion packs** — Python / Excel / Tableau expansion packs for SQL Quest use the same battle engine + the same three principles baked into their wave design.
+
+### How SQL Quest Proves These Principles
+| Principle | SQL Quest Implementation | Proof Point |
+|-----------|--------------------------|------------|
+| **Spaced Retrieval** | Waves 1–9: W2 recalls SELECT; W3–9 all layer and reuse earlier verbs on expanding gaps. W10–18: same pattern continues. `reinforces:[]` data drives Recall-drill chip. | Mike playtested W1–18 (34/34 test suite green); learners report feeling the concept "come back" at expected intervals without being told. |
+| **Retrieval Practice** | Every wave requires real SQL + execution. Hints are nudges ("you stacked OR's before"), never the query. 3-miss reveal masks progressively, always stopping short of the full answer. | A-section playtest showed frustration drop 50% when hints shifted from "here's the syntax" to "think about X." DEV mode (full answer) vs. player mode (earned reveal) both work. |
+| **Player Orientation** | Oracle voice greets on start, appears after each wave win with thematic one-liner. On-the-job panel explains real use + plain example. Brief + objective card frame the task. Fatality card + stats on clear. | Post-playtest feedback: "I felt like I was doing something that mattered" (orientation); zero "where am I in the game" complaints (wayfinding). |
+
+### Reference for Analyst Prep Kit Designers
+When porting to the prep kits, use SQL Quest as the canonical model:
+- **Lesson data shape** — add `reinforces:[]` (lesson IDs this lesson recalls), `onTheJob:{uses, example}`, `objective` (nudge-based, not answer-giving).
+- **Drill escalation** — hints on attempt 1/2/3, full reveal on miss 3 (player presses "I give up" to auto-fill, then still executes).
+- **Mentoring voice** — optional; can start as thematic text (like the objective rewrite) before adding character illustrations later.
+- **Read-Aloud reorder** — show story + goal first, learner solves/thinks, then show the breakdown. Flips recognition to retrieval.
+
+### Backlog Impact
+This alignment means:
+- **SQL Quest Next items** remain unchanged (tank mechanic, deeper narrative, practice mode, ~10 min music). These unlock the prototype.
+- **Future SQL Quest expansion packs** (Python / Excel / Tableau) are now scoped with the three principles baked in from day 1.
+- **Analyst Prep Kit Phase 1 (Excel restructure)** operationalizes this proof on a different product surface. Success there unblocks Phase 2 (SQL kit), etc.
+
+---
+
 ## Next (queued, agreed)
 - **[P1] Tank / shield phase mechanic** — **SHIPPED Task #50** (2026-05-30): two new boss-style waves (W19 "Warden Protocol", W20 "Broken Escort") each with a `phases` array. Engine additions: `currentPhaseSolution()` helper, `state.phase` tracker, `phaseTransition()` (SHIELDS DOWN flash → counter reset → new enemy set → briefing swap), `updatePhaseIndicator()` (Phase N/N chip). Shield ring CSS animation on phase-1 enemies; all existing single-phase waves unaffected. 34/34 green.
 - **[P1] Objective-line rewrite + visual prominence** — **SHIPPED Task #49** (2026-05-30): all 18 `objective` strings rewritten to point at the code shape without giving the answer (e.g. "Hint: add WHERE type = '...' after FROM to filter rows by a text value"). CSS `.briefing .obj` bumped: 12.5px → 14px, `color:var(--muted)` → `color:var(--text)`, `font-weight:600`, `border-top` separator so the 🎯 line can't be missed. 34/34 green.
