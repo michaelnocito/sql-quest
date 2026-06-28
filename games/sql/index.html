@@ -341,6 +341,13 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
   0%,100%{filter:drop-shadow(0 0 18px rgba(212,168,73,.7)) drop-shadow(0 0 8px rgba(125,191,184,.5))}
   50%{filter:drop-shadow(0 0 32px rgba(212,168,73,1)) drop-shadow(0 0 50px rgba(125,191,184,.4))}
 }
+/* Screen shake + damage flash — wrong-answer juice */
+.screen-shake{animation:screen-shake .25s ease-out}
+@keyframes screen-shake{0%,100%{transform:translate(0,0)}20%{transform:translate(-5px,-3px)}40%{transform:translate(5px,3px)}60%{transform:translate(-3px,5px)}80%{transform:translate(3px,-5px)}}
+.damage-flash{position:fixed;inset:0;background:rgba(224,92,92,.35);pointer-events:none;z-index:999;animation:dmg-flash-fade .35s ease-out forwards}
+@keyframes dmg-flash-fade{0%{opacity:1}100%{opacity:0}}
+.success-flash{position:fixed;inset:0;background:rgba(92,186,138,.2);pointer-events:none;z-index:999;animation:suc-flash-fade .4s ease-out forwards}
+@keyframes suc-flash-fade{0%{opacity:1}100%{opacity:0}}
 /* Phase mechanic: shielded enemies in phase-1 show a pulsing teal ring */
 .shield-ring{animation:shield-pulse 1.6s ease-in-out infinite}
 @keyframes shield-pulse{0%,100%{stroke-opacity:0.3;stroke-width:2}50%{stroke-opacity:0.85;stroke-width:3.5}}
@@ -720,7 +727,8 @@ function loadWave(){
       name: obj.name || obj.id || ('Target '+(i+1)),
       archetype: archFromType(obj.type) || w.enemyArch || 'warden',
       maxHp: ENEMY_MAXHP, hp: ENEMY_MAXHP, advance: 0, alive: true,
-      shielded: isPhased   // phase-1 enemies carry shields until the transition
+      shielded: isPhased,
+      spriteAlt: i % 2 === 1
     };
   });
   document.getElementById('field-status').textContent =
@@ -1258,12 +1266,14 @@ function archOf(en){ return ENEMY_ARCH[en && en.archetype] || ENEMY_ARCH.warden;
 // when the result set has a `type` column (Raider/Warden/Scout/etc.).
 const TYPE_TO_ARCH = { 'Raider':'raider', 'Warden':'warden', 'Scout':'scout' };
 function archFromType(t){ return TYPE_TO_ARCH[t] || null; }
-// A void-being — a slow-rotating dark crystal star with a counter-rotating
-// inner glyph and a glowing nucleus. Silhouette varies by archetype.
+const SHIP_SPRITES = { scout:'enemies/enemy_7.png', raider:'enemies/enemy_51.png', warden:'enemies/enemy_84.png' };
+const SHIP_SPRITES_ALT = { scout:'enemies/enemy_23.png', raider:'enemies/enemy_112.png', warden:'enemies/enemy_51.png' };
+function shipSpriteFor(en){
+  const arch = en && en.archetype || 'warden';
+  return (en && en.spriteAlt) ? (SHIP_SPRITES_ALT[arch] || SHIP_SPRITES[arch]) : (SHIP_SPRITES[arch] || 'enemies/enemy_84.png');
+}
 function enemyFigure(x, y, en){
   const a = archOf(en);
-  // Telegraph: a primed foe shows a pulsing warning ring + spark — a heavy
-  // strike lands on the next wrong query unless a correct one interrupts it.
   const warn = (en && en.primed)
     ? `<circle class="charge-warn" cx="${x}" cy="${y}" r="56" fill="none" stroke="var(--yellow)" stroke-width="3"/>`
       + `<text x="${x}" y="${y-63}" fill="var(--yellow)" font-size="22" text-anchor="middle">⚡</text>`
@@ -1271,14 +1281,12 @@ function enemyFigure(x, y, en){
   const shield = (en && en.shielded)
     ? `<circle class="shield-ring" cx="${x}" cy="${y}" r="${a.ro + 22}" fill="none" stroke="var(--accent2)" stroke-width="2.5"/>`
     : '';
-  // Show the archetype class name (Warden / Raider / Scout) — not the DB row name.
   const label = (en.archetype || '').charAt(0).toUpperCase() + (en.archetype || '').slice(1);
+  const sz = 80;
   return `<circle cx="${x}" cy="${y}" r="56" fill="url(#${a.halo})"/>`
     + warn
     + shield
-    + `<g class="spin-self ${a.spin}"><polygon class="mote-core" points="${starPts(x,y,a.spikes,a.ro,a.ri)}" fill="#160f1e" stroke="${a.stroke}" stroke-width="3" stroke-opacity="0.85"/></g>`
-    + `<g class="spin-self ${a.inner}"><polygon points="${polyPts(x,y,a.glyph,24,-Math.PI/2)}" fill="none" stroke="${a.stroke}" stroke-opacity="0.55" stroke-width="1.5"/></g>`
-    + `<circle cx="${x}" cy="${y}" r="9" fill="${a.nucleus}" fill-opacity="0.9"/>`
+    + `<image href="${shipSpriteFor(en)}" x="${x-sz/2}" y="${y-sz/2}" width="${sz}" height="${sz}" class="mote-core" style="filter:drop-shadow(0 0 8px ${a.stroke})"/>`
     + `<text x="${x}" y="${y+63}" fill="#cdd6ff" font-size="13" text-anchor="middle" font-family="var(--mono)">${label}</text>`;
 }
 
@@ -1334,6 +1342,7 @@ function applyBaseDmg(dmg){
 // the Final-Fantasy-style exchange. Survivors creep a step between volleys.
 function volley(isPhaseKill = false){
   busy = true;
+  successFlash();
   // A correct query interrupts any wind-up — good play is always safe.
   enemiesLive.forEach(en=>{ en.charge = 0; en.primed = false; });
   const svg = document.getElementById('field');
@@ -1416,6 +1425,7 @@ function volley(isPhaseKill = false){
 // so there's no risk of reading stale state inside a deferred callback.
 function fatality(isPhaseKill = false){
   busy = true;
+  successFlash();
   const svg = document.getElementById('field');
   // Interrupt any wind-up — clean play always cancels charges.
   enemiesLive.forEach(en=>{ en.charge = 0; en.primed = false; });
@@ -1512,6 +1522,7 @@ function enemyAttack(){
 // damage. Over-broad (false-positive) rows add friendly-fire on top.
 function missTurn(falsePos){
   busy = true;
+  damageFlash(); screenShake();
   // Dissonant tritone stab — immediate "that was wrong" audio signal.
   // C5 + F#5 (523 + 740 Hz): bright register cuts through the low bass hits.
   // Sawtooth for bite; both notes fire together as a sharp dissonant chord.
@@ -1550,6 +1561,7 @@ function standardAttackDmg(){
 // SYNTAX ERROR / BANNED VERB → a lighter punishment: half of a standard strike,
 // no creep and no full lunge. Still counts as a failed attempt (drives reveal).
 function syntaxHit(){
+  damageFlash(); screenShake();
   const dmg = Math.max(1, Math.ceil(standardAttackDmg() * 0.5));
   const svg = document.getElementById('field');
   const core = document.getElementById('base-core');
@@ -1984,6 +1996,20 @@ function beep(freq, ms){
   o.connect(g); g.connect(c.destination); o.start();
   g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + ms/1000);
   o.stop(c.currentTime + ms/1000);
+}
+function screenShake(){
+  const m = document.querySelector('main');
+  m.classList.remove('screen-shake'); void m.offsetWidth;
+  m.classList.add('screen-shake');
+  setTimeout(()=>m.classList.remove('screen-shake'), 250);
+}
+function damageFlash(){
+  const d = document.createElement('div'); d.className='damage-flash';
+  document.body.appendChild(d); setTimeout(()=>d.remove(), 350);
+}
+function successFlash(){
+  const d = document.createElement('div'); d.className='success-flash';
+  document.body.appendChild(d); setTimeout(()=>d.remove(), 400);
 }
 function updateAudioBtns(){
   const mb = document.getElementById('music-btn');
