@@ -675,8 +675,9 @@ function loadWave(){
   // Oracle mentor voice (SQL TD New blend): the recurring character greets you
   // into the wave. Data-driven + optional — hidden when a wave has no `oracle`.
   const orcEl = document.getElementById('oracle-voice');
-  if(w.oracle && w.oracle.intro){
-    document.getElementById('oracle-line').innerHTML = w.oracle.intro;
+  const mentorIntro = (w.captain && w.captain.intro) ? w.captain.intro : (w.oracle && w.oracle.intro ? w.oracle.intro : null);
+  if(mentorIntro){
+    document.getElementById('oracle-line').innerHTML = mentorIntro;
     orcEl.style.display = 'flex';
   } else { orcEl.style.display = 'none'; }
   renderTrack();
@@ -1658,8 +1659,8 @@ function waveCleared(wasFatality){
   const overlayIcon  = isVisionWin ? '👁' : (isColdFatality ? '⚡' : '🏆');
   // Oracle reacts to the win (SQL TD New blend) — her voice opens the clear
   // screen, mirroring the Archaeology mentor's win line. Optional per wave.
-  const orcWin = (w.oracle && w.oracle.win)
-    ? `<div class="orc-overlay-line">🔮 “${esc(w.oracle.win)}”</div>` : '';
+  const mentorWin = (w.captain && w.captain.win) ? w.captain.win : (w.oracle && w.oracle.win ? w.oracle.win : null);
+  const orcWin = mentorWin ? `<div class=”orc-overlay-line”>🔮 “${esc(mentorWin)}”</div>` : '';
   const body = orcWin + (isVisionWin
     ? `You channeled the Vision and finished the wave. <b style="color:var(--accent2)">${esc(w.concept)}</b> is yours now — next time, try it cold.`
       + `<br><span style="color:var(--muted);font-size:13px">Next up — Wave ${next.id}: <b style="color:var(--text)">${esc(next.concept)}</b> · ${esc(next.title)}</span>`
