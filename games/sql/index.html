@@ -65,17 +65,49 @@ header .dev-toggle{margin-left:2px}
    pane → sticky action bar at the viewport bottom. The Execute button is
    never buried by the mobile keyboard, and the result table is capped + scrolls
    internally so it can never push the editor off-screen. */
-/* BRIDGE VIEW (default, all viewports) — battlefield fills the entire
-   background like the view out a bridge viewport; editor sits in front as
-   a translucent console. Player's eyes stay on the terminal but the action
-   plays out wrapped around it. */
-main{flex:1;display:block;min-height:0;position:relative;height:100%}
-.field-pane{position:absolute;inset:0;z-index:0;border-bottom:none;background:linear-gradient(#0b1130,#0e2a2c)}
-.editor-pane{position:relative;z-index:1;margin:0 auto;max-width:560px;width:100%;height:100%;padding:10px 14px 14px;overflow-y:auto;background:rgba(23,21,19,.82);border-left:1px solid rgba(88,170,162,.28);border-right:1px solid rgba(88,170,162,.28);box-shadow:0 0 40px rgba(0,0,0,.55),inset 0 0 24px rgba(88,170,162,.06);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-.field-pane .overlay{position:fixed;z-index:50}
-/* TRUE MOBILE: console fills width — no room for side-air on narrow phones */
+/* FIRST-PERSON BRIDGE — you're seated at the helm. The battlefield is the
+   view through the canopy (top); the SQL terminal is the console you lean
+   over (bottom). A canopy vignette + corner struts (.canopy SVG) wrap the
+   view so you feel enclosed in the ship, and the console's lit, angled top
+   lip reads as the physical edge of a dashboard, not two stacked boxes. */
+main{flex:1;display:flex;flex-direction:column;min-height:0;position:relative;height:100%}
+
+/* THE VIEWPORT — open space seen through the canopy; enemies float here, large. */
+.field-pane{position:relative;order:-1;flex:0 0 44vh;min-height:190px;z-index:0;border-bottom:none;overflow:hidden;
+  background:radial-gradient(125% 95% at 50% 16%, #16235a 0%, #0b1130 56%, #07101a 100%);
+  transition:flex-basis .25s ease}
+/* canopy vignette — curved-glass darkening at the edges of the view */
+.field-pane::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:6;
+  background:radial-gradient(135% 125% at 50% 10%, transparent 52%, rgba(4,8,14,.72) 100%);
+  box-shadow:inset 0 -26px 44px rgba(4,8,14,.7)}
+body.typing .field-pane{flex-basis:32vh;min-height:140px}
+
+/* THE CONSOLE — the dashboard you lean over: a teal-rimmed metal surface the
+   terminal is set into. The clipped top corners read as the angled console lip. */
+.editor-pane{position:relative;flex:1 1 auto;min-height:0;z-index:2;width:100%;max-width:820px;margin:0 auto;
+  padding:18px 18px 16px;overflow-y:auto;
+  background:linear-gradient(180deg,#1b1916 0%,#141210 60%,#100e0c 100%);
+  border-top:2px solid rgba(88,170,162,.55);
+  box-shadow:0 -18px 38px rgba(0,0,0,.6), inset 0 16px 28px rgba(88,170,162,.06);
+  clip-path:polygon(0 16px, 5% 0, 95% 0, 100% 16px, 100% 100%, 0 100%)}
+/* lit front edge of the console lip */
+.editor-pane::before{content:'';position:absolute;top:0;left:5%;right:5%;height:2px;z-index:3;pointer-events:none;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.75;
+  filter:drop-shadow(0 0 6px rgba(88,170,162,.5))}
+
+/* COCKPIT CANOPY FRAME — angled corner struts stretched over the viewport so
+   the open space reads as "seen through a ship frame," not a plain panel. */
+.canopy{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:7}
+
+/* The wave-cleared overlay covers the WHOLE bridge, not just the viewport. */
+.field-pane .overlay{position:fixed;inset:0;z-index:50}
+
+/* TRUE MOBILE: shorter canopy so the terminal + Execute stay above the fold
+   (the primary action must never be buried), shorter still while typing. */
 @media (max-width:699px){
-  .editor-pane{max-width:none;padding:10px 12px 14px;background:rgba(23,21,19,.9)}
+  .field-pane{flex-basis:24vh;min-height:140px}
+  body.typing .field-pane{flex-basis:16vh;min-height:96px}
+  .editor-pane{max-width:none;padding:14px 13px 14px}
 }
 
 /* CONCEPT TRACK — shows the whole campaign path: done · current · upcoming */
@@ -506,6 +538,23 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
     <div class="field-status" id="field-status">Void-motes in the lane — weave the right query to scatter them.</div>
     <svg id="field-bg" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
     <svg id="field" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid meet"></svg>
+    <!-- COCKPIT CANOPY — angled corner struts framing the view through the
+         helm window. Stretched to fill the viewport (preserveAspectRatio none)
+         so the struts stay pinned to the corners at any size. -->
+    <svg class="canopy" viewBox="0 0 800 320" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="strut-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="rgba(125,191,184,.55)"/>
+          <stop offset="1" stop-color="rgba(88,170,162,.18)"/>
+        </linearGradient>
+      </defs>
+      <!-- top-left strut -->
+      <path d="M0,0 L232,0 L168,40 L70,40 L70,118 L0,162 Z"
+            fill="rgba(88,170,162,.07)" stroke="url(#strut-grad)" stroke-width="2"/>
+      <!-- top-right strut -->
+      <path d="M800,0 L568,0 L632,40 L730,40 L730,118 L800,162 Z"
+            fill="rgba(88,170,162,.07)" stroke="url(#strut-grad)" stroke-width="2"/>
+    </svg>
     <div class="overlay" id="overlay">
       <div class="big" id="ov-big">🏆</div>
       <div class="first-try" id="ov-firsttry">🎯 First try — no peeking!</div>
@@ -534,7 +583,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "June 28, 2026 · 9:22 PM ET";
+const BUILD_TS = "June 28, 2026 · 9:48 PM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, devMode: false, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, fatalities: 0, visionWaves: [], started: Date.now()
