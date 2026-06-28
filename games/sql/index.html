@@ -257,6 +257,12 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 .result-tbl th,.result-tbl td{border:1px solid var(--border);padding:4px 8px;text-align:left}
 .result-tbl th{background:var(--surf2);color:var(--accent2)}
 .result-meta{margin-top:5px;font-size:11px;color:var(--muted)}
+/* gauge cell — a threat/HP column rendered as a readable bar + value, so the
+   battlefield can be read straight off the scan. */
+.gauge-td{white-space:nowrap}
+.gauge{display:inline-block;vertical-align:middle;width:46px;height:7px;border-radius:4px;background:var(--surf2);border:1px solid var(--border);overflow:hidden;margin-right:7px}
+.gauge-bar{display:block;height:100%;border-radius:4px}
+.gauge-val{vertical-align:middle;color:var(--text)}
 
 /* HINT */
 .hint{margin-top:8px;font-size:12.5px;color:var(--yellow);background:rgba(212,168,73,.08);border-left:3px solid var(--yellow);border-radius:0 6px 6px 0;padding:7px 11px;display:none}
@@ -622,7 +628,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "June 28, 2026 · 10:24 PM ET";
+const BUILD_TS = "June 28, 2026 · 10:46 PM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, devMode: false, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, fatalities: 0, visionWaves: [], started: Date.now()
@@ -1106,13 +1112,34 @@ function setFb(kind, msg){
   fb.className = 'feedback ' + kind;
   fb.textContent = msg;
 }
+// Columns that describe a target's strength/durability — when the player
+// queries one, we render it as a readable gauge bar so the battlefield is
+// legible straight from the table ("scan the threat, then calibrate"). Pure
+// presentation: the data, query and combat are untouched.
+const GAUGE_COLS = ['threat_level','threat','hp','health','strength','power','shield','armor','danger'];
+function gaugeColIndex(columns){
+  return columns.findIndex(c => GAUGE_COLS.includes(String(c).toLowerCase()));
+}
+function gaugeCell(v, max){
+  if(v == null || isNaN(Number(v))) return `<td>${v==null?'NULL':esc(v)}</td>`;
+  const n = Number(v);
+  const pct = max > 0 ? Math.max(6, Math.round((n / max) * 100)) : 0;
+  // colour by relative strength: high = red threat, mid = yellow, low = green
+  const ratio = max > 0 ? n / max : 0;
+  const col = ratio > 0.66 ? 'var(--red)' : ratio > 0.33 ? 'var(--yellow)' : 'var(--green)';
+  return `<td class="gauge-td"><span class="gauge"><span class="gauge-bar" style="width:${pct}%;background:${col}"></span></span><span class="gauge-val">${esc(v)}</span></td>`;
+}
 function showResult(r){
   const el = document.getElementById('result');
   const block = document.getElementById('output-block');
   if(!r.columns.length){ el.innerHTML = '<div class="result-meta">Query ran — no rows returned.</div>'; }
   else {
+    const gi = gaugeColIndex(r.columns);
+    const gMax = gi >= 0 ? Math.max(...r.rows.map(row => Number(row[gi])).filter(n => !isNaN(n)), 0) : 0;
     const thead = `<tr>${r.columns.map(c=>`<th>${esc(c)}</th>`).join('')}</tr>`;
-    const tbody = r.rows.map(row=>`<tr>${row.map(v=>`<td>${v==null?'NULL':esc(v)}</td>`).join('')}</tr>`).join('');
+    const tbody = r.rows.map(row=>`<tr>${row.map((v,ci)=>
+      ci === gi ? gaugeCell(v, gMax) : `<td>${v==null?'NULL':esc(v)}</td>`
+    ).join('')}</tr>`).join('');
     el.innerHTML = `<table class="result-tbl"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`
       + `<div class="result-meta">${r.rows.length} row${r.rows.length!==1?'s':''} returned</div>`;
   }
