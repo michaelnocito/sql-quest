@@ -33,30 +33,30 @@ window.WAVES = [
     concept: "SELECT",
     enemyArch: "scout",
     title: "First Contact",
-    oracle: {
-      intro: "I am the Oracle — the light these void-motes came to swallow. Your first query is already loaded; read it, then fire. Ask for everything, and I scatter everything.",
-      win: "The whole swarm, gone in one breath. You trusted the simple move — most who sit at this console never do."
+    captain: {
+      intro: "Chief, we're reading a massive cluster on our sensors. I need a full diagnostic — all contacts, every data point. Run a complete scan and show me what we're facing.",
+      win: "Well done. You pulled the complete picture on your first try. That's command-level thinking."
     },
-    briefing: "A scout swarm breached the perimeter. Your turret fires on whatever your query returns — so return the whole <code>enemies</code> table to lock the entire swarm.",
-    objective: "Return every row from the <code>enemies</code> table. Hint: it's your first query, so it's loaded for you — read it left to right, then fire. Nothing is filtered, so every contact lights up.",
-    realWorld: "SELECT is the first thing an analyst writes — it pulls raw rows out of a table so you can see what you're working with.",
+    briefing: "The network is flooded with incoming contacts. Your console fires a volley on whatever your query returns. To lock the entire swarm, return the complete <code>contacts</code> table — all columns, all rows.",
+    objective: "Return every row and every column from the <code>contacts</code> table. Hint: Your opening query is loaded for you. Read it left to right, then execute. Nothing is filtered, so every contact lights up.",
+    realWorld: "SELECT * is the first move any analyst makes — you pull raw data out of a table to see what you're actually working with: what columns exist, what data looks like, whether the table is even populated.",
     layer: "copy",
     rounds: 3,
     creep: 0.10,
     reinforces: [],
-    starter: "SELECT * FROM enemies;",
-    solution: "SELECT * FROM enemies;",
-    explain: {
-      simple: "SELECT pulls rows back out of a table. The * means “every column”, so SELECT * FROM enemies hands you the whole table, nothing left out.",
-      analogy: "Like asking a librarian to wheel out an entire shelf — every book comes back, none held aside."
-    },
-    onTheJob: {
-      uses: "Reading rows back out of a table is the very first move in almost any analysis — an ad-hoc data pull, a sanity check before a report, or just seeing what columns a table even has.",
-      example: "A teammate says \"can you pull the customers table so we can take a look?\" — you'd reach for SELECT to read those rows back."
-    },
+    starter: "SELECT * FROM contacts;",
+    solution: "SELECT * FROM contacts;",
+    solutions: [
+      {briefing:"A network anomaly is spreading through our database. I need a full diagnostic — every piece of data about these corrupted contacts so we can understand the extent.",objective:"Pull the complete dataset from the <code>contacts</code> table. Hint: The asterisk means all columns. Fire it.",explain:{simple:"SELECT * pulls every row and every column out of a table. The * is a wildcard meaning give me everything.",analogy:"Like a doctor asking run every test on a patient — you get back all measurements, all vital signs, a complete picture."},onTheJob:{uses:"First step in any analysis: you don't know what you have yet. SELECT * answers that question fast.",example:"I just got access to the sales table — what does it even contain? — you'd SELECT * to see all rows and columns."}},
+      {briefing:"Our sensors are detecting incoming signatures. Before the captain can decide on a response, she needs a complete threat assessment. Feed her the raw data.",objective:"Return the entire <code>contacts</code> table unfiltered. Every column, every row — the captain needs the complete picture.",explain:{simple:"SELECT * means pull back all the data; nothing is hidden or removed. You're retrieving the full dataset.",analogy:"Like a security camera showing the entire room, not just one corner — you capture everything that's there."},onTheJob:{uses:"Before you can filter or analyze, you need to see what exists. Unfiltered data dumps are your baseline.",example:"Give me the raw customer data so I can understand what fields we have — SELECT * FROM customers."}},
+      {briefing:"The database is locked in read-only mode while we investigate the breach. Your first job: catalog everything. What contacts exist? Retrieve the complete manifest.",objective:"Return all data from the <code>contacts</code> table with no filtering. That's your starting point for diagnosis.",explain:{simple:"SELECT * is SQL's way of saying no filtering, no edits — just hand me the data as-is.",analogy:"Like opening a filing cabinet and looking at every folder without removing any — you inventory what's there."},onTheJob:{uses:"After a data incident, the first forensic step is always: what do we actually have? SELECT * shows the raw facts.",example:"Something went wrong in the pipeline. I need to see every row and column in the source table. — SELECT *."}},
+      {briefing:"Our deep-space sensors picked up something familiar — an old Federation database still broadcasting. Before we can make sense of it, we need the full telemetry. Show me everything.",objective:"Retrieve the complete <code>contacts</code> table. No cuts, no filters — full transparency.",explain:{simple:"SELECT * retrieves the whole dataset without modification. It's the most basic query: show me what you've got.",analogy:"Like an explorer opening a sealed archive for the first time — you see everything inside, completely unchanged."},onTheJob:{uses:"The building block of every analysis: start with the complete data, then filter and transform it step by step.",example:"Load the full dataset into memory so I can work with it — SELECT *."}}
+    ],
+    explain:{simple:"SELECT pulls rows back out of a table. The * means every column, so SELECT * FROM contacts hands you the whole table, nothing left out.",analogy:"Like asking a librarian to wheel out an entire shelf — every book comes back, none held aside."},
+    onTheJob:{uses:"Reading rows back out of a table is the very first move in almost any analysis — an ad-hoc data pull, a sanity check before a report, or just seeing what columns a table even has.",example:"A teammate says can you pull the contacts table so we can take a look? — you'd reach for SELECT to read those rows back."},
     schema: `
-      CREATE TABLE enemies (id INTEGER, name TEXT, type TEXT, health INTEGER);
-      INSERT INTO enemies VALUES
+      CREATE TABLE contacts (id INTEGER, name TEXT, type TEXT, threat_level INTEGER);
+      INSERT INTO contacts VALUES
         (1,'Recon Drone','Scout',30),
         (2,'Skitter','Scout',25),
         (3,'Buzzer','Scout',20),
@@ -70,30 +70,30 @@ window.WAVES = [
     concept: "SELECT columns",
     enemyArch: "scout",
     title: "Just the Essentials",
-    oracle: {
-      intro: "You don't need every reading off a target to strike it. Name only what matters — two columns — and leave the rest in the dark.",
-      win: "Sharper. You took only what the moment asked for. That restraint is rarer than raw power."
+    captain: {
+      intro: "You don't need a full readout to assess a target. Name only what matters — the contact's signature and type — and leave the noise behind.",
+      win: "Precise. You took exactly what the situation demanded. That efficiency could save the ship."
     },
-    briefing: "You only need each contact's <b>name</b> and <b>class</b>, not the full readout. Name those two columns instead of using <code>*</code>.",
-    objective: "Return only the <code>name</code> and <code>type</code> columns. Hint: instead of grabbing everything, name the two columns you actually want — what separates one from the next in a list?",
+    briefing: "Signal isolation is critical. You need each contact's <b>name</b> and <b>type</b>, not the full sensor array. Name those two columns instead of using <code>*</code>.",
+    objective: "Return only the <code>name</code> and <code>type</code> columns from <code>contacts</code>. Hint: instead of grabbing everything, name the two columns you actually want.",
     realWorld: "Analysts almost never want every column — you pick the handful that answer the question, which keeps results readable and queries fast.",
     layer: "modify",
     rounds: 3,
     creep: 0.11,
     reinforces: ["SELECT"],
-    starter: "SELECT ____, ____ FROM enemies;",
-    solution: "SELECT name, type FROM enemies;",
-    explain: {
-      simple: "Instead of the * wildcard, you can list the exact columns you want, separated by commas. SELECT name, type returns just those two columns for every row.",
-      analogy: "Like ordering two specific dishes off a menu instead of asking for one of everything in the kitchen — you get exactly what you asked for, nothing extra."
-    },
-    onTheJob: {
-      uses: "Real tables can have dozens of columns; pulling only the ones you need keeps the output readable, the query fast, and your intent clear to whoever reads it later.",
-      example: "Someone asks \"just give me each customer's name and email\" — you'd name those two columns instead of selecting the whole table."
-    },
+    starter: "SELECT ____, ____ FROM contacts;",
+    solution: "SELECT name, type FROM contacts;",
+    solutions: [
+      {briefing:"Signal isolation is critical right now. We're drowning in telemetry. Give me just the contact name and class so we can assess threat vectors.",objective:"Pull only <code>name</code> and <code>type</code> from the <code>contacts</code> table. Hint: list them after SELECT, separated by a comma.",explain:{simple:"Instead of * you list the exact columns you want, separated by commas. SELECT name, type returns just those two columns for every row.",analogy:"Like ordering two specific dishes off a menu instead of asking for one of everything in the kitchen — you get exactly what you asked for, nothing extra."},onTheJob:{uses:"Real tables can have dozens of columns; pulling only the ones you need keeps the output readable, the query fast, and your intent clear to whoever reads it later.",example:"Someone asks just give me each customer's name and email — you'd name those two columns instead of selecting the whole table."}},
+      {briefing:"We're implementing cascade damping — a containment protocol. To tune it right, I need to understand the distribution of threat levels across contact types. Give me just the type and the threat reading.",objective:"Return only <code>type</code> and <code>threat_level</code> from <code>contacts</code>. This time, pick the columns that help you see patterns.",explain:{simple:"You can SELECT any columns you need. Just list them by name after SELECT, in any order.",analogy:"Like a researcher choosing which measurements to record — you pick what's relevant, ignore the rest."},onTheJob:{uses:"Every analyst query starts with knowing which columns to pull. Too many columns = noise. Too few = missing the picture.",example:"I need to see which products are in each category — SELECT category, product_name FROM inventory."}},
+      {briefing:"Speed matters. We're at red alert. I don't have time for full telemetry dumps. Just send me name and type — that's all the captain needs to make a call.",objective:"Retrieve <code>name</code> and <code>type</code> only. The fewer columns, the faster the response — and right now, fast wins.",explain:{simple:"SELECT name, type FROM contacts will return just those two columns for all rows in the contacts table.",analogy:"Like giving your commander a briefing slide instead of a 50-page report — concise, actionable, now."},onTheJob:{uses:"High-volume queries benefit from pulling only what you need. Database performance scales with column count.",example:"For a report on active users, SELECT user_id, status FROM users — not every field in the profile."}},
+      {briefing:"Captain's briefing: what are we facing? Send me the roster — contact names and their classification. That's the intel I need to decide our next move.",objective:"Pull name and type from contacts. These two columns tell the story we need.",explain:{simple:"Named columns in SELECT let you pick exactly which data comes back. It's more efficient and clearer than SELECT *.",analogy:"Like a historian choosing which documents to study — you focus on the relevant ones, not every archive box."},onTheJob:{uses:"Column selection is how you communicate intent. Seeing SELECT name, type tells the next person exactly what question you were answering.",example:"To find high-value customers, SELECT customer_id, revenue FROM customers WHERE revenue > 50000."}}
+    ],
+    explain:{simple:"Instead of * you can list the exact columns you want, separated by commas. SELECT name, type returns just those two columns for every row.",analogy:"Like ordering two specific dishes off a menu instead of asking for one of everything in the kitchen — you get exactly what you asked for, nothing extra."},
+    onTheJob:{uses:"Real tables can have dozens of columns; pulling only the ones you need keeps the output readable, the query fast, and your intent clear to whoever reads it later.",example:"Someone asks just give me each customer's name and email — you'd name those two columns instead of selecting the whole table."},
     schema: `
-      CREATE TABLE enemies (id INTEGER, name TEXT, type TEXT, health INTEGER);
-      INSERT INTO enemies VALUES
+      CREATE TABLE contacts (id INTEGER, name TEXT, type TEXT, threat_level INTEGER);
+      INSERT INTO contacts VALUES
         (1,'Recon Drone','Scout',30),
         (2,'Skitter','Scout',25),
         (3,'Pip','Scout',28),
@@ -107,30 +107,30 @@ window.WAVES = [
     concept: "SELECT DISTINCT",
     enemyArch: "raider",
     title: "Sensor Noise",
-    oracle: {
-      intro: "The sensors are seeing double — the same mote logged again and again. Collapse the echoes for me; I cannot lock onto a ghost.",
-      win: "One clean target where there were phantoms. You cut the noise — the console feels clearer already."
+    captain: {
+      intro: "The logs are flooded with duplicates from a cascading loop. We need a clean picture: one entry per unique contact. Filter out the echoes and show me the real targets.",
+      win: "Clean signal. One entry per target — you cut through the noise and showed me what's actually there."
     },
-    briefing: "The sensor array logged every contact more than once. Collapse the duplicate rows into one clean target each.",
-    objective: "Return each enemy once — no duplicate rows. Hint: the de-dupe keyword is already in the starter — just fill in the two columns that identify each contact.",
+    briefing: "The log processor duplicated every contact entry as the cascade spread through the system. Collapse the duplicate rows into one clean entry per contact.",
+    objective: "Return each contact once — no duplicate rows. Hint: the de-dupe keyword is already in the starter — just fill in the two columns that identify each unique contact.",
     realWorld: "Real tables accumulate duplicates through event logs, joins, and ETL pipelines. SELECT DISTINCT is how you cut through to the unique values.",
     layer: "modify",
     rounds: 3,
     creep: 0.11,
     reinforces: ["SELECT"],
-    starter: "SELECT DISTINCT ____, ____ FROM enemies;",
-    solution: "SELECT DISTINCT name, type FROM enemies;",
-    explain: {
-      simple: "DISTINCT filters the result set down to unique rows only — any row that's an exact copy of another is dropped. It sits right after SELECT, before the column list.",
-      analogy: "Like calling roll in a class where some students appear twice on the sheet — you mark each name once and skip the repeat."
-    },
-    onTheJob: {
-      uses: "Duplicates sneak in through logging, joins, and pipelines. SELECT DISTINCT is the quick sanity-check: how many unique values actually exist in this column?",
-      example: "\"How many distinct product categories do we sell?\" — SELECT DISTINCT category FROM products."
-    },
+    starter: "SELECT DISTINCT ____, ____ FROM contacts;",
+    solution: "SELECT DISTINCT name, type FROM contacts;",
+    solutions: [
+      {briefing:"Log echo cleanup protocol: we need to see how many unique contact types we're actually dealing with. Every duplicate record is bloating the signal. De-dupe and show me the roster.",objective:"Return each unique combination of <code>name</code> and <code>type</code> once. Hint: DISTINCT goes right after SELECT.",explain:{simple:"DISTINCT filters the result set down to unique rows only — any row that's an exact copy of another is dropped. It sits right after SELECT, before the column list.",analogy:"Like calling roll in a class where some students appear twice on the sheet — you mark each name once and skip the repeat."},onTheJob:{uses:"Duplicates sneak in through logging, joins, and pipelines. SELECT DISTINCT is the quick sanity-check: how many unique values actually exist in this column?",example:"How many distinct product categories do we sell? — SELECT DISTINCT category FROM products."}},
+      {briefing:"Cascade filtering in progress. I need to understand threat distribution across unique contact types — but first, no duplicates in the result set. Give me the distinct contact signatures.",objective:"Remove all duplicate rows from <code>contacts</code>. Show <code>name</code> and <code>type</code>, one per unique contact.",explain:{simple:"SELECT DISTINCT eliminates duplicate rows. If two rows are identical, only one survives in the result.",analogy:"Like a librarian removing duplicate catalog cards — the library now has a clean, accurate list."},onTheJob:{uses:"Before analyzing data, you often need to know: how many unique values are there really? DISTINCT answers that fast.",example:"How many distinct customers actually placed orders this month? — SELECT DISTINCT customer_id FROM orders."}},
+      {briefing:"Threat assessment requires accuracy. The database is reporting duplicates for every incoming signal. Use DISTINCT to collapse them back to ground truth: one entry per actual threat.",objective:"Filter <code>contacts</code> to show each unique threat once. Return <code>name</code> and <code>type</code> with no repeats.",explain:{simple:"DISTINCT is SQL's way of saying keep only the unique rows. It compares entire rows, not individual columns.",analogy:"Like a bouncer checking IDs — if you've already been checked in, you don't get checked again."},onTheJob:{uses:"Event logs often create duplicates when systems process the same event twice. DISTINCT is your first deduplication tool.",example:"Our user login table has duplicates. SELECT DISTINCT user_id, login_time FROM logins to see unique sessions."}},
+      {briefing:"Unique count verification: I need an accurate manifest of who — and what — we're facing. The sensor logs duplicated every entry. De-dupe the contacts and send me a clean count.",objective:"Use DISTINCT to return each unique contact in the table. Show <code>name</code> and <code>type</code>, no duplicates.",explain:{simple:"SELECT DISTINCT queries return each unique row exactly once, no matter how many times it appears in the original table.",analogy:"Like sorting through a stack of business cards and removing duplicates — you end up with one card per person."},onTheJob:{uses:"Database duplicates are common. DISTINCT is often the first step in cleaning data: see what unique values actually exist.",example:"Our ETL pipeline might have created duplicate customer records. SELECT DISTINCT email FROM customers to audit."}}
+    ],
+    explain:{simple:"DISTINCT filters the result set down to unique rows only — any row that's an exact copy of another is dropped. It sits right after SELECT, before the column list.",analogy:"Like calling roll in a class where some students appear twice on the sheet — you mark each name once and skip the repeat."},
+    onTheJob:{uses:"Duplicates sneak in through logging, joins, and pipelines. SELECT DISTINCT is the quick sanity-check: how many unique values actually exist in this column?",example:"How many distinct product categories do we sell? — SELECT DISTINCT category FROM products."},
     schema: `
-      CREATE TABLE enemies (id INTEGER, name TEXT, type TEXT, health INTEGER);
-      INSERT INTO enemies VALUES
+      CREATE TABLE contacts (id INTEGER, name TEXT, type TEXT, threat_level INTEGER);
+      INSERT INTO contacts VALUES
         (1,'Vex','Raider',60),
         (1,'Vex','Raider',60),
         (2,'Pip','Scout',25),
