@@ -583,7 +583,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "June 28, 2026 · 9:48 PM ET";
+const BUILD_TS = "June 28, 2026 · 9:58 PM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, devMode: false, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, fatalities: 0, visionWaves: [], started: Date.now()
@@ -1091,24 +1091,24 @@ function showResult(r){
 }
 
 /* ─── BATTLEFIELD (SVG) ──────────────────────────────────────────────────── */
-const FIELD_W = 800, FIELD_H = 320, BASE_X = 720, ORACLE_X = 690, LANE_TOP = 50, LANE_GAP = 56;
-// Squadron formation — splits the enemies into a top row (front line, ceil N/2)
-// and a bottom row (back line, floor N/2), each centered on the advance line.
-// For odd N the top row is wider, giving a clean arrowhead/pyramid silhouette.
-// Solo enemies (aggregate waves) center vertically.
+const FIELD_W = 800, FIELD_H = 320;
+// Bearing-based enemy positions — spread across the viewport like space around you.
+// Each enemy at a different angle (bearing) from the center, distance scaled by advancement.
+// Waves can override via optional `positions` array: [{x, y}, ...] in wave data.
 function enemyPos(i, en){
   const N = enemiesLive.length;
-  if(N === 1) return { x: enemyX(en.advance), y: FIELD_H/2 };
-  const topCount = Math.ceil(N / 2);
-  const inTop = i < topCount;
-  const rowCount = inTop ? topCount : (N - topCount);
-  const idxInRow = inTop ? i : (i - topCount);
-  const centerIdx = (rowCount - 1) / 2;
-  const ROW_OFFSET = 78, COL_OFFSET = 112;
-  return {
-    x: enemyX(en.advance) + (centerIdx - idxInRow) * COL_OFFSET,
-    y: FIELD_H/2 + (inTop ? -ROW_OFFSET : ROW_OFFSET)
-  };
+  const w = state.wave < WAVES.length ? WAVES[state.wave] : null;
+
+  // If the wave defines explicit positions, use them (data-driven per scenario).
+  if(w && w.positions && w.positions[i]) return w.positions[i];
+
+  // Otherwise, spread enemies in a bearing formation across the viewport.
+  const cx = FIELD_W / 2, cy = FIELD_H / 2;
+  const bearing = (i / Math.max(1, N)) * Math.PI * 2;  // evenly space around circle
+  const advDist = 90 + en.advance * 0.8;  // distance from center based on advancement
+  const x = cx + Math.cos(bearing) * advDist;
+  const y = cy + Math.sin(bearing) * advDist * (FIELD_H / FIELD_W);  // scale for aspect
+  return { x: Math.max(40, Math.min(FIELD_W - 40, x)), y: Math.max(40, Math.min(FIELD_H - 40, y)) };
 }
 const ENEMY_MAXHP = 100;   // every enemy starts here; a correct volley chips maxHp/rounds
 const FF_DMG = 4;          // friendly-fire: base HP lost per over-broad (false-positive) row
@@ -1231,17 +1231,8 @@ function drawField(){
   const svg = document.getElementById('field');
   buildFieldBg();   // ensure the persistent animated backdrop exists
   let s = fieldDefs();
-  // the Oracle — your geometric celestial being on the right (was the Spire)
-  s += heroFigure(ORACLE_X, FIELD_H/2);
-  // lane guides — faint star-paths drawn under each enemy's row
-  const seenRows = new Set();
-  enemiesLive.forEach((en,i)=>{
-    const { y } = enemyPos(i, en);
-    if(seenRows.has(y)) return;
-    seenRows.add(y);
-    s += `<line x1="70" y1="${y}" x2="${BASE_X}" y2="${y}" stroke="var(--accent)" stroke-opacity="0.14" stroke-dasharray="2 8" stroke-width="1"/>`;
-  });
-  // void-motes — eclipse fragments drifting toward the Oracle
+  // Oracle removed — full viewport now shows space around you.
+  // enemies spread across bearings around the player
   enemiesLive.forEach((en,i)=>{
     if(!en.alive) return;
     const { x, y } = enemyPos(i, en);
