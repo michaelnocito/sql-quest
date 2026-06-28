@@ -9,7 +9,59 @@ then moves into **Now / Next / Later / Icebox**. Done items drop to **Shipped**.
 ---
 
 ## Now (actively building)
-_Nothing in flight._
+- **[P1] Action-RPG Progression Phase 2 -- item drops + enemy variety** (next = Task #74). Enemies drop loot on death (scrap pieces, cosmetic items). Visual loot on battlefield. Inventory UI. Different enemy ships per wave (more sprites from the CC0 asset pack). Needs: drop table design, rarity tiers, cosmetic sprite set.
+
+---
+
+## Action-RPG Progression (Phases 1-5)
+**(Added June 28, 2026 -- Mike's vision for SQL Quest evolution)**
+
+Mike's feedback: correct-answer feedback is hard to see because the animation
+happens away from where the player's eyes are (the terminal). Solution: make
+feedback impossible to miss + layer an action-RPG progression system on top
+of the existing turn-based combat.
+
+### Phase 1 -- SHIPPED (Task #73, June 28, 2026)
+- Replaced SVG polygon void-motes with PNG ship sprites (CC0 asset pack,
+  Wisedawn 200+ Starships, Clean style). 5 ships mapped to scout/raider/warden.
+- Added full-screen red damage flash + screen shake on wrong answer.
+- Added full-screen green success flash on correct answer.
+- All existing beam/boom/shockwave/sound animations preserved.
+
+### Phase 2 -- Item Drops + Enemy Variety (next up)
+- Enemy death triggers item drops (weapon/armor/cosmetic scrap pieces).
+- Visual loot on the battlefield (floating pickup sprites).
+- Different enemy ships per wave (rotate through asset pack).
+- Item rarity tiers (common/rare/epic) for visual hierarchy.
+- Estimated: ~2-3 days.
+
+### Phase 3 -- Loot Inventory + Equippable Cosmetics
+- Inventory UI (bottom-right corner or sidebar).
+- Items equippable to change player ship/Oracle visual appearance.
+- Silly but professional cosmetic options (Mike's direction: "have fun with it").
+- Estimated: ~2-3 days.
+
+### Phase 4 -- Crafting System
+- Scrap pieces collected from enemies feed into crafting recipes.
+- Simple click-to-craft (no skill commands needed).
+- Recipes stored client-side (JSON). No API dependency.
+- Crafter UI (modal or sidebar).
+- Estimated: ~2-3 days.
+
+### Phase 5 -- Meta Progression (stretch)
+- Equipped items grant stat bonuses (more HP, better rewards).
+- Unlockable cosmetics as campaign progresses.
+- Level select with difficulty tiers.
+- Estimated: ~3-4 days.
+
+### Key Decisions (locked in, June 28 session)
+- **Enemy art:** CC0 asset pack (Wisedawn), not hand-drawn. Files in
+  `games/sql/enemies/`. Add more from `C:\Users\Mike\Projects\Graphics Assets\200Starships\Clean\`.
+- **Crafting:** click-to-craft, no skill commands required.
+- **Cosmetics:** silly but professional options (Mike: "have fun with this").
+- **Hit system (deferred):** discussed wrong-answer hit limit (5 hits = restart
+  level) but not yet implemented in SQL Quest -- the existing HP system already
+  serves this role. Revisit if the HP curve feels too forgiving.
 
 ---
 
@@ -101,6 +153,7 @@ This alignment means:
 ---
 
 ## Shipped
+- **[P1] Action-RPG Phase 1 -- enemy ship sprites + screen shake/flash feedback** (2026-06-28) -- Mike: "hard to see the action when you get a right answer." Replaced SVG polygon void-motes with CC0 PNG ship sprites (5 from Wisedawn asset pack, mapped to scout/raider/warden with alternating variants). Added full-screen red damage flash + CSS screen shake on wrong answer (missTurn + syntaxHit). Added full-screen green success flash on correct answer (volley + fatality). All existing beam/boom/sound animations preserved. 26/26 green.
 - **[P0] DEV-off helper-text leak + dev-only wave picker** (2026-05-29) — Mike playtest B-section finding: with DEV off, the editor still showed the wave's `starter` scaffold pre-filled (looked like the dev helper sticking around). Root cause: the queued "starter helper text" feature was already half-wired via `w.starter` pre-fill in `loadWave`. **Fix:** editor now starts empty in both modes; in DEV the answer ghost shows behind (Tab inserts); in player mode the editor is clean until misses kick in the reveal. Toggling DEV resets the miss counters so each mode starts cleanly. **Also added** the dev-only **wave picker** (`<select id="dev-jump">` next to the DEV button, only visible when DEV is on) so any of the 18 waves can be tested in one click — full HP, fresh counters, lane rebuilt. Headless suite still 34/34.
 - **[P1] Tier 2 + Tier 3 content — waves 10–18 (intermediate ramp)** (2026-05-28) — kept the beginner ramp's one-new-idea-per-wave pacing. Added **9 waves** continuing from JOIN: **10 `IN`** (set membership) → **11 `BETWEEN`** (range) → **12 `LIKE`** (text pattern, `%`) → **13 `COUNT(*)`** (first aggregate — "how many?") → **14 `SUM` / `AVG`** (numeric aggregates) → **15 `MIN` / `MAX`** (extremes) → **16 `GROUP BY`** (one row per category) → **17 `HAVING`** (filter the groups; contrast with WHERE) → **18 `AS` alias + `ORDER BY` an aggregate** (top-category-by-count, the analyst-leaderboard pattern). Each layers earlier verbs and carries a `reinforces` recall chip on expanding gaps. Each has full briefing / objective / explain + analogy / on-the-job uses + example / hints. Headless suite updated (renderable check is aggregate-aware) and **34/34 green**. Game is now 18 waves end-to-end.
 - **[P1] Headless test suite (Playwright) — quality + directive gate before playtest** (2026-05-28) — Mike wanted the game run through a headless test at the highest standard for this kind of game, checking both industry quality bars and our own project directives. Added a **Playwright** suite (headless Chromium, desktop + iPhone viewport) committed to the repo, runnable with `npm test`; dev-only tooling, not shipped. Covers: **functional** (all 9 waves solvable, ORDER BY/LIMIT enforced, over-broad = friendly fire, a real UI playthrough, persistence, zero console errors), **accessibility** (axe-core WCAG 2.1 AA, every control named, `prefers-reduced-motion` honored), **security** (SQL allowlist blocks all write/DDL verbs, no secrets), and **project directives** (player oriented, action stays visible, build-stamp format, spaced-retrieval data, network only to self + sql.js/fonts CDNs, and a **private-design-notes leak guard** whose term list is kept in a git-ignored local fixture). Plain-language `TESTING.md` for a beginner. **A11y fixes made to pass:** `aria-label` on the SQL editor, the campaign track made keyboard-focusable, and the dev/reveal ghost text bumped to meet contrast (dropped the .45 opacity — it now reads as muted, not barely-there). 34/34 green.
@@ -131,6 +184,8 @@ Raw incoming notes from Mike. Newest first. Triaged into the lists above.
 
 | Date | Feedback | Priority | Status | Where it went |
 |------|----------|----------|--------|----------------|
+| 2026-06-28 | "Hard to see the action of when you get a right answer. Optimize visual placement relative to the terminal. First-person bridge view. On wrong queries they get hit, red glow shake screen. Item drops when enemies are killed, equippable to visually change ship, scrap pieces to craft. Creating a mini crafter." | P1 | Phase 1 done, Phases 2-5 roadmapped | Action-RPG Progression section. Phase 1 shipped (Task #73). Phases 2-5 queued in roadmap. |
+| 2026-06-28 | "Use ships from C:\Users\Mike\Projects\Graphics Assets\200Starships. Click-to-craft, no skill commands. Have fun with the cosmetic options -- silly but professional." | P1 | done (Phase 1) + roadmapped | CC0 asset pack integrated. Crafting + cosmetics scoped in Phases 3-4. |
 | 2026-05-28 | "Kick the music up — more oomph, a funky 70s Super Fly-ish vibe (not too much), based on solid game research, WITHOUT losing the researched calm/spatial benefits I like. Also: we don't have to do turrets, we can do people — I'm thinking more turn-based combat like Final Fantasy now." | P2 | done (music) | Shipped (funk groove layer gated to energetic sections; ambient sections preserved). "People / FF turn-based" pivot → see theme direction below |
 | 2026-05-28 | Art-direction decision: go **psychedelic celestial** (synthetic geometric forms; characters can become cool psychedelic celestial beings later). Considered using Mike's own charcoal art (michaelnocito.github.io/art) — he decided charcoal doesn't fit this motif. Design goal: art-first, hypnotic, low cognitive load, flow-friendly. | P1 | done (backdrop) | Shipped persistent psychedelic-celestial animated backdrop; geometric character forms queued in Next |
 | 2026-05-28 | "Translate the audio into a stage theme. Keep the FF *combat/play* but the theme can deviate from FF. Look up themes that appeal to both men and women — don't make it just for young boys (and don't pander/superficially target one gender)." Picked direction #1 of three offered. | P1 | done | Shipped (Celestial Cartographer battlefield reskin); deeper narrative pass queued in Next |
