@@ -92,7 +92,7 @@ test.describe('Functional correctness', () => {
       if (await page.locator('#overlay.show').count() > 0) break;
       await page.waitForFunction(() => !busy, null, { timeout: 8_000 }).catch(() => {});
       await page.fill('#editor', solution);
-      await page.getByRole('button', { name: /execute query/i }).click();
+      await page.getByRole('button', { name: /execute/i }).click();
     }
     await expect(page.locator('#overlay')).toHaveClass(/show/, { timeout: 8_000 });
     await expect(page.locator('#ov-title')).toHaveText(/cleared/i);

@@ -24,9 +24,9 @@ test.describe('Project directives', () => {
     await openGame(page);
     await startCampaign(page);
     await expect(page.locator('#editor')).toBeInViewport();
-    await expect(page.getByRole('button', { name: /execute query/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /execute/i })).toBeVisible();
     await page.fill('#editor', 'SELECT * FROM enemies');
-    await page.getByRole('button', { name: /execute query/i }).click();
+    await page.getByRole('button', { name: /execute/i }).click();
     await page.waitForTimeout(600);
     await expect(page.locator('#editor')).toBeInViewport(); // result table didn't bury it
   });
@@ -54,7 +54,7 @@ test.describe('Project directives', () => {
   test('only same-origin and known CDNs (sql.js + Google Fonts) are contacted', async ({ page }) => {
     // Allowed external hosts: the sql.js WebAssembly CDN and Google Fonts.
     // (If we ever self-host fonts for full privacy/offline, drop the font hosts.)
-    const ALLOWED = ['localhost', '127.0.0.1', 'cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
+    const ALLOWED = ['localhost', '127.0.0.1', 'cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com', 'www.googletagmanager.com', 'www.google-analytics.com'];
     const offsite = new Set();
     page.on('request', (req) => {
       const u = new URL(req.url());

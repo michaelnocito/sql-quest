@@ -81,7 +81,7 @@ SQL Quest is now the **canonically proven implementation** of three core learnin
 
 ### Cross-Product Rollout Plan
 - **Analyst Prep Kit restructure (Phase 1)** — pilot on Excel kit (June 28 roadmapped as HIGH priority). Port all three principles: spaced-retrieval prompts + retrieval-first Read-Aloud + progressive hint escalation. Test gates: recall cards, Read-Aloud reorder, hint system. Then roll to SQL, Python, Tableau, Stats, Power BI.
-- **Future expansion packs** — Python / Excel / Tableau expansion packs for SQL Quest use the same battle engine + the same three principles baked into their wave design.
+- **Future expansion packs** — Python / Excel / Tableau expansion packs for SQL Quest use the same battle engine + the same three principles built into their wave design.
 
 ### How SQL Quest Proves These Principles
 | Principle | SQL Quest Implementation | Proof Point |
@@ -100,7 +100,7 @@ When porting to the prep kits, use SQL Quest as the canonical model:
 ### Backlog Impact
 This alignment means:
 - **SQL Quest Next items** remain unchanged (tank mechanic, deeper narrative, practice mode, ~10 min music). These unlock the prototype.
-- **Future SQL Quest expansion packs** (Python / Excel / Tableau) are now scoped with the three principles baked in from day 1.
+- **Future SQL Quest expansion packs** (Python / Excel / Tableau) are now scoped with the three principles built in from day 1.
 - **Analyst Prep Kit Phase 1 (Excel restructure)** operationalizes this proof on a different product surface. Success there unblocks Phase 2 (SQL kit), etc.
 
 ---

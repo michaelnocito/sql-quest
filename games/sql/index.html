@@ -75,12 +75,14 @@ main{flex:1;display:flex;flex-direction:column;min-height:0;position:relative}
   .field-pane{flex-basis:22vh;min-height:130px}
   body.typing .field-pane{flex-basis:15vh;min-height:95px}
 }
-/* Side-by-side layout fires for desktop (>=900px) OR any landscape phone/tablet
-   with limited vertical space (<=500px high). */
+/* BRIDGE VIEW — desktop (>=900px): battlefield fills the entire background,
+   editor console overlays on top like a bridge terminal looking out at space.
+   The player's eyes stay on the terminal but the action is visible around it. */
 @media (min-width:900px), (max-height:500px) and (orientation:landscape){
-  main{flex-direction:row}
-  .editor-pane{order:0;flex:0 0 44%;max-width:44%;height:100%;border-right:1px solid var(--border);padding-bottom:14px}
-  .field-pane{order:0;flex:1 1 auto;height:100%;min-height:0;border-bottom:none;flex-basis:auto;transition:none}
+  main{position:relative;display:block;height:100%}
+  .field-pane{position:absolute;inset:0;z-index:0;height:100%;border-bottom:none;flex:none;min-height:0;transition:none}
+  .editor-pane{position:relative;z-index:1;margin:0 auto;max-width:520px;width:100%;height:100%;padding:10px 16px 14px;overflow-y:auto;background:rgba(23,21,19,.88);border-left:1px solid rgba(88,170,162,.25);border-right:1px solid rgba(88,170,162,.25);box-shadow:0 0 40px rgba(0,0,0,.6),inset 0 0 20px rgba(88,170,162,.06);backdrop-filter:blur(6px)}
+  .field-pane .overlay{position:fixed;z-index:50}
   body.typing .field-pane{flex-basis:auto;min-height:0}
 }
 
