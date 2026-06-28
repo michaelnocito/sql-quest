@@ -65,25 +65,17 @@ header .dev-toggle{margin-left:2px}
    pane → sticky action bar at the viewport bottom. The Execute button is
    never buried by the mobile keyboard, and the result table is capped + scrolls
    internally so it can never push the editor off-screen. */
-main{flex:1;display:flex;flex-direction:column;min-height:0;position:relative}
-.editor-pane{flex:1 1 auto;min-height:0;padding:12px 14px;overflow-y:auto;background:var(--bg)}
-.field-pane{order:-1;flex:0 0 35vh;min-height:160px;position:relative;border-bottom:1px solid var(--border);background:linear-gradient(#0b1130,#0e2a2c);transition:flex-basis .25s ease}
-/* TRUE MOBILE only: shrink the battlefield more aggressively + shrink further
-   when typing so the editor + result get more room above the keyboard.
-   Desktop-narrow stays at the comfortable 35vh default. */
+/* BRIDGE VIEW (default, all viewports) — battlefield fills the entire
+   background like the view out a bridge viewport; editor sits in front as
+   a translucent console. Player's eyes stay on the terminal but the action
+   plays out wrapped around it. */
+main{flex:1;display:block;min-height:0;position:relative;height:100%}
+.field-pane{position:absolute;inset:0;z-index:0;border-bottom:none;background:linear-gradient(#0b1130,#0e2a2c)}
+.editor-pane{position:relative;z-index:1;margin:0 auto;max-width:560px;width:100%;height:100%;padding:10px 14px 14px;overflow-y:auto;background:rgba(23,21,19,.82);border-left:1px solid rgba(88,170,162,.28);border-right:1px solid rgba(88,170,162,.28);box-shadow:0 0 40px rgba(0,0,0,.55),inset 0 0 24px rgba(88,170,162,.06);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.field-pane .overlay{position:fixed;z-index:50}
+/* TRUE MOBILE: console fills width — no room for side-air on narrow phones */
 @media (max-width:699px){
-  .field-pane{flex-basis:22vh;min-height:130px}
-  body.typing .field-pane{flex-basis:15vh;min-height:95px}
-}
-/* BRIDGE VIEW — desktop (>=900px): battlefield fills the entire background,
-   editor console overlays on top like a bridge terminal looking out at space.
-   The player's eyes stay on the terminal but the action is visible around it. */
-@media (min-width:900px), (max-height:500px) and (orientation:landscape){
-  main{position:relative;display:block;height:100%}
-  .field-pane{position:absolute;inset:0;z-index:0;height:100%;border-bottom:none;flex:none;min-height:0;transition:none}
-  .editor-pane{position:relative;z-index:1;margin:0 auto;max-width:520px;width:100%;height:100%;padding:10px 16px 14px;overflow-y:auto;background:rgba(23,21,19,.88);border-left:1px solid rgba(88,170,162,.25);border-right:1px solid rgba(88,170,162,.25);box-shadow:0 0 40px rgba(0,0,0,.6),inset 0 0 20px rgba(88,170,162,.06);backdrop-filter:blur(6px)}
-  .field-pane .overlay{position:fixed;z-index:50}
-  body.typing .field-pane{flex-basis:auto;min-height:0}
+  .editor-pane{max-width:none;padding:10px 12px 14px;background:rgba(23,21,19,.9)}
 }
 
 /* CONCEPT TRACK — shows the whole campaign path: done · current · upcoming */
@@ -542,7 +534,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "June 28, 2026 · 9:14 PM ET";
+const BUILD_TS = "June 28, 2026 · 9:22 PM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, devMode: false, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, fatalities: 0, visionWaves: [], started: Date.now()
