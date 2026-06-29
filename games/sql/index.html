@@ -73,7 +73,7 @@ header .dev-toggle{margin-left:2px}
 main{flex:1;display:flex;flex-direction:column;min-height:0;position:relative;height:100%}
 
 /* THE VIEWPORT — open space seen through the canopy; enemies float here, large. */
-.field-pane{position:relative;order:-1;flex:0 0 44vh;min-height:190px;z-index:0;border-bottom:none;overflow:hidden;
+.field-pane{position:relative;order:-1;flex:0 0 44vh;min-height:190px;border-bottom:none;overflow:hidden;
   background:radial-gradient(125% 95% at 50% 16%, #16235a 0%, #0b1130 56%, #07101a 100%);
   transition:flex-basis .25s ease}
 /* canopy vignette — curved-glass darkening at the edges of the view */
@@ -263,6 +263,23 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 .gauge{display:inline-block;vertical-align:middle;width:46px;height:7px;border-radius:4px;background:var(--surf2);border:1px solid var(--border);overflow:hidden;margin-right:7px}
 .gauge-bar{display:block;height:100%;border-radius:4px}
 .gauge-val{vertical-align:middle;color:var(--text)}
+
+/* ENGAGE — intel→action stage. Launch button appears once a scan arms a buff. */
+.engage-launch{display:none;width:100%;margin-top:10px;justify-content:center;gap:6px;font-family:var(--mono);
+  letter-spacing:.03em;background:linear-gradient(90deg,#3a2b12,#5b3f19);border:1px solid var(--yellow);color:#ffeccc}
+.engage-launch.show{display:inline-flex;animation:engage-rise .3s ease-out}
+.engage-launch .engage-sub{color:rgba(255,236,204,.6);font-size:.85em}
+@keyframes engage-rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.engage-ov .engage-kicker{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.engage-ov .engage-note{max-width:520px}
+.buff-row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:580px;margin:6px 0 18px}
+.buff-card{text-align:left;width:248px;background:var(--surf);border:1px solid var(--border);border-left:3px solid var(--accent);
+  border-radius:8px;padding:10px 12px;cursor:pointer;transition:border-color .15s,box-shadow .15s,background .15s}
+.buff-card:hover{border-color:var(--accent)}
+.buff-card.on{border-color:var(--green);box-shadow:0 0 0 1px var(--green),0 0 18px rgba(110,200,120,.22);background:rgba(110,200,120,.06)}
+.buff-card.locked{opacity:.5;cursor:not-allowed;border-left-color:var(--border)}
+.buff-card .bn{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-weight:700;color:var(--accent2);font-size:13px}
+.buff-card .bd{margin-top:5px;font-size:12px;line-height:1.45;color:var(--muted)}
 
 /* HINT */
 .hint{margin-top:8px;font-size:12.5px;color:var(--yellow);background:rgba(212,168,73,.08);border-left:3px solid var(--yellow);border-radius:0 6px 6px 0;padding:7px 11px;display:none}
@@ -571,6 +588,9 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
       </div>
 
       <div class="feedback" id="feedback"></div>
+      <!-- ENGAGE — once your scans arm at least one protocol, drop to the
+           auto-aim engagement stage and spend your analysis as buffs. -->
+      <button class="btn engage-launch" id="engage-btn" onclick="openEngage()">⚔ Engage targets <span class="engage-sub">— analysis ready</span></button>
       <!-- OUTPUT — labelled so reading the result is a skill, not a footnote. -->
       <div class="output-block" id="output-block" style="display:none">
         <div class="output-h">🔍 Output — what your query returned</div>
@@ -611,6 +631,17 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
         <button class="btn btn-primary" id="ov-btn" onclick="overlayAction()">Next Wave →</button>
       </div>
     </div>
+    <!-- ENGAGE STAGE — pick the buffs your scans armed, then fire (auto-aim). -->
+    <div class="overlay engage-ov" id="engage">
+      <div class="engage-kicker">◈ Engage Sequence</div>
+      <h2 id="engage-h">Spend your analysis</h2>
+      <p class="engage-note" id="engage-note">Each scan you ran in the query stage armed a protocol. Choose your loadout, then fire — your ship auto-locks the swarm.</p>
+      <div class="buff-row" id="buff-row"></div>
+      <div class="ov-btns">
+        <button class="btn btn-ghost" onclick="closeEngage()">← Back to console</button>
+        <button class="btn btn-primary" id="engage-fire" onclick="engageFire()">🔥 Fire</button>
+      </div>
+    </div>
   </section>
 </main>
 
@@ -628,7 +659,7 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "June 28, 2026 · 10:46 PM ET";
+const BUILD_TS = "June 28, 2026 · 11:18 PM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, devMode: false, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, fatalities: 0, visionWaves: [], started: Date.now()
@@ -811,13 +842,15 @@ function loadWave(){
     return {
       name: obj.name || obj.id || ('Target '+(i+1)),
       archetype: archFromType(obj.type) || w.enemyArch || 'warden',
+      threat: (obj.threat_level != null) ? Number(obj.threat_level) : null,
       maxHp: ENEMY_MAXHP, hp: ENEMY_MAXHP, advance: 0, alive: true,
       shielded: isPhased,
       spriteAlt: i % 2 === 1
     };
   });
   document.getElementById('field-status').textContent =
-    `${enemiesLive.length} void-mote${enemiesLive.length!==1?'s':''} hold the line against the Oracle — weave the right query to scatter them.`;
+    `${enemiesLive.length} contact${enemiesLive.length!==1?'s':''} on your scope — scan them, then weave the query that locks them.`;
+  intel.clear(); engageLoadout.clear(); updateEngageButton();
   drawField();
   hideOverlay();
 }
@@ -1063,6 +1096,7 @@ function runQuery(){
   // richness scales with the query's attackTier (no chord on syntax/banned errors).
   playMelodyExecute(sql);
   showResult(player);
+  recordIntel(player.columns);   // arm Engage buffs from what the scan revealed
 
   const ordered = solutionIsOrdered(currentPhaseSolution());
   if(sameResult(player, expected, ordered)){
@@ -1155,6 +1189,11 @@ function showResult(r){
 
 /* ─── BATTLEFIELD (SVG) ──────────────────────────────────────────────────── */
 const FIELD_W = 800, FIELD_H = 320;
+// Legacy lane geometry — still referenced by a couple of helpers (laneY/enemyX).
+const BASE_X = 720, LANE_TOP = 50, LANE_GAP = 56;
+// First-person helm: with the Oracle removed, YOU fire from the bottom-centre of
+// the view and enemy hits register there too. (Replaced the old Oracle origin.)
+const HELM_X = FIELD_W / 2, HELM_Y = FIELD_H - 8;
 // Bearing-based enemy positions — spread across the viewport like space around you.
 // Each enemy at a different angle (bearing) from the center, distance scaled by advancement.
 // Waves can override via optional `positions` array: [{x, y}, ...] in wave data.
@@ -1437,6 +1476,103 @@ function applyBaseDmg(dmg){
 // CORRECT query → a volley that chips every living enemy by maxHp/rounds.
 // Repeating the correct query (waveRounds of them) whittles the lane to zero —
 // the Final-Fantasy-style exchange. Survivors creep a step between volleys.
+/* ─── ENGAGE: intel → action (vertical slice) ────────────────────────────────
+   The query stage gathers intel; each strength/identity column you successfully
+   scan ARMS a buff. In the Engage stage you spend those buffs on an auto-aim
+   strike. Pure payoff layered on top — it reads your analysis, never changes the
+   queries, objectives, or combat math. Gated to Wave 1 for the prototype. */
+const ENGAGE_BUFFS = {
+  threat_level: { name:'Overcharge Lock', icon:'⚡',
+    desc:'You scanned threat levels — route extra power to the hottest target and hit it first.' },
+  type:         { name:'Weak-Point Tag', icon:'🎯',
+    desc:'You profiled each contact’s type — your shots strike the exposed core for a critical hit.' },
+};
+const intel = new Set();          // columns scanned this wave that arm a buff
+let engageLoadout = new Set();    // buffs the player selected for this strike
+
+function recordIntel(columns){
+  if(!Array.isArray(columns)) return;
+  let added = false;
+  columns.forEach(c => { const k = String(c).toLowerCase(); if(ENGAGE_BUFFS[k] && !intel.has(k)){ intel.add(k); added = true; } });
+  if(added) updateEngageButton();
+}
+function updateEngageButton(){
+  const btn = document.getElementById('engage-btn');
+  if(!btn) return;
+  btn.classList.toggle('show', state.wave === 0 && intel.size >= 1);  // slice gate: Wave 1
+}
+function openEngage(){
+  engageLoadout = new Set();
+  const row = document.getElementById('buff-row');
+  row.innerHTML = Object.keys(ENGAGE_BUFFS).map(k => {
+    const b = ENGAGE_BUFFS[k], on = intel.has(k);
+    return `<div class="buff-card ${on?'':'locked'}" data-buff="${k}" ${on?`onclick="toggleBuff('${k}')"`:''}>
+      <div class="bn"><span>${b.icon} ${b.name}</span><span class="bmark">${on?'◯':'🔒'}</span></div>
+      <div class="bd">${on?b.desc:'Locked — scan this attribute in the query stage to arm it.'}</div></div>`;
+  }).join('');
+  document.getElementById('engage').classList.add('show');
+}
+function toggleBuff(k){
+  if(!intel.has(k)) return;
+  engageLoadout.has(k) ? engageLoadout.delete(k) : engageLoadout.add(k);
+  const card = document.querySelector(`.buff-card[data-buff="${k}"]`);
+  if(card){ const on = engageLoadout.has(k); card.classList.toggle('on', on); card.querySelector('.bmark').textContent = on ? '◉' : '◯'; }
+}
+function closeEngage(){ document.getElementById('engage').classList.remove('show'); }
+
+function engageFire(){
+  if(busy) return;
+  closeEngage();
+  busy = true; successFlash();
+  const svg = document.getElementById('field');
+  // Non-destructive: snapshot HP/alive so the wave state is untouched afterward.
+  const snap = enemiesLive.map(en => ({ hp: en.hp, alive: en.alive }));
+  const overcharge = engageLoadout.has('threat_level');
+  const weak = engageLoadout.has('type');
+  let order = enemiesLive.map((en,i)=>({en,i})).filter(o=>o.en.alive);
+  if(overcharge) order.sort((a,b)=>(b.en.threat||0)-(a.en.threat||0));  // hottest first
+  const STEP = 200;
+  order.forEach((o, idx) => {
+    setTimeout(() => {
+      const p = enemyPos(o.i, o.en);
+      const beams = weak ? 3 : 1;
+      for(let b=0;b<beams;b++){
+        const off = (b-(beams-1)/2)*10;
+        const beam = document.createElementNS(SVGNS,'line');
+        beam.setAttribute('x1', HELM_X+off); beam.setAttribute('y1', HELM_Y);
+        beam.setAttribute('x2', p.x); beam.setAttribute('y2', p.y);
+        beam.setAttribute('stroke', weak ? '#ffd95c' : 'var(--accent2)');
+        beam.setAttribute('stroke-width', overcharge && idx===0 ? 5 : 3);
+        beam.setAttribute('opacity','0.9');
+        svg.appendChild(beam);
+        setTimeout(()=>beam.remove(), 200);
+      }
+      setTimeout(() => {
+        o.en.alive = false; o.en.hp = 0;
+        const node = svg.querySelector(`.enemy[data-i="${o.i}"]`);
+        if(node) node.classList.add('hit');
+        spawnBoom(svg, p.x, p.y);
+        if(overcharge && idx === 0){ spawnShockwave(svg, p.x, p.y, '#ffd95c'); screenShake(); }
+        spawnDmg(svg, p.x, p.y, weak ? 'CRIT' : (overcharge && idx===0 ? '⚡MAX' : '✦'), 'dmg-perfect');
+        beep(300 + Math.random()*220, 70);
+      }, 170);
+    }, idx * STEP);
+  });
+  const settle = order.length * STEP + 480;
+  setTimeout(() => {
+    drawField();
+    // restore wave state (prototype payoff is a simulation, not the real clear)
+    enemiesLive.forEach((en,i)=>{ en.hp = snap[i].hp; en.alive = snap[i].alive; });
+    drawField();
+    busy = false;
+    const parts = [];
+    if(overcharge) parts.push('⚡ Overcharge melted the priority target');
+    if(weak) parts.push('🎯 Weak-Point crits tore through the rest');
+    if(!parts.length) parts.push('Clean sweep — though armed intel would have hit far harder.');
+    showOverlay('🛰', 'Sector neutralized', parts.join('<br>') + '<br><br><i>Prototype: your scans drove that strike. Back to the console to keep clearing.</i>', 'Back to console');
+  }, settle);
+}
+
 function volley(isPhaseKill = false){
   busy = true;
   successFlash();
@@ -1474,7 +1610,7 @@ function volley(isPhaseKill = false){
       const off = (b - (beamsPerTarget-1)/2) * 12;
       setTimeout(()=>{
         const beam = document.createElementNS(SVGNS,'line');
-        beam.setAttribute('x1', ORACLE_X); beam.setAttribute('y1', FIELD_H/2 + off);
+        beam.setAttribute('x1', HELM_X + off); beam.setAttribute('y1', HELM_Y);
         beam.setAttribute('x2', t.x); beam.setAttribute('y2', t.y + off * 0.5);
         beam.setAttribute('stroke', 'var(--accent2)');
         beam.setAttribute('stroke-width', strokeW);
@@ -1599,7 +1735,7 @@ function enemyAttack(){
   if(node) node.classList.add('lunge');
   const bolt = document.createElementNS(SVGNS,'line');
   bolt.setAttribute('x1', x); bolt.setAttribute('y1', y);
-  bolt.setAttribute('x2', ORACLE_X); bolt.setAttribute('y2', FIELD_H/2);
+  bolt.setAttribute('x2', HELM_X); bolt.setAttribute('y2', HELM_Y);
   bolt.setAttribute('stroke', heavy ? '#ffb648' : 'var(--red)');
   bolt.setAttribute('stroke-width', heavy ? '6' : '3');
   bolt.setAttribute('class', heavy ? 'charge-bolt' : 'enemy-bolt');
@@ -1609,7 +1745,7 @@ function enemyAttack(){
     bolt.remove();
     const core = document.getElementById('base-core');
     if(core){ const cls = heavy ? 'base-hit-heavy' : 'base-hit'; core.classList.add(cls); setTimeout(()=>core.classList.remove(cls), heavy ? 520 : 360); }
-    spawnDmg(svg, ORACLE_X, FIELD_H/2, '-' + dmg + (heavy ? ' ⚡' : ''), heavy ? 'dmg-charged' : 'dmg-ff');
+    spawnDmg(svg, HELM_X, HELM_Y, '-' + dmg + (heavy ? ' ⚡' : ''), heavy ? 'dmg-charged' : 'dmg-ff');
     applyBaseDmg(dmg);
     if(!heavy) drawField();   // refresh so a new telegraph ring shows on the primed foe
   }, 220);
@@ -1639,7 +1775,7 @@ function missTurn(falsePos){
   enemyAttack();                                 // the swarm hits back
   const ffDmg = Math.min(falsePos, 6) * FF_DMG;  // extra self-inflicted hits if over-broad
   if(ffDmg > 0){
-    setTimeout(()=>{ spawnDmg(document.getElementById('field'), ORACLE_X, FIELD_H/2 + 24, '-' + ffDmg + ' FF', 'dmg-ff'); }, 300);
+    setTimeout(()=>{ spawnDmg(document.getElementById('field'), HELM_X, HELM_Y - 24, '-' + ffDmg + ' FF', 'dmg-ff'); }, 300);
     applyBaseDmg(ffDmg);
   }
   setTimeout(()=>{
@@ -1663,7 +1799,7 @@ function syntaxHit(){
   const svg = document.getElementById('field');
   const core = document.getElementById('base-core');
   if(core){ core.classList.add('base-hit'); setTimeout(()=>core.classList.remove('base-hit'), 360); }
-  spawnDmg(svg, ORACLE_X, FIELD_H/2, '-' + dmg, 'dmg-ff');
+  spawnDmg(svg, HELM_X, HELM_Y, '-' + dmg, 'dmg-ff');
   beep(150, 110);
   applyBaseDmg(dmg);
   if(state.baseHP <= 0) waveLost();
@@ -1937,6 +2073,7 @@ function overlayAction(){
   const title = document.getElementById('ov-title').textContent;
   if(title === "Oracle's Vision"){ hideOverlay(); document.getElementById('editor').focus(); return; }
   if(title === 'On the job'){ hideOverlay(); return; }
+  if(title === 'Sector neutralized'){ hideOverlay(); document.getElementById('editor').focus(); return; }
   if(title === 'Reset'){ hideOverlay(); replayWave(); return; }
   if(title === 'Base Overrun'){
     state.baseHP = 100; updateHP(); save(); loadWave(); return;

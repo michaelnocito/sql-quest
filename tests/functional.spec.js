@@ -89,13 +89,31 @@ test.describe('Functional correctness', () => {
     // Fire the correct query until the overlay shows. A clean first-try clears
     // in one shot (fatality); a friction-ed run takes `rounds` correct volleys.
     for (let i = 0; i < rounds + 1; i++) {
-      if (await page.locator('#overlay.show').count() > 0) break;
+      // Let any clear/volley animation settle first — once the wave clears, the
+      // overlay covers the screen (and correctly blocks the Execute button), so
+      // we must check for it AFTER the animation, before trying to click again.
       await page.waitForFunction(() => !busy, null, { timeout: 8_000 }).catch(() => {});
+      if (await page.locator('#overlay.show').count() > 0) break;
       await page.fill('#editor', solution);
       await page.getByRole('button', { name: /execute/i }).click();
     }
     await expect(page.locator('#overlay')).toHaveClass(/show/, { timeout: 8_000 });
     await expect(page.locator('#ov-title')).toHaveText(/cleared/i);
+  });
+
+  test('scanning a strength column arms the Engage stage (intel → action)', async ({ page }) => {
+    await openGame(page);
+    await startCampaign(page);
+    // Engage is hidden until a scan reveals an arming column.
+    await expect(page.locator('#engage-btn')).not.toHaveClass(/show/);
+    await page.waitForFunction(() => !busy, null, { timeout: 8_000 }).catch(() => {});
+    // A valid scan that returns name/type/threat_level (not the solution, so the
+    // wave doesn't clear) should arm the buffs and reveal the Engage button.
+    await page.fill('#editor', 'SELECT name, type, threat_level FROM contacts');
+    await page.getByRole('button', { name: /execute/i }).click();
+    await expect(page.locator('#engage-btn')).toHaveClass(/show/, { timeout: 8_000 });
+    const scanned = await page.evaluate(() => [...intel]);
+    expect(scanned).toEqual(expect.arrayContaining(['type', 'threat_level']));
   });
 
   test('progress persists across a reload', async ({ page }) => {
