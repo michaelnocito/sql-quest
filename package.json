@@ -1,7 +1,7 @@
 {
-  "name": "sql-quest",
+  "name": "sql-space-quest",
   "version": "2.0.0",
-  "description": "SQL Quest — a browser SQL tower-defense game. Real SQL controls your turret.",
+  "description": "SQL Space Quest — a browser game where real SQL queries clear the swarm. Learn analyst SQL by playing.",
   "private": true,
   "scripts": {
     "test": "playwright test",

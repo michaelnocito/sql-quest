@@ -1,6 +1,6 @@
-# SQL Quest
+# SQL Space Quest
 
-A roguelike **tower-defense game where real SQL queries control your turret**. Built for aspiring data analysts: survive each wave by writing the query that locks onto the enemies in the lane. Every query runs against a real SQLite database — in your browser, with nothing to install.
+A space campaign where **real SQL queries are your only weapon**. Built for aspiring data analysts: the Captain briefs you, the swarm closes in, and the query that returns exactly the right rows is the one that clears the lane. Every query runs against a real SQLite database — in your browser, with nothing to install.
 
 **▶ Play:** open `index.html`, or visit the GitHub Pages site.
 

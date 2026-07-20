@@ -11,7 +11,8 @@
   </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SQL Quest — SQL Tower Defense</title>
+<title>SQL Space Quest — Learn SQL by Playing</title>
+<meta name="description" content="SQL Space Quest — learn the SQL analysts get hired for by clearing a hostile swarm, one real query at a time. Free, in your browser, nothing to install.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -61,10 +62,8 @@ header .hp-wrap{margin-right:4px}
 .schema-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px}
 .schema-tbl{font-family:var(--mono);font-size:11px;background:var(--surf2);border:1px solid var(--border);border-radius:var(--r2);padding:5px 9px;color:var(--muted)}
 .schema-tbl b{color:var(--accent2)}
-/* EDITOR — wrap holds the surface + border; the textarea is TRANSPARENT so the
-   grey ghost shows THROUGH where the player hasn't typed yet. As they type,
-   their bright text overlays the grey at the corresponding positions — the
-   "type over the vision" effect Mike wants for both DEV and Oracle's Vision. */
+/* EDITOR — the textarea's text is transparent; the #ghost underlay renders the
+   same SQL Prism-highlighted, so the console reads like a real terminal. */
 .ed-wrap{position:relative;background:#0d0d0d;border:2px solid #0a9;border-radius:var(--r2);transition:border-color .15s;box-shadow:inset 0 0 0 1px rgba(0,170,136,.2)}
 .ed-wrap:focus-within{border-color:#00dd99;box-shadow:inset 0 0 0 1px rgba(0,221,153,.4)}
 #editor{width:100%;min-height:156px;resize:vertical;font-family:var(--mono);font-size:15.5px;line-height:1.7;color:rgba(232,224,212,.85);background:transparent;border:0;border-radius:0;padding:14px 16px;outline:none;position:relative;z-index:2}
@@ -271,7 +270,7 @@ header .hp-wrap{margin-right:4px}
 
 /* ═══ TRAIL-STYLE SCREEN SHELL (2026-07-20 redesign) ══════════════════════
    One #app div, screenXxx() functions swap innerHTML — SQL Trail's card flow
-   wearing SQL Quest's psychedelic-celestial skin. */
+   wearing SQL Space Quest's psychedelic-celestial skin. */
 body{overflow:auto}
 main.appmain{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
 #app{max-width:860px;margin:0 auto;padding:18px clamp(12px,3vw,28px) 60px}
@@ -351,7 +350,7 @@ main.appmain{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touc
 <body>
 
 <header>
-  <div class="brand">SQL <span class="q">Quest</span></div>
+  <div class="brand">SQL Space <span class="q">Quest</span></div>
   <div class="spacer"></div>
   <button class="icon-btn" id="music-btn" title="Background music on/off" onclick="toggleMusic()">🎵</button>
   <button class="icon-btn" id="sfx-btn" title="Sound effects on/off" onclick="toggleSfx()">🔔</button>
@@ -383,7 +382,7 @@ main.appmain{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touc
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "July 20, 2026 · 3:19 PM ET";
+const BUILD_TS = "July 20, 2026 · 3:27 PM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, fatalities: 0, visionWaves: [], streak: 0,
@@ -1554,9 +1553,9 @@ function dismissBreak(){
 function applyTheme(){ document.body.classList.toggle('light', state.theme === 'light'); }
 function toggleTheme(){ state.theme = state.theme === 'light' ? 'dark' : 'light'; applyTheme(); save(); }
 /* ─── MOBILE SETTINGS MENU ──────────────────────────────────────────────────
-   On phone-sized screens the DEV / wave-picker / theme / reset controls
-   collapse into a ⚙ button that opens a small dropdown panel anchored to
-   the header. Desktop ignores this entirely (display:contents on the group). */
+   On phone-sized screens the theme / reset controls collapse into a ⚙ button
+   that opens a small dropdown panel anchored to the header. Desktop ignores
+   this entirely (display:contents on the group). */
 function toggleMore(){
   const g = document.getElementById('more-group');
   const b = document.getElementById('more-btn');
@@ -1618,7 +1617,7 @@ function screenTitle(){
   state.screen = 'title';
   const hasRun = state.begun && (state.wave > 0 || state.cleared.length > 0);
   app.innerHTML = `
-    <h1>SQL <span class="q">QUEST</span></h1>
+    <h1>SQL SPACE <span class="q">QUEST</span></h1>
     <div class="panel crt center">
       <p style="margin:4px 0">The swarm reads your queries before you finish typing.<br><span class="dim">Type better queries.</span></p>
     </div>
@@ -2080,7 +2079,7 @@ function retryWave(){
   screenStory();
 }
 
-/* ─── DEV MODE + SETTINGS ────────────────────────────────────────────────── */
+/* ─── SETTINGS ───────────────────────────────────────────────────────────── */
 function resetCampaign(){
   state.wave = 0; state.phase = 0;
   state.baseHP = 100;

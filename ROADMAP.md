@@ -1,4 +1,4 @@
-# SQL Quest — Roadmap & Feedback Triage
+# SQL Space Quest — Roadmap & Feedback Triage
 
 A living board. New feedback lands in the **log** at the bottom, gets a priority,
 then moves into **Now / Next / Later / Icebox**. Done items drop to **Shipped**.

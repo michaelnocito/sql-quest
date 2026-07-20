@@ -1,4 +1,4 @@
-# Testing SQL Quest
+# Testing SQL Space Quest
 
 This is a plain-language guide to the game's **automated headless tests** — what
 they check, why, and how to run them. "Headless" just means the tests drive a

@@ -1,9 +1,9 @@
-# SQL Quest — Design Spec
+# SQL Space Quest — Design Spec
 
 > Locked during a discovery session (2026-05-28). This file is the source of truth for intent.
 
 ## Concept
-Roguelike tower defense where SQL queries control the turret. Players survive waves by writing correct SQL. Audience: aspiring data analysts prepping for their first month on the job. Free, open-source. Foundation for expansion packs (Python, Excel, BI).
+A space campaign (roguelike wave structure) where SQL queries fire the ship's weapons. Players survive waves by writing correct SQL. Audience: aspiring data analysts prepping for their first month on the job. Free, open-source. Foundation for expansion packs (Python, Excel, BI).
 
 ## Architecture decision (changed from original handoff)
 The original handoff proposed **FastAPI + React + server SQLite**. We switched to **100% client-side sql.js** because:

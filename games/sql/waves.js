@@ -1,5 +1,5 @@
 /* ────────────────────────────────────────────────────────────────────────
-   SQL QUEST — WAVE CONFIG
+   SQL SPACE QUEST — WAVE CONFIG
    Each wave is fully data-driven so new waves (and whole expansion packs)
    can be added without touching engine code. The engine builds a fresh
    SQLite DB from `schema`, runs the player's query AND the `solution`,
