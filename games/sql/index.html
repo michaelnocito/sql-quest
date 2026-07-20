@@ -37,7 +37,6 @@ code{font-family:var(--mono);background:var(--surf2);padding:1px 5px;border-radi
 /* TOP BAR */
 header{background:var(--surf);border-bottom:1px solid var(--border);padding:8px 14px;display:flex;align-items:center;gap:14px;flex-shrink:0;flex-wrap:wrap;position:relative}
 header .hp-wrap{margin-right:4px}
-header .dev-toggle{margin-left:2px}
 .brand{font-weight:700;font-size:15px;white-space:nowrap}
 .brand .q{color:var(--accent)}
 .wave-chip{font-size:12px;color:var(--muted);background:var(--surf2);padding:3px 10px;border-radius:20px;white-space:nowrap}
@@ -50,13 +49,6 @@ header .dev-toggle{margin-left:2px}
 .icon-btn:hover{color:var(--text);border-color:var(--text)}
 .icon-btn.on{color:var(--accent);border-color:var(--accent)}
 .icon-btn.off{opacity:.4}
-/* Dev-only wave picker — only visible when DEV is on. */
-.dev-jump{height:32px;background:var(--surf);color:var(--text);border:1px solid var(--border);border-radius:var(--r2);padding:0 8px;font:600 11px var(--mono);cursor:pointer;display:none}
-.dev-jump:hover{border-color:var(--accent)}
-.dev-jump:focus{outline:none;border-color:var(--accent)}
-.dev-toggle{width:auto;padding:0 10px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.5px}
-.dev-toggle::after{content:' OFF';opacity:.7}
-.dev-toggle.on::after{content:' ON'}
 /* CONCEPT TRACK — shows the whole campaign path: done · current · upcoming */
 .track{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;padding-bottom:3px}
 .track-step{flex:0 0 auto;display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;padding:4px 10px 4px 5px;border-radius:20px;border:1px solid var(--border);background:var(--surf);color:var(--muted);white-space:nowrap}
@@ -94,7 +86,6 @@ header .dev-toggle{margin-left:2px}
 .kbd{font-family:var(--mono);font-size:10px;background:var(--surf2);border:1px solid var(--border);border-radius:4px;padding:1px 5px;color:var(--muted)}
 .btn.pulse{animation:hintpulse 1.6s ease-out 2}
 @keyframes hintpulse{0%{box-shadow:0 0 0 0 rgba(212,168,73,.5);border-color:var(--yellow);color:var(--yellow)}70%{box-shadow:0 0 0 8px rgba(212,168,73,0)}100%{box-shadow:0 0 0 0 rgba(212,168,73,0)}}
-.dev-note{font-size:11px;color:var(--muted)}
 /* RESULT / FEEDBACK */
 .feedback{margin-top:9px;font-size:13px;min-height:18px}
 .feedback.ok{color:var(--green)}
@@ -267,13 +258,11 @@ header .dev-toggle{margin-left:2px}
   #more-btn{display:flex}
   .more-group{display:none;position:absolute;top:100%;right:10px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r2);padding:9px;gap:7px;flex-direction:column;align-items:stretch;box-shadow:0 6px 20px rgba(0,0,0,.4);z-index:120;min-width:160px}
   .more-group.open{display:flex}
-  .more-group .icon-btn,.more-group .dev-jump{width:100%;height:36px;justify-content:flex-start;padding:0 12px;font-size:13px;border-radius:var(--r2)}
-  .more-group .dev-toggle{font-size:12px}
+  .more-group .icon-btn{width:100%;height:36px;justify-content:flex-start;padding:0 12px;font-size:13px;border-radius:var(--r2)}
   /* Compact briefing — lore prose collapses behind ⓘ (learn-by-typing). */
   .briefing{padding:8px 11px;font-size:13px;margin-bottom:8px}
   /* (prose default-hide + expanded styling now lives in the base CSS) */
   .intel .obj{font-size:17px;line-height:1.3}
-  .obj-hint{font-size:12px;margin-top:6px}
   .intel-target{margin-top:7px;padding-top:6px}
   .intel-tables{margin-top:7px;padding-top:6px}
   .help-row{margin-top:6px;gap:5px}
@@ -312,9 +301,6 @@ main.appmain{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touc
 .objective{background:var(--surf2);border:1px solid rgba(212,168,73,.35);border-left:4px solid var(--yellow);border-radius:6px;padding:12px 15px;margin:12px 0;box-shadow:0 0 14px rgba(212,168,73,.10);font-size:15.5px;line-height:1.45}
 .objective .tag{display:block;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--yellow);letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px}
 .objective code{background:var(--surf);color:var(--yellow)}
-.obj-hint{font-size:12.5px;line-height:1.5;color:var(--muted);margin-top:7px}
-.obj-hint::before{content:"💡 ";opacity:.8}
-.obj-hint:empty{display:none}
 
 /* STORY CARD — the Captain's briefing */
 .story{font-size:1.05em;line-height:1.65;font-style:italic;color:var(--text)}
@@ -372,8 +358,6 @@ main.appmain{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touc
   <button class="icon-btn" id="melody-btn" title="Code-as-melody: typing tones + keyword chimes + execute chord (opt-in; requires SFX on)" onclick="toggleMelody()">🎼</button>
   <button class="icon-btn" id="more-btn" title="More settings" aria-label="More settings" aria-expanded="false" onclick="toggleMore()">⚙</button>
   <div class="more-group" id="more-group">
-    <button class="icon-btn dev-toggle" id="dev-btn" title="Dev mode — ON: Tab inserts the answer, wave jump unlocked." onclick="toggleDev()">DEV</button>
-    <select class="dev-jump" id="dev-jump" aria-label="Jump to wave (dev mode)" title="Jump to any wave (dev)" onchange="jumpToWave(this.value)"></select>
     <button class="icon-btn" id="theme-btn" title="Theme" onclick="toggleTheme()">◐</button>
     <button class="icon-btn" id="reset-btn" title="Reset all campaign progress" onclick="confirmReset()">↻</button>
   </div>
@@ -399,9 +383,9 @@ main.appmain{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touc
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "July 20, 2026 · 2:45 PM ET";
+const BUILD_TS = "July 20, 2026 · 3:19 PM ET";
 const state = {
-  wave: 0, phase: 0, baseHP: 100, devMode: false, music: false, sfx: true, melody: false, theme: 'dark',
+  wave: 0, phase: 0, baseHP: 100, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, fatalities: 0, visionWaves: [], streak: 0,
   started: Date.now(), screen: 'title', begun: false
 };
@@ -418,12 +402,13 @@ function load(){
   const saved = (()=>{ try{ return JSON.parse(localStorage.getItem(LS)) || {}; }catch(e){ return {}; } })();
   if(saved.music === undefined && saved.audio !== undefined) state.music = saved.audio;
   if(saved.sfx === undefined && saved.audio !== undefined) state.sfx = saved.audio;
+  delete state.devMode;                 // dev mode removed 2026-07-20
   state.started = Date.now();
   state.screen = 'title';
 }
 function save(){
   localStorage.setItem(LS, JSON.stringify({
-    wave: state.wave, baseHP: state.baseHP, devMode: state.devMode,
+    wave: state.wave, baseHP: state.baseHP,
     music: state.music, sfx: state.sfx, melody: state.melody, theme: state.theme, cleared: state.cleared,
     attempts: state.attempts, correct: state.correct, streak: state.streak || 0,
     fatalities: state.fatalities || 0, visionWaves: state.visionWaves || [], begun: !!state.begun
@@ -1716,14 +1701,26 @@ function currentObjective(){
   const w = currentWave();
   return (w.phases && w.phases[state.phase]) ? w.phases[state.phase].objective : w.objective;
 }
+
 function objectiveHtml(){
+  // Trail rule: the goal sentence only. Any legacy "Hint:" tail in the wave
+  // data is stripped at render time — help arrives ONLY through misses.
   const t = currentObjective() || '';
   const i = t.indexOf('Hint:');
   const goal = (i === -1 ? t : t.slice(0, i)).trim();
-  const hint = (i === -1 ? '' : t.slice(i + 5)).trim();
   const w = currentWave();
   const phaseChip = (w.phases && w.phases.length > 1) ? ` <span class="badge" style="color:var(--yellow)">⚡ Phase ${state.phase + 1}/${w.phases.length}</span>` : '';
-  return `<div class="objective"><span class="tag">🎯 Firing solution${phaseChip}</span>${goal}<div class="obj-hint">${hint}</div></div>`;
+  return `<div class="objective"><span class="tag">🎯 Firing solution${phaseChip}</span>${goal}</div>`;
+}
+function objectiveHtml(){
+  // Trail rule: the goal sentence only. Any legacy "Hint:" tail in the wave
+  // data is stripped at render time — help arrives ONLY through misses.
+  const t = currentObjective() || '';
+  const i = t.indexOf('Hint:');
+  const goal = (i === -1 ? t : t.slice(0, i)).trim();
+  const w = currentWave();
+  const phaseChip = (w.phases && w.phases.length > 1) ? ` <span class="badge" style="color:var(--yellow)">⚡ Phase ${state.phase + 1}/${w.phases.length}</span>` : '';
+  return `<div class="objective"><span class="tag">🎯 Firing solution${phaseChip}</span>${goal}</div>`;
 }
 function pipsHtml(){
   return [0,1,2].map(i => `<i class="${i < Math.min(waveTries,3) ? 'used' : ''}"></i>`).join('');
@@ -1774,8 +1771,6 @@ function screenTask(fresh){
       <button class="btn btn-ghost btn-sm" onclick="formatSQL()" id="format-btn" title="Uppercase SQL keywords (Alt+Shift+F)">Format</button>
       <a class="btn btn-ghost btn-sm" href="guide.html">📖 Study Guide</a>
       <button class="btn btn-ghost btn-sm" onclick="screenStory()">◂ Re-read the briefing</button>
-      <span class="spacer"></span>
-      <span class="dev-note" id="dev-hint" style="visibility:${state.devMode?'visible':'hidden'}">DEV — <span class="kbd">Tab</span> inserts the answer</span>
     </div>
     <div class="ruleline">Runs used <span class="trypips" id="trypips">${pipsHtml()}</span>
       &nbsp;·&nbsp; 1st miss is free &nbsp;·&nbsp; 2nd fills in half the code &nbsp;·&nbsp; 3rd hands you the solution</div>
@@ -1804,11 +1799,7 @@ function wireEditor(){
   syncGhost();
   ed.addEventListener('input', syncGhost);
   ed.addEventListener('keydown', e => {
-    if(e.key === 'Tab' && state.devMode){
-      e.preventDefault();
-      ed.value = currentPhaseSolution();
-      syncGhost();
-    } else if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){
+if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){
       e.preventDefault();
       submitAnswer();
     } else if((e.key === 'F' || e.key === 'f') && e.altKey && e.shiftKey){
@@ -2090,27 +2081,6 @@ function retryWave(){
 }
 
 /* ─── DEV MODE + SETTINGS ────────────────────────────────────────────────── */
-function toggleDev(){
-  state.devMode = !state.devMode;
-  document.getElementById('dev-btn').classList.toggle('on', state.devMode);
-  document.getElementById('dev-jump').style.display = state.devMode ? 'inline-block' : 'none';
-  const hint = document.getElementById('dev-hint');
-  if(hint) hint.style.visibility = state.devMode ? 'visible' : 'hidden';
-  save();
-}
-function populateDevJump(){
-  const sel = document.getElementById('dev-jump');
-  sel.innerHTML = WAVES.map((w,i) => `<option value="${i}">${w.id}. ${w.concept}</option>`).join('');
-  sel.value = String(state.wave);
-}
-function jumpToWave(idx){
-  const n = Number(idx);
-  if(!Number.isInteger(n) || n < 0 || n >= WAVES.length) return;
-  state.wave = n; state.phase = 0;
-  state.baseHP = 100;
-  save();
-  screenStory();
-}
 function resetCampaign(){
   state.wave = 0; state.phase = 0;
   state.baseHP = 100;
@@ -2140,9 +2110,6 @@ async function init(){
   load();
   applyTheme();
   updateAudioBtns();
-  document.getElementById('dev-btn').classList.toggle('on', state.devMode);
-  populateDevJump();
-  document.getElementById('dev-jump').style.display = state.devMode ? 'inline-block' : 'none';
   if(state.wave >= WAVES.length) state.wave = 0;
   try{
     await bootSQL();

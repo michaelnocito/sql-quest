@@ -121,6 +121,29 @@ test.describe('Functional correctness', () => {
     await expect(page.locator('.winbanner')).toBeVisible({ timeout: 10_000 });
   });
 
+  test('no part of the solution is visible before the 2nd miss', async ({ page }) => {
+    await openGame(page);
+    await goToTask(page);
+    const solution = await page.evaluate(() => window.WAVES[0].solution);
+    const norm = (s) => s.replace(/\s+/g, ' ').replace(/;$/, '').trim().toLowerCase();
+    // Pre-solve: empty editor (Trail starts blank — no starter pre-fill, no ghost),
+    // and the solution string appears nowhere in the rendered screen.
+    expect(await page.inputValue('#editor')).toBe('');
+    let body = await page.locator('#app').innerText();
+    expect(norm(body)).not.toContain(norm(solution));
+    // Tab must not insert anything (dev mode is gone).
+    await page.focus('#editor');
+    await page.keyboard.press('Tab');
+    expect(await page.inputValue('#editor')).toBe('');
+    // After miss 1 (free): still no solution anywhere, editor untouched.
+    await page.fill('#editor', 'SELECT name FROM contacts');
+    await page.getByRole('button', { name: /execute/i }).click();
+    await expect(page.locator('#trypips i.used')).toHaveCount(1);
+    expect(norm(await page.inputValue('#editor'))).not.toBe(norm(solution));
+    body = await page.locator('#app').innerText();
+    expect(norm(body)).not.toContain(norm(solution));
+  });
+
   test('an empty Execute does not count as a try', async ({ page }) => {
     await openGame(page);
     await goToTask(page);
