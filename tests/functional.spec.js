@@ -1,14 +1,14 @@
 // FUNCTIONAL — does the game actually work?
-// Every wave must be solvable, the feedback tiers must behave, sorting/top-N
+// Every wave must be solvable, the escalating help must behave, sorting/top-N
 // must be enforced, and progress must survive a reload — with no console errors.
 const { test, expect } = require('@playwright/test');
-const { openGame, startCampaign, watchErrors } = require('./helpers');
+const { openGame, goToTask, watchErrors } = require('./helpers');
 
 test.describe('Functional correctness', () => {
   test('loads and boots the SQL engine with no console errors', async ({ page }) => {
     const errors = watchErrors(page);
     await openGame(page);
-    await startCampaign(page);
+    await goToTask(page);
     expect(errors, errors.join('\n')).toEqual([]);
   });
 
@@ -22,11 +22,9 @@ test.describe('Functional correctness', () => {
         const pass = sameResult(sol, sol, ordered);
         db.close();
         // Row-result waves should have a name/id so enemies render with a label.
-        // Aggregate/grouped waves are summary readouts — the "target" is the
-        // number itself, so this check doesn't apply there.
         const isSummary = /\b(COUNT|SUM|AVG|MIN|MAX)\s*\(/i.test(w.solution) || /\bgroup\s+by\b/i.test(w.solution);
         const renderable = isSummary || sol.columns.includes('name') || sol.columns.includes('id');
-        return { id: w.id, concept: w.concept, rows: sol.rows.length, renderable, pass };
+        return { id: w.id, concept: w.concept, rows: sol.rows.length, renderable, pass, hasStory: typeof w.story === 'string' && w.story.length > 40 };
       });
     });
     expect(results.length).toBeGreaterThanOrEqual(9);
@@ -34,6 +32,7 @@ test.describe('Functional correctness', () => {
       expect(r.pass, `wave ${r.id} (${r.concept}) solution should match itself`).toBe(true);
       expect(r.rows, `wave ${r.id} should return at least one target`).toBeGreaterThan(0);
       expect(r.renderable, `wave ${r.id} needs a name/id column so enemies render`).toBe(true);
+      expect(r.hasStory, `wave ${r.id} needs a Captain's story for the briefing screen`).toBe(true);
     }
   });
 
@@ -79,41 +78,55 @@ test.describe('Functional correctness', () => {
     expect(r.fp).toBeGreaterThan(0);
   });
 
-  test('UI playthrough: solving wave 1 clears the wave', async ({ page }) => {
+  test('UI playthrough: solving wave 1 leads to the debrief card', async ({ page }) => {
     await openGame(page);
-    await startCampaign(page);
-    const { solution, rounds } = await page.evaluate(() => ({
-      solution: window.WAVES[0].solution,
-      rounds: window.WAVES[0].rounds,
-    }));
-    // Fire the correct query until the overlay shows. A clean first-try clears
-    // in one shot (fatality); a friction-ed run takes `rounds` correct volleys.
-    for (let i = 0; i < rounds + 1; i++) {
-      // Let any clear/volley animation settle first — once the wave clears, the
-      // overlay covers the screen (and correctly blocks the Execute button), so
-      // we must check for it AFTER the animation, before trying to click again.
-      await page.waitForFunction(() => !busy, null, { timeout: 8_000 }).catch(() => {});
-      if (await page.locator('#overlay.show').count() > 0) break;
-      await page.fill('#editor', solution);
-      await page.getByRole('button', { name: /execute/i }).click();
-    }
-    await expect(page.locator('#overlay')).toHaveClass(/show/, { timeout: 8_000 });
-    await expect(page.locator('#ov-title')).toHaveText(/cleared/i);
+    await goToTask(page);
+    const solution = await page.evaluate(() => window.WAVES[0].solution);
+    await page.fill('#editor', solution);
+    await page.getByRole('button', { name: /execute/i }).click();
+    // Clean first-try → FATALITY banner on the debrief; a Next sector CTA follows.
+    await expect(page.locator('.winbanner')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('button', { name: /next sector/i })).toBeVisible();
   });
 
-  test('scanning a strength column arms the Engage stage (intel → action)', async ({ page }) => {
+  test('escalating help: free miss, then half the code, then the full solution', async ({ page }) => {
     await openGame(page);
-    await startCampaign(page);
-    // Engage is hidden until a scan reveals an arming column.
-    await expect(page.locator('#engage-btn')).not.toHaveClass(/show/);
-    await page.waitForFunction(() => !busy, null, { timeout: 8_000 }).catch(() => {});
-    // A valid scan that returns name/type/threat_level (not the solution, so the
-    // wave doesn't clear) should arm the buffs and reveal the Engage button.
-    await page.fill('#editor', 'SELECT name, type, threat_level FROM contacts');
+    await goToTask(page);
+    const solution = await page.evaluate(() => window.WAVES[0].solution);
+    const hpBefore = await page.evaluate(() => state.baseHP);
+
+    // Miss 1 — free: a wry line + diagnostic, no HP cost, editor untouched.
+    await page.fill('#editor', 'SELECT name FROM contacts');
     await page.getByRole('button', { name: /execute/i }).click();
-    await expect(page.locator('#engage-btn')).toHaveClass(/show/, { timeout: 8_000 });
-    const scanned = await page.evaluate(() => [...intel]);
-    expect(scanned).toEqual(expect.arrayContaining(['type', 'threat_level']));
+    await expect(page.locator('.helpline')).toBeVisible();
+    expect(await page.evaluate(() => state.baseHP)).toBe(hpBefore);
+    expect(await page.locator('#trypips i.used').count()).toBe(1);
+
+    // Miss 2 — costs the base and pre-fills ~half the solution.
+    await page.fill('#editor', 'SELECT name FROM contacts');
+    await page.getByRole('button', { name: /execute/i }).click();
+    await expect(page.locator('#trypips i.used')).toHaveCount(2);
+    expect(await page.evaluate(() => state.baseHP)).toBeLessThan(hpBefore);
+    const half = await page.inputValue('#editor');
+    expect(half.trim().length).toBeGreaterThan(0);
+    expect(solution.replace(/\s+/g, ' ')).toContain(half.trim().replace(/\s+/g, ' '));
+
+    // Miss 3 — hands over the full solution; the player still presses Execute.
+    await page.fill('#editor', 'SELECT name FROM contacts');
+    await page.getByRole('button', { name: /execute/i }).click();
+    await expect(page.locator('#trypips i.used')).toHaveCount(3);
+    expect((await page.inputValue('#editor')).replace(/\s+/g, ' ').trim())
+      .toBe(solution.replace(/\s+/g, ' ').trim());
+    await page.getByRole('button', { name: /execute/i }).click();
+    await expect(page.locator('.winbanner')).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('an empty Execute does not count as a try', async ({ page }) => {
+    await openGame(page);
+    await goToTask(page);
+    await page.getByRole('button', { name: /execute/i }).click();
+    expect(await page.locator('#trypips i.used').count()).toBe(0);
+    await expect(page.locator('#feedback')).toContainText(/write a query first/i);
   });
 
   test('progress persists across a reload', async ({ page }) => {

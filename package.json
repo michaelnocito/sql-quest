@@ -1,6 +1,6 @@
 {
   "name": "sql-quest",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "SQL Quest — a browser SQL tower-defense game. Real SQL controls your turret.",
   "private": true,
   "scripts": {

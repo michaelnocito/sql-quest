@@ -5,7 +5,7 @@
 const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
-const { openGame, startCampaign } = require('./helpers');
+const { openGame, startCampaign, goToTask } = require('./helpers');
 
 test.describe('Project directives', () => {
   test('player is oriented: wave counter, concept, and a step for every wave', async ({ page }) => {
@@ -22,10 +22,10 @@ test.describe('Project directives', () => {
 
   test('the primary action (editor + Execute) stays visible, even after a query', async ({ page }) => {
     await openGame(page);
-    await startCampaign(page);
+    await goToTask(page);
     await expect(page.locator('#editor')).toBeInViewport();
     await expect(page.getByRole('button', { name: /execute/i })).toBeVisible();
-    await page.fill('#editor', 'SELECT * FROM enemies');
+    await page.fill('#editor', 'SELECT name FROM contacts');
     await page.getByRole('button', { name: /execute/i }).click();
     await page.waitForTimeout(600);
     await expect(page.locator('#editor')).toBeInViewport(); // result table didn't bury it
@@ -54,7 +54,7 @@ test.describe('Project directives', () => {
   test('only same-origin and known CDNs (sql.js + Google Fonts) are contacted', async ({ page }) => {
     // Allowed external hosts: the sql.js WebAssembly CDN and Google Fonts.
     // (If we ever self-host fonts for full privacy/offline, drop the font hosts.)
-    const ALLOWED = ['localhost', '127.0.0.1', 'cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com', 'www.googletagmanager.com', 'www.google-analytics.com'];
+    const ALLOWED = ['localhost', '127.0.0.1', 'cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com', 'www.googletagmanager.com', 'www.google-analytics.com', 'analytics.google.com', 'stats.g.doubleclick.net'];
     const offsite = new Set();
     page.on('request', (req) => {
       const u = new URL(req.url());

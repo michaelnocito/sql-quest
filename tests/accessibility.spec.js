@@ -4,12 +4,12 @@
 // calms its motion when the OS asks for reduced motion.
 const { test, expect } = require('@playwright/test');
 const AxeBuilder = require('@axe-core/playwright').default;
-const { openGame, startCampaign } = require('./helpers');
+const { openGame, startCampaign, goToTask } = require('./helpers');
 
 test.describe('Accessibility (WCAG 2.1 AA)', () => {
   test('no serious or critical axe violations on the game screen', async ({ page }) => {
     await openGame(page);
-    await startCampaign(page);
+    await goToTask(page);
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
       .analyze();
@@ -20,7 +20,7 @@ test.describe('Accessibility (WCAG 2.1 AA)', () => {
 
   test('every control has an accessible name', async ({ page }) => {
     await openGame(page);
-    await startCampaign(page);
+    await goToTask(page);
     const unnamed = await page.evaluate(() => {
       const bad = [];
       document.querySelectorAll('button, a, input, textarea, select').forEach((el) => {
@@ -43,7 +43,7 @@ test.describe('Accessibility (WCAG 2.1 AA)', () => {
     const ctx = await browser.newContext({ reducedMotion: 'reduce' });
     const page = await ctx.newPage();
     await openGame(page);
-    await startCampaign(page);
+    await goToTask(page);
     const animName = await page.evaluate(() => {
       const el = document.getElementById('field-bg');
       return el ? getComputedStyle(el).animationName : 'none';

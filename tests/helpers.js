@@ -20,10 +20,18 @@ async function openGame(page) {
   await page.waitForFunction(() => Array.isArray(window.WAVES) && window.WAVES.length > 0);
 }
 
-// Click "Start Campaign" to leave the splash screen.
+// Title screen → sector chart (Trail-style flow: Launch/Resume lands on the map).
 async function startCampaign(page) {
-  await page.getByRole('button', { name: /start campaign/i }).click();
-  await expect(page.locator('#splash')).not.toHaveClass(/show/);
+  await page.getByRole('button', { name: /launch campaign|resume/i }).click();
+  await expect(page.locator('#track')).toBeVisible();
 }
 
-module.exports = { GAME_URL, watchErrors, openGame, startCampaign };
+// All the way to the firing console: map → briefing → task.
+async function goToTask(page) {
+  await startCampaign(page);
+  await page.getByRole('button', { name: /advance to the swarm/i }).click();
+  await page.getByRole('button', { name: /on to the firing console/i }).click();
+  await expect(page.locator('#editor')).toBeVisible();
+}
+
+module.exports = { GAME_URL, watchErrors, openGame, startCampaign, goToTask };

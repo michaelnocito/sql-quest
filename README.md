@@ -4,6 +4,8 @@ A roguelike **tower-defense game where real SQL queries control your turret**. B
 
 **▶ Play:** open `index.html`, or visit the GitHub Pages site.
 
+> **v2.0 (2026-07-20):** interface + narrative redesigned in SQL Trail's card-flow style — Title → Sector chart → Captain's briefing → Firing console → Debrief, with Trail's escalating help (1st miss free · 2nd fills half the code · 3rd hands you the solution) and diagnostic miss coaching. The psychedelic-celestial look and space-combat fiction are unchanged.
+
 ## Why this exists
 
 It's a free learning tool for people breaking into data analytics. **23 waves** introduce one new SQL concept at a time, in the order you'd meet them on the job, then layer earlier ideas back in so you keep recalling them (spaced retrieval):

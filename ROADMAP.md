@@ -9,6 +9,7 @@ then moves into **Now / Next / Later / Icebox**. Done items drop to **Shipped**.
 ---
 
 ## Now (actively building)
+- **[P1] Trail-style redesign — SHIPPED 2026-07-20 (v2.0.0)**: single-page screen-swapped flow (title/map/story/task/debrief), escalating help replaces the ghost reveal, per-wave `story` fields in waves.js, Results/Messages output tabs, sector chart + mastery rail. Follow-ups: playtest pass, mobile polish, decide fate of the Engage buff prototype (removed in redesign).
 - **[P1] Action-RPG Progression Phase 2 -- item drops + enemy variety** (next = Task #74). Enemies drop loot on death (scrap pieces, cosmetic items). Visual loot on battlefield. Inventory UI. Different enemy ships per wave (more sprites from the CC0 asset pack). Needs: drop table design, rarity tiers, cosmetic sprite set.
 
 ---

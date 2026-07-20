@@ -14,8 +14,6 @@
 <title>SQL Quest — SQL Tower Defense</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/themes/prism-tomorrow.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/plugins/line-numbers/prism-line-numbers.min.css">
 <style>
 :root{
   --bg:#171513;--surf:#201d1a;--surf2:#292520;
@@ -59,89 +57,6 @@ header .dev-toggle{margin-left:2px}
 .dev-toggle{width:auto;padding:0 10px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.5px}
 .dev-toggle::after{content:' OFF';opacity:.7}
 .dev-toggle.on::after{content:' ON'}
-
-/* LAYOUT — MOBILE FIRST. Default targets phone portrait; desktop expands
-   at ≥900px. Mobile stack: header → battlefield (35vh) → scrollable editor
-   pane → sticky action bar at the viewport bottom. The Execute button is
-   never buried by the mobile keyboard, and the result table is capped + scrolls
-   internally so it can never push the editor off-screen. */
-/* FIRST-PERSON BRIDGE — you're seated at the helm. The battlefield is the
-   view through the canopy (top); the SQL terminal is the console you lean
-   over (bottom). A canopy vignette + corner struts (.canopy SVG) wrap the
-   view so you feel enclosed in the ship, and the console's lit, angled top
-   lip reads as the physical edge of a dashboard, not two stacked boxes. */
-main{flex:1;display:flex;flex-direction:column;min-height:0;position:relative;height:100%}
-
-/* THE VIEWPORT — open space seen through the canopy; enemies float here, large. */
-.field-pane{position:relative;order:-1;flex:0 0 44vh;min-height:190px;border-bottom:none;overflow:hidden;
-  background:radial-gradient(125% 95% at 50% 16%, #16235a 0%, #0b1130 56%, #07101a 100%);
-  transition:flex-basis .25s ease}
-/* canopy vignette — curved-glass darkening at the edges of the view */
-.field-pane::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:6;
-  background:radial-gradient(135% 125% at 50% 10%, transparent 52%, rgba(4,8,14,.72) 100%);
-  box-shadow:inset 0 -26px 44px rgba(4,8,14,.7)}
-body.typing .field-pane{flex-basis:32vh;min-height:140px}
-
-/* THE CONSOLE — the dashboard you lean over: a teal-rimmed metal surface split
-   into two lit screens. MISSION readout (left) + the SQL TERMINAL (center). The
-   clipped top corners read as the angled console lip. */
-.editor-pane{position:relative;flex:1 1 auto;min-height:0;z-index:2;width:100%;margin:0 auto;
-  padding:16px clamp(16px,4vw,48px) 16px;overflow:hidden;
-  display:grid;gap:16px;align-items:stretch;
-  grid-template-columns:minmax(0,340px) minmax(0,1fr);
-  grid-template-rows:minmax(0,1fr);
-  grid-template-areas:"mission terminal";
-  background:linear-gradient(180deg,#1b1916 0%,#141210 60%,#100e0c 100%);
-  border-top:2px solid rgba(88,170,162,.55);
-  box-shadow:0 -18px 38px rgba(0,0,0,.6), inset 0 16px 28px rgba(88,170,162,.06);
-  clip-path:polygon(0 16px, 3% 0, 97% 0, 100% 16px, 100% 100%, 0 100%)}
-/* lit front edge of the console lip */
-.editor-pane::before{content:'';position:absolute;top:0;left:3%;right:3%;height:2px;z-index:3;pointer-events:none;
-  background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.75;
-  filter:drop-shadow(0 0 6px rgba(88,170,162,.5))}
-.mission-panel{grid-area:mission;min-height:0;overflow-y:auto}
-.terminal-panel{grid-area:terminal;min-height:0;overflow-y:auto;display:flex;flex-direction:column}
-
-/* each panel is its own lit console screen with a labelled header */
-.console-screen{position:relative;background:rgba(8,16,18,.5);border:1px solid rgba(88,170,162,.2);
-  border-radius:10px;padding:12px 14px 14px;box-shadow:inset 0 0 26px rgba(88,170,162,.045)}
-/* tiny status light in the corner of each screen — minimal cockpit detail */
-.console-screen::after{content:'';position:absolute;top:13px;right:13px;width:6px;height:6px;border-radius:50%;
-  background:var(--accent);box-shadow:0 0 7px var(--accent);opacity:.7}
-.screen-label{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;
-  color:var(--accent);opacity:.85;margin-bottom:11px;padding-bottom:7px;border-bottom:1px solid rgba(88,170,162,.16)}
-.screen-label.sub{margin-top:16px}
-/* flatten the briefing inside the mission screen — the screen IS the frame now */
-.mission-panel .briefing{background:none;border:none;border-radius:0;padding:0;margin:0;font-size:13.5px}
-.mission-panel .track{margin-bottom:0}
-/* let the SQL prompt grow to fill the terminal screen — a real terminal, not a
-   small box floating with dead space below it. */
-.terminal-panel .ed-wrap{flex:1 1 auto;min-height:156px;display:flex;flex-direction:column}
-.terminal-panel #editor{flex:1 1 auto;min-height:140px;resize:none}
-
-/* COCKPIT CANOPY FRAME — angled corner struts stretched over the viewport so
-   the open space reads as "seen through a ship frame," not a plain panel. */
-.canopy{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:7}
-
-/* The wave-cleared overlay covers the WHOLE bridge, not just the viewport. */
-.field-pane .overlay{position:fixed;inset:0;z-index:50}
-
-/* NARROW: not enough width for two side-by-side screens — stack them, mission
-   above terminal, so the objective leads and the terminal follows. */
-@media (max-width:820px){
-  .editor-pane{grid-template-columns:1fr;grid-template-rows:auto auto;grid-template-areas:"mission" "terminal";
-    overflow-y:auto;padding:14px clamp(12px,3vw,20px) 14px}
-  .mission-panel,.terminal-panel{overflow:visible}
-}
-/* TRUE MOBILE: shorter canopy so the terminal + Execute stay above the fold
-   (the primary action must never be buried), shorter still while typing. */
-@media (max-width:699px){
-  .field-pane{flex-basis:24vh;min-height:140px}
-  body.typing .field-pane{flex-basis:16vh;min-height:96px}
-  .editor-pane{gap:12px;padding:12px 12px 14px}
-  .console-screen{padding:11px 12px 12px}
-}
-
 /* CONCEPT TRACK — shows the whole campaign path: done · current · upcoming */
 .track{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;padding-bottom:3px}
 .track-step{flex:0 0 auto;display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;padding:4px 10px 4px 5px;border-radius:20px;border:1px solid var(--border);background:var(--surf);color:var(--muted);white-space:nowrap}
@@ -150,71 +65,10 @@ body.typing .field-pane{flex-basis:32vh;min-height:140px}
 .track-step.done .dot{background:var(--green);color:#0e1f1e}
 .track-step.current{border-color:var(--accent);color:var(--text);background:rgba(88,170,162,.12)}
 .track-step.current .dot{background:var(--accent);color:#0e1f1e}
-
-/* BRIEFING */
-.briefing{background:var(--surf);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--r2);padding:11px 14px;margin-bottom:10px;font-size:13.5px;transition:border-left-color .3s}
-@keyframes phase-flash{0%{border-left-color:var(--yellow);box-shadow:inset 3px 0 0 var(--yellow),0 0 18px rgba(212,168,73,.25)}60%{border-left-color:var(--yellow)}100%{border-left-color:var(--accent);box-shadow:none}}
-.briefing.phase-new{animation:phase-flash 1.4s ease-out forwards}
-@keyframes chip-pop{0%,100%{transform:scale(1)}35%{transform:scale(1.22);background:rgba(212,168,73,.35);color:#0e1a0a}}
-#phase-indicator.pop{animation:chip-pop .55s ease-out}
-.briefing .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--accent);background:var(--surf2);padding:2px 8px;border-radius:4px;margin-right:8px}
-.briefing .ttl{font-weight:700}
-/* Briefing prose (lore/flavor) is HIDDEN by default at all widths — competes
-   with the Target. Tap the ⓘ button to expand. When shown, it sits muted and
-   italic so the Target stays the visual focus. */
-.briefing p{display:none}
-.briefing.expanded p{display:block;margin-top:8px;font-size:12.5px;line-height:1.55;color:var(--muted);font-style:italic;border-left:2px solid var(--border);padding-left:9px}
-/* INTELLIGENCE SHEET — Target is the star. Tables and chips support it. */
-.intel-h{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
-.intel-target{margin-top:11px;padding:13px 15px;background:var(--surf2);border:1px solid rgba(212,168,73,.35);border-left:4px solid var(--yellow);border-radius:6px;box-shadow:0 0 14px rgba(212,168,73,.10)}
-.intel-tables{margin-top:9px;padding-top:8px;border-top:1px solid var(--border)}
-.intel-lbl{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
-.intel-target .intel-lbl{color:var(--yellow)}
-.intel .obj{font-size:19px;font-weight:700;color:var(--text);line-height:1.35;padding:0;margin:0;border:0}
-.intel .obj b{color:var(--yellow)}
-.intel .obj code{font-family:var(--mono);font-size:.82em;background:var(--surf);color:var(--yellow);padding:1px 5px;border-radius:4px}
-/* Hint sits UNDER the goal — present but clearly secondary, so the goal reads first. */
-.obj-hint{font-size:12.5px;line-height:1.5;color:var(--muted);margin-top:7px}
-.obj-hint::before{content:"💡 ";opacity:.8}
-.obj-hint code{font-family:var(--mono);font-size:.9em;color:var(--accent2)}
-.obj-hint:empty{display:none}
-.intel .schema-row{margin:0}
-/* Oracle mentor voice — the recurring character speaks to you (SQL TD New blend
-   of the Archaeology sim's mentor pattern). Compact card below the dossier;
-   data-driven via each wave's optional `oracle` field. */
-.oracle-voice{display:flex;gap:9px;align-items:flex-start;background:var(--surf);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:var(--r2);padding:9px 12px;margin-bottom:10px}
-.oracle-voice .orc-avatar{flex:0 0 auto;font-size:18px;line-height:1.4}
-.oracle-voice .orc-speech{flex:1 1 auto;min-width:0;font-size:13px;line-height:1.5}
-.oracle-voice .orc-name{display:block;font-weight:700;color:var(--accent2);font-size:11px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px}
-.oracle-voice .orc-line{color:var(--text);font-style:italic}
-.orc-overlay-line{color:var(--accent2);font-style:italic;font-size:14px;line-height:1.5;margin-bottom:10px}
-.splash-oracle{color:var(--muted);font-style:italic;font-size:13.5px;line-height:1.6;margin:-12px 0 22px}
-/* Briefing context-toggle (ⓘ) — collapses the lore prose so the player gets
-   only the 🎯 objective by default. Forces learn-by-typing over learn-by-reading.
-   Visible only when there's prose to expand. */
-.briefing-info{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:1px 5px;border-radius:3px;margin-left:4px;vertical-align:middle;line-height:1}
-.briefing-info:hover{color:var(--accent2)}
-.briefing-info.expanded{color:var(--accent)}
-/* (.intel .obj rule above supersedes — Target text lives inside the Intel Sheet now.) */
-/* Compact help row: secondary resources sit as small chips so the briefing
-   stays focused on the task. On-the-job opens a panel; recall is an inline
-   reminder of which earlier concepts this wave makes you reuse. */
-.help-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px;align-items:center}
-.help-chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;border-radius:20px;padding:4px 11px;border:1px solid var(--border);background:var(--surf2);color:var(--muted)}
-button.help-chip{font-family:var(--font);cursor:pointer;transition:.15s}
-button.help-chip:hover{color:var(--text);border-color:var(--accent)}
-.help-chip.recall{color:var(--yellow);border-color:rgba(212,168,73,.35)}
-.help-chip.recall .rk{display:inline-block;font-family:var(--mono);font-size:11px;background:var(--surf);color:var(--yellow);padding:1px 6px;border-radius:4px;margin:0 1px}
-/* On-the-job panel (rendered in the shared overlay) */
-.job-line{font-size:13.5px;line-height:1.55;margin-bottom:11px;text-align:left}
-.job-line .lbl{display:block;font-size:11px;font-family:var(--mono);letter-spacing:.5px;text-transform:uppercase;color:var(--accent2);margin-bottom:3px}
-.job-line.eg .lbl{color:var(--yellow)}
-
 /* SCHEMA chips */
 .schema-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px}
 .schema-tbl{font-family:var(--mono);font-size:11px;background:var(--surf2);border:1px solid var(--border);border-radius:var(--r2);padding:5px 9px;color:var(--muted)}
 .schema-tbl b{color:var(--accent2)}
-
 /* EDITOR — wrap holds the surface + border; the textarea is TRANSPARENT so the
    grey ghost shows THROUGH where the player hasn't typed yet. As they type,
    their bright text overlays the grey at the corresponding positions — the
@@ -241,7 +95,6 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 .btn.pulse{animation:hintpulse 1.6s ease-out 2}
 @keyframes hintpulse{0%{box-shadow:0 0 0 0 rgba(212,168,73,.5);border-color:var(--yellow);color:var(--yellow)}70%{box-shadow:0 0 0 8px rgba(212,168,73,0)}100%{box-shadow:0 0 0 0 rgba(212,168,73,0)}}
 .dev-note{font-size:11px;color:var(--muted)}
-
 /* RESULT / FEEDBACK */
 .feedback{margin-top:9px;font-size:13px;min-height:18px}
 .feedback.ok{color:var(--green)}
@@ -263,29 +116,6 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 .gauge{display:inline-block;vertical-align:middle;width:46px;height:7px;border-radius:4px;background:var(--surf2);border:1px solid var(--border);overflow:hidden;margin-right:7px}
 .gauge-bar{display:block;height:100%;border-radius:4px}
 .gauge-val{vertical-align:middle;color:var(--text)}
-
-/* ENGAGE — intel→action stage. Launch button appears once a scan arms a buff. */
-.engage-launch{display:none;width:100%;margin-top:10px;justify-content:center;gap:6px;font-family:var(--mono);
-  letter-spacing:.03em;background:linear-gradient(90deg,#3a2b12,#5b3f19);border:1px solid var(--yellow);color:#ffeccc}
-.engage-launch.show{display:inline-flex;animation:engage-rise .3s ease-out}
-.engage-launch .engage-sub{color:rgba(255,236,204,.6);font-size:.85em}
-@keyframes engage-rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.engage-ov .engage-kicker{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
-.engage-ov .engage-note{max-width:520px}
-.buff-row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:580px;margin:6px 0 18px}
-.buff-card{text-align:left;width:248px;background:var(--surf);border:1px solid var(--border);border-left:3px solid var(--accent);
-  border-radius:8px;padding:10px 12px;cursor:pointer;transition:border-color .15s,box-shadow .15s,background .15s}
-.buff-card:hover{border-color:var(--accent)}
-.buff-card.on{border-color:var(--green);box-shadow:0 0 0 1px var(--green),0 0 18px rgba(110,200,120,.22);background:rgba(110,200,120,.06)}
-.buff-card.locked{opacity:.5;cursor:not-allowed;border-left-color:var(--border)}
-.buff-card .bn{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-weight:700;color:var(--accent2);font-size:13px}
-.buff-card .bd{margin-top:5px;font-size:12px;line-height:1.45;color:var(--muted)}
-
-/* HINT */
-.hint{margin-top:8px;font-size:12.5px;color:var(--yellow);background:rgba(212,168,73,.08);border-left:3px solid var(--yellow);border-radius:0 6px 6px 0;padding:7px 11px;display:none}
-.hint.show{display:block}
-.hint pre{font-family:var(--mono);font-size:12px;color:var(--text);margin-top:5px;white-space:pre-wrap}
-
 /* BATTLEFIELD */
 /* Two stacked SVG layers: #field-bg is built ONCE and holds the slow ambient
    psychedelic-celestial motion (so it never restarts on a turn redraw);
@@ -317,19 +147,6 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 @keyframes breathe{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:.95;transform:scale(1.07)}}
 @media (prefers-reduced-motion:reduce){#field-bg,.neb-a,.neb-b,.mandala,.tw,.spin-self,.breathe{animation:none}}
 .field-status{position:absolute;top:10px;left:0;right:0;text-align:center;font-size:12px;color:var(--muted);pointer-events:none}
-
-/* START SPLASH */
-#splash{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;padding:24px;
-  background:radial-gradient(circle at 50% 30%,rgba(88,170,162,.14),transparent 60%),var(--bg)}
-#splash.show{display:flex}
-.splash-card{text-align:center;max-width:440px}
-.splash-logo{font-weight:800;font-size:2.8rem;letter-spacing:-1px;margin-bottom:14px}
-.splash-logo .q{color:var(--accent)}
-.splash-tag{color:var(--muted);font-size:15px;line-height:1.6;margin-bottom:26px}
-.splash-start{font-size:16px;padding:12px 26px}
-.splash-build{margin-top:22px;font-family:var(--mono);font-size:11px;color:var(--muted);opacity:.8}
-
-/* WAVE OVERLAY (win/lose) */
 /* Course-complete screen — full-page overlay with stats + personal best */
 #complete-screen{position:fixed;inset:0;background:rgba(23,21,19,.95);display:none;align-items:center;justify-content:center;z-index:50;overflow-y:auto;padding:20px}
 #complete-screen.show{display:flex}
@@ -372,7 +189,6 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 #confetti{position:fixed;inset:0;pointer-events:none;z-index:190;overflow:hidden}
 .confetti{position:absolute;top:-12px;width:9px;height:9px;border-radius:2px;animation:fall linear forwards}
 @keyframes fall{to{transform:translateY(105vh) rotate(540deg);opacity:.2}}
-
 /* IMPACT FX (SVG) */
 .boom{transform-box:fill-box;transform-origin:center;pointer-events:none}
 .boom-flash{animation:boom-flash .32s ease-out forwards}
@@ -442,7 +258,6 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 .break-nudge{position:fixed;bottom:0;left:0;right:0;background:var(--surf);border-top:1px solid var(--accent);padding:12px 16px;display:none;align-items:center;gap:12px;z-index:180;font-size:13px}
 .break-nudge.show{display:flex}
 .break-nudge .x{margin-left:auto}
-
 /* === SUB-DESKTOP BREAKPOINT (<900px): collapse the settings menu + tighten
    the briefing. This covers desktop-narrow windows AND real phones — the
    header just doesn't have room for 8 buttons regardless of device. === */
@@ -465,184 +280,107 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
   .schema-row{margin-bottom:6px}
 }
 
-/* === TRUE MOBILE (<700px): action bar gets phone styling. At 700–899px on
-   desktop-narrow windows, the action bar stays inline + normal-sized — the
-   phone-specific Execute-stretch + sticky-bottom-bar look stays OFF. === */
-@media (max-width:699px){
-  .ed-row .btn{padding:11px 14px;font-size:14px;flex-shrink:0}
-  .ed-row .btn-primary{flex:1;min-width:0;justify-content:center}
-  .ed-row #format-btn{display:none}            /* presentation-only on mobile */
-  .ed-row .dev-note,.ed-row .spacer{display:none}
-  /* result table: cap so it never pushes the editor off the small screen */
-  #result{max-height:42vh;overflow-y:auto;margin-top:8px}
-  /* Editor textarea — shorter min-height for limited screen real estate */
-  #editor{min-height:110px;font-size:15px}
-}
-/* Sticky action bar — pinned to viewport bottom on actual phones in portrait.
-   Editor pane gets extra bottom padding so content can scroll above the bar. */
-@media (max-width:699px) and (orientation:portrait){
-  .ed-row{position:fixed;left:0;right:0;bottom:0;margin:0;padding:8px 12px;background:var(--surf);border-top:1px solid var(--border);z-index:50;gap:6px;flex-wrap:nowrap;overflow-x:auto}
-  .editor-pane{padding-bottom:76px}
-}
+/* ═══ TRAIL-STYLE SCREEN SHELL (2026-07-20 redesign) ══════════════════════
+   One #app div, screenXxx() functions swap innerHTML — SQL Trail's card flow
+   wearing SQL Quest's psychedelic-celestial skin. */
+body{overflow:auto}
+main.appmain{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#app{max-width:860px;margin:0 auto;padding:18px clamp(12px,3vw,28px) 60px}
+#app h1{font-size:2.4rem;letter-spacing:2px;text-align:center;margin:26px 0 14px}
+#app h1 .q{color:var(--accent)}
+#app h2{font-size:1.25rem;margin:14px 0 10px}
+#app .center{text-align:center}
+#app .dim{color:var(--muted)}
+#app .amber{color:var(--yellow)}
+.panel{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:13px 16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.btnrow{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;margin:14px 0}
+.btnrow.left{justify-content:flex-start}
 
-/* === SMALLER PHONES (<520px): hide the campaign progress track (info already
-   shown in the wave chip), tighten the chrome further. === */
-@media (max-width:520px){
-  .track{display:none}
-  .brand{font-size:14px}
-  .editor-pane{padding:10px 10px 76px}
-  header{gap:7px;padding:7px 10px}
-  .hp-wrap{font-size:11px;gap:5px}
-  .hp-bar{width:54px}
-  .icon-btn{width:30px;height:30px;font-size:15px}
-  .wave-chip{font-size:11px;padding:3px 8px}
-}
+/* STATBAR — chips: wave, base integrity, streak */
+.statbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.statbar .chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);background:var(--surf);border:1px solid var(--border);padding:4px 11px;border-radius:20px;white-space:nowrap}
+.statbar .chip b{color:var(--text)}
+.statbar .hp-bar{width:74px}
+
+/* SECTOR CHART — Trail's CRT strip, retuned to Quest teal-on-void */
+.crt{font-family:var(--mono);font-size:12.5px;background:#07131a;border:1px solid rgba(88,170,162,.5);border-radius:var(--r2);color:var(--accent2);padding:10px 13px;box-shadow:inset 0 0 22px rgba(88,170,162,.10), 0 0 12px rgba(88,170,162,.14);text-shadow:0 0 6px rgba(125,191,184,.55)}
+.crt .tmscroll{white-space:nowrap;overflow-x:auto;padding-bottom:3px;letter-spacing:.5px}
+.crt .tmline{margin-top:5px;color:var(--muted);text-shadow:none;font-size:11.5px}
+.crt .tmline b{color:var(--yellow)}
+
+/* OBJECTIVE — the gold firing-solution callout (Trail's .objective) */
+.objective{background:var(--surf2);border:1px solid rgba(212,168,73,.35);border-left:4px solid var(--yellow);border-radius:6px;padding:12px 15px;margin:12px 0;box-shadow:0 0 14px rgba(212,168,73,.10);font-size:15.5px;line-height:1.45}
+.objective .tag{display:block;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--yellow);letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px}
+.objective code{background:var(--surf);color:var(--yellow)}
+.obj-hint{font-size:12.5px;line-height:1.5;color:var(--muted);margin-top:7px}
+.obj-hint::before{content:"💡 ";opacity:.8}
+.obj-hint:empty{display:none}
+
+/* STORY CARD — the Captain's briefing */
+.story{font-size:1.05em;line-height:1.65;font-style:italic;color:var(--text)}
+.story-who{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2);margin-bottom:8px}
+.badge{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--accent);background:var(--surf2);border:1px solid var(--border);padding:2px 9px;border-radius:4px;margin-right:6px}
+
+/* COMPACT BATTLEFIELD STRIP — the canopy view, shrunk to a viewport band */
+.field-pane{position:relative;height:200px;border-radius:var(--r2);overflow:hidden;margin:12px 0;border:1px solid rgba(88,170,162,.35);
+  background:radial-gradient(125% 95% at 50% 16%, #16235a 0%, #0b1130 56%, #07101a 100%)}
+.field-pane::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:6;
+  background:radial-gradient(135% 125% at 50% 10%, transparent 52%, rgba(4,8,14,.6) 100%)}
+@media (max-width:600px){.field-pane{height:170px}}
+
+/* EDITOR — terminal look; typed text renders via the Prism ghost underlay */
+#editor{color:transparent;caret-color:#e8e0d4}
+#editor::selection{background:rgba(88,170,162,.35);color:transparent}
+.ed-ghost{color:#e8e0d4;display:block}
+.schemastrip{font-family:var(--mono);font-size:12px;color:var(--muted);margin:9px 0;line-height:1.7}
+.schemastrip .sstable{color:var(--accent2);font-weight:600}
+.schemastrip .sscols{color:var(--muted)}
+
+/* TRY PIPS + rule line */
+.ruleline{font-size:12px;color:var(--muted);margin-top:9px}
+.trypips i{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--surf2);border:1px solid var(--border);margin:0 2px;vertical-align:middle}
+.trypips i.used{background:var(--red);border-color:var(--red)}
+
+/* OUTPUT TABS — Results / Messages */
+.outtabs{margin-top:12px;display:flex;gap:2px}
+.outtabs button{font:600 12px var(--font);background:var(--surf2);color:var(--muted);border:1px solid var(--border);border-bottom:none;border-radius:6px 6px 0 0;padding:6px 14px;cursor:pointer}
+.outtabs button.on{background:var(--surf);color:var(--accent2);border-color:var(--accent)}
+.outpane{background:var(--surf);border:1px solid var(--accent);border-radius:0 6px 6px 6px;padding:9px 12px;max-height:260px;overflow:auto}
+.msgline{font-family:var(--mono);font-size:12px;color:var(--muted);padding:2px 0}
+.msgline.err{color:var(--red)}
+
+/* HELPLINE — wry line + concrete diagnostic */
+.helpline{background:var(--surf);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:var(--r2);padding:9px 12px;margin-top:9px;font-size:13.5px;line-height:1.55}
+.helpline b{color:var(--accent2)}
+
+/* DEBRIEF */
+.winbanner{font-family:var(--mono);font-size:1.7rem;font-weight:700;color:var(--yellow);text-align:center;letter-spacing:.06em;text-shadow:0 0 18px rgba(212,168,73,.5);margin:8px 0 4px}
+.debrief-flavor{text-align:center;color:var(--muted);font-style:italic;margin-bottom:12px}
+
+/* MASTERY RAIL on the sector chart (vertical variant of .track) */
+.rail{display:flex;flex-direction:column;gap:5px;max-height:44vh;overflow-y:auto;padding-right:4px}
+.rail .track-step{width:100%}
 </style>
 </head>
 <body>
 
-<div id="splash" class="show">
-  <div class="splash-card">
-    <div class="splash-logo">SQL <span class="q">Quest</span></div>
-    <p class="splash-tag">Command your turret with real SQL. Each query is an attack — clear the swarm, learn the language analysts get hired for.</p>
-    <p class=”splash-oracle”>🎖️ <span>”Chief, we're reading a massive cluster on our sensors. I need a full diagnostic — all contacts, every data point. Run a complete scan and show me what we're facing.”</span></p>
-    <button class="btn btn-primary splash-start" onclick="startGame()">▶ Start Campaign</button>
-    <a class="btn btn-ghost splash-start" href="guide.html" style="font-size:13px;margin-top:-4px">📖 Study Guide — all 23 concepts explained</a>
-    <div class="splash-build">Build · <span id="build-ts">—</span></div>
-  </div>
-</div>
-
 <header>
   <div class="brand">SQL <span class="q">Quest</span></div>
-  <div class="wave-chip">Wave <b id="wave-num">1</b> / <span id="wave-total">3</span> · <span id="wave-concept">SELECT</span></div>
   <div class="spacer"></div>
-  <div class="hp-wrap" title="Base integrity">
-    <span>BASE</span>
-    <div class="hp-bar"><div class="hp-fill" id="hp-fill"></div></div>
-    <span id="hp-num">100</span>
-  </div>
   <button class="icon-btn" id="music-btn" title="Background music on/off" onclick="toggleMusic()">🎵</button>
   <button class="icon-btn" id="sfx-btn" title="Sound effects on/off" onclick="toggleSfx()">🔔</button>
   <button class="icon-btn" id="melody-btn" title="Code-as-melody: typing tones + keyword chimes + execute chord (opt-in; requires SFX on)" onclick="toggleMelody()">🎼</button>
   <button class="icon-btn" id="more-btn" title="More settings" aria-label="More settings" aria-expanded="false" onclick="toggleMore()">⚙</button>
   <div class="more-group" id="more-group">
-    <button class="icon-btn dev-toggle on" id="dev-btn" title="Dev mode — ON: full answer shown (Tab inserts). OFF: player mode — the answer is uncovered over 3 misses, then autopilot." onclick="toggleDev()">DEV</button>
+    <button class="icon-btn dev-toggle" id="dev-btn" title="Dev mode — ON: Tab inserts the answer, wave jump unlocked." onclick="toggleDev()">DEV</button>
     <select class="dev-jump" id="dev-jump" aria-label="Jump to wave (dev mode)" title="Jump to any wave (dev)" onchange="jumpToWave(this.value)"></select>
     <button class="icon-btn" id="theme-btn" title="Theme" onclick="toggleTheme()">◐</button>
-    <button class="icon-btn" id="reset-btn" title="Reset (this wave or all progress)" onclick="showResetOverlay()">↻</button>
+    <button class="icon-btn" id="reset-btn" title="Reset all campaign progress" onclick="confirmReset()">↻</button>
   </div>
 </header>
 
-<main>
-  <!-- THE CONSOLE — a two-screen cockpit dashboard. MISSION readout on the
-       left (what to do + where you are in the campaign); the TERMINAL in the
-       center (captain's briefing + the SQL terminal you fire from). -->
-  <section class="editor-pane">
-
-    <!-- LEFT SCREEN — mission readout: objective, tables, campaign progress. -->
-    <aside class="console-screen mission-panel">
-      <div class="screen-label">◈ Mission</div>
-      <div class="intel briefing">
-        <div class="intel-h">
-          <span class="tag" id="b-tag">SELECT</span><span class="ttl" id="b-title">First Contact</span><button class="briefing-info" id="briefing-info-btn" onclick="toggleBriefingInfo()" aria-label="Show wave context" aria-expanded="false" title="Wave context">ⓘ</button>
-          <div id="phase-indicator" class="phase-chip" style="display:none" aria-live="polite"></div>
-        </div>
-        <p id="b-text"></p>
-        <div class="intel-target">
-          <div class="intel-lbl">🎯 Objective</div>
-          <div class="obj" id="b-obj"></div>
-          <div class="obj-hint" id="b-hint"></div>
-        </div>
-        <div class="intel-tables">
-          <div class="intel-lbl">📋 Tables</div>
-          <div class="schema-row" id="schema-row"></div>
-        </div>
-        <div class="help-row">
-          <span class="help-chip recall" id="b-recall" title="Earlier concepts this wave makes you reuse">🔁 Recall: <span id="b-recall-text"></span></span>
-        </div>
-      </div>
-      <div class="screen-label sub">◈ Campaign</div>
-      <div class="track" id="track" tabindex="0" role="group" aria-label="Campaign progress"></div>
-    </aside>
-
-    <!-- CENTER SCREEN — the terminal: captain's briefing, then the SQL prompt. -->
-    <div class="console-screen terminal-panel">
-      <div class="screen-label">◈ Terminal</div>
-      <!-- CAPTAIN'S BRIEFING — the recurring mentor voice. Per-wave from
-           w.captain/w.oracle.intro in loadWave(); hidden when a wave has none. -->
-      <div class="oracle-voice" id="oracle-voice" style="display:none">
-        <span class="orc-avatar" aria-hidden="true">🎖️</span>
-        <div class="orc-speech"><span class="orc-name">Captain's Briefing</span><span class="orc-line" id="oracle-line"></span></div>
-      </div>
-
-      <div class="ed-wrap">
-        <textarea id="editor" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="SQL query editor" placeholder="Write your SQL here… (case-insensitive — lowercase is fine)"></textarea>
-        <div class="ed-ghost" id="ghost"></div>
-      </div>
-
-      <div class="ed-row">
-        <button class="btn btn-primary" onclick="runQuery()" style="font-family:var(--mono);letter-spacing:.02em">▶ Execute <span class="kbd">Ctrl+↵</span></button>
-        <button class="btn btn-ghost btn-sm" onclick="formatSQL()" id="format-btn" title="Uppercase SQL keywords (Alt+Shift+F). SQL is case-insensitive — type lowercase, click Format.">Format <span class="kbd">⌥⇧F</span></button>
-        <span class="spacer"></span>
-        <span class="dev-note" id="dev-hint">Dev mode on — press <span class="kbd">Tab</span> to insert the answer</span>
-      </div>
-
-      <div class="feedback" id="feedback"></div>
-      <!-- ENGAGE — once your scans arm at least one protocol, drop to the
-           auto-aim engagement stage and spend your analysis as buffs. -->
-      <button class="btn engage-launch" id="engage-btn" onclick="openEngage()">⚔ Engage targets <span class="engage-sub">— analysis ready</span></button>
-      <!-- OUTPUT — labelled so reading the result is a skill, not a footnote. -->
-      <div class="output-block" id="output-block" style="display:none">
-        <div class="output-h">🔍 Output — what your query returned</div>
-        <div id="result"></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="field-pane">
-    <div class="field-status" id="field-status">Void-motes in the lane — weave the right query to scatter them.</div>
-    <svg id="field-bg" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
-    <svg id="field" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid meet"></svg>
-    <!-- COCKPIT CANOPY — angled corner struts framing the view through the
-         helm window. Stretched to fill the viewport (preserveAspectRatio none)
-         so the struts stay pinned to the corners at any size. -->
-    <svg class="canopy" viewBox="0 0 800 320" preserveAspectRatio="none" aria-hidden="true">
-      <defs>
-        <linearGradient id="strut-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="rgba(125,191,184,.55)"/>
-          <stop offset="1" stop-color="rgba(88,170,162,.18)"/>
-        </linearGradient>
-      </defs>
-      <!-- top-left strut -->
-      <path d="M0,0 L232,0 L168,40 L70,40 L70,118 L0,162 Z"
-            fill="rgba(88,170,162,.07)" stroke="url(#strut-grad)" stroke-width="2"/>
-      <!-- top-right strut -->
-      <path d="M800,0 L568,0 L632,40 L730,40 L730,118 L800,162 Z"
-            fill="rgba(88,170,162,.07)" stroke="url(#strut-grad)" stroke-width="2"/>
-    </svg>
-    <div class="overlay" id="overlay">
-      <div class="big" id="ov-big">🏆</div>
-      <div class="first-try" id="ov-firsttry">🎯 First try — no peeking!</div>
-      <h2 id="ov-title">Wave Cleared</h2>
-      <p id="ov-text"></p>
-      <div class="terms-wrap" id="ov-terms"></div>
-      <div class="ov-btns">
-        <button class="btn btn-ghost" id="ov-btn-secondary" onclick="overlayActionSecondary()" style="display:none">↻ Replay</button>
-        <button class="btn btn-primary" id="ov-btn" onclick="overlayAction()">Next Wave →</button>
-      </div>
-    </div>
-    <!-- ENGAGE STAGE — pick the buffs your scans armed, then fire (auto-aim). -->
-    <div class="overlay engage-ov" id="engage">
-      <div class="engage-kicker">◈ Engage Sequence</div>
-      <h2 id="engage-h">Spend your analysis</h2>
-      <p class="engage-note" id="engage-note">Each scan you ran in the query stage armed a protocol. Choose your loadout, then fire — your ship auto-locks the swarm.</p>
-      <div class="buff-row" id="buff-row"></div>
-      <div class="ov-btns">
-        <button class="btn btn-ghost" onclick="closeEngage()">← Back to console</button>
-        <button class="btn btn-primary" id="engage-fire" onclick="engageFire()">🔥 Fire</button>
-      </div>
-    </div>
-  </section>
+<main class="appmain">
+  <div id="app"><p style="text-align:center;color:var(--muted);padding:40px 0">Warming the drives…</p></div>
 </main>
 
 <div id="toast"></div>
@@ -654,43 +392,49 @@ button.help-chip:hover{color:var(--text);border-color:var(--accent)}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/components/prism-sql.min.js"></script>
 <script src="waves.js"></script>
 <script>
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "June 28, 2026 · 11:18 PM ET";
+const BUILD_TS = "July 20, 2026 · 2:45 PM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, devMode: false, music: false, sfx: true, melody: false, theme: 'dark',
-  cleared: [], attempts: 0, correct: 0, fatalities: 0, visionWaves: [], started: Date.now()
+  cleared: [], attempts: 0, correct: 0, fatalities: 0, visionWaves: [], streak: 0,
+  started: Date.now(), screen: 'title', begun: false
 };
 let SQLjs = null;          // initSqlJs module
 let enemiesLive = [];      // live battlefield enemies for current wave
-let hintLevel = 0;
 let busy = false;          // lock during animations
-let waveTries = 0;         // failed attempts this wave (wrong answer, syntax, or banned) — drives reveal + autopilot
-let revealFrac = 0;        // player-mode (dev off): how much of the solution is uncovered (0..1)
-let autopiloted = false;   // player-mode: has autopilot already rescued this wave?
-let waveFriction = false;  // ANY friction this wave (miss, syntax, banned, hint click, Tab-insert) — disqualifies a fatality
-const AUTOPILOT_AT = 3;    // failed attempts before autopilot fills the answer + explains
+let waveTries = 0;         // misses this wave — drives the Trail-style escalating help
+let handedOver = false;    // 3rd miss: the full solution is in the editor
+let waveFriction = false;  // ANY miss this wave — disqualifies a FATALITY
+const HAND_OVER_AT = 3;    // misses before the full solution is handed over
 
 function load(){
   try{ Object.assign(state, JSON.parse(localStorage.getItem(LS)) || {}); }catch(e){}
-  // Migrate the old single audio flag → separate music/sfx prefs.
   const saved = (()=>{ try{ return JSON.parse(localStorage.getItem(LS)) || {}; }catch(e){ return {}; } })();
   if(saved.music === undefined && saved.audio !== undefined) state.music = saved.audio;
   if(saved.sfx === undefined && saved.audio !== undefined) state.sfx = saved.audio;
   state.started = Date.now();
+  state.screen = 'title';
 }
 function save(){
   localStorage.setItem(LS, JSON.stringify({
     wave: state.wave, baseHP: state.baseHP, devMode: state.devMode,
     music: state.music, sfx: state.sfx, melody: state.melody, theme: state.theme, cleared: state.cleared,
-    attempts: state.attempts, correct: state.correct,
-    fatalities: state.fatalities || 0, visionWaves: state.visionWaves || []
+    attempts: state.attempts, correct: state.correct, streak: state.streak || 0,
+    fatalities: state.fatalities || 0, visionWaves: state.visionWaves || [], begun: !!state.begun
   }));
 }
-
+function currentWave(){ return WAVES[state.wave]; }
+function currentPhaseSolution(){
+  const w = currentWave();
+  return (w.phases && w.phases[state.phase]) ? w.phases[state.phase].solution : w.solution;
+}
+function accuracy(){ return state.attempts ? Math.round(100*state.correct/state.attempts) : 100; }
 /* ════════════════════════════════════════════════════════════════════════════
    LANGUAGE MODULE — replace this entire region to clone the game.
    Everything else (combat, audio, UI, animation, wave engine) is shared.
@@ -754,265 +498,34 @@ function isSafe(sql){
 }
 /* ─── END LANGUAGE MODULE: SQL ENGINE ────────────────────────────────────── */
 
-/* ─── WAVE LOADING ───────────────────────────────────────────────────────── */
-function currentWave(){ return WAVES[state.wave]; }
-// Task #72 — Intel Sheet clarity. Split an objective into its crisp GOAL (the
-// big yellow line) and an optional HINT (the small line under it). Authors write
-// "Goal. Hint: nudge." — the goal is what the player must accomplish; the hint
-// nudges toward the syntax. Keeps the Objective unmissable and the prose crisp.
-function setObjective(text){
-  const t = text || '';
-  const i = t.indexOf('Hint:');
-  const goal = (i === -1 ? t : t.slice(0, i)).trim();
-  const hint = (i === -1 ? '' : t.slice(i + 5)).trim();
-  document.getElementById('b-obj').innerHTML = goal;
-  document.getElementById('b-hint').innerHTML = hint;
-}
-// For phased waves returns the active phase's solution; falls back to w.solution.
-function currentPhaseSolution(){
-  const w = currentWave();
-  return (w.phases && w.phases[state.phase]) ? w.phases[state.phase].solution : w.solution;
-}
-
-function loadWave(){
-  const w = currentWave();
-  state.phase = 0;
-  hintLevel = 0;
-  waveTries = 0;
-  revealFrac = 0;
-  autopiloted = false;
-  waveFriction = false;
-  setOracleCharge(0);             // fresh wave → no power-up carry-over
-  // Collapse briefing prose by default each wave (mobile philosophy: learn by typing).
-  const br = document.querySelector('.briefing');
-  if(br) br.classList.remove('expanded');
-  const bib = document.getElementById('briefing-info-btn');
-  if(bib){ bib.classList.remove('expanded'); bib.setAttribute('aria-expanded','false'); }
-  document.getElementById('wave-num').textContent = w.id;
-  document.getElementById('wave-concept').textContent = w.concept;
-  document.getElementById('b-tag').textContent = w.concept;
-  document.getElementById('b-title').textContent = w.title;
-  // Phased waves use phase-0 briefing/objective; regular waves use top-level fields.
-  const ph0 = w.phases ? w.phases[0] : null;
-  document.getElementById('b-text').innerHTML = ph0 ? ph0.briefing : w.briefing;
-  setObjective(ph0 ? ph0.objective : w.objective);
-  updatePhaseIndicator();
-  // Spaced retrieval: surface which earlier concepts this wave forces you to recall.
-  const rec = w.reinforces || [];
-  const recEl = document.getElementById('b-recall');
-  if(rec.length){
-    document.getElementById('b-recall-text').innerHTML = rec.map(c=>`<span class="rk">${esc(c)}</span>`).join('');
-    recEl.style.display = 'inline-flex';
-  } else { recEl.style.display = 'none'; }
-  // Oracle mentor voice (SQL TD New blend): the recurring character greets you
-  // into the wave. Data-driven + optional — hidden when a wave has no `oracle`.
-  const orcEl = document.getElementById('oracle-voice');
-  const mentorIntro = (w.captain && w.captain.intro) ? w.captain.intro : (w.oracle && w.oracle.intro ? w.oracle.intro : null);
-  if(mentorIntro){
-    document.getElementById('oracle-line').innerHTML = mentorIntro;
-    orcEl.style.display = 'flex';
-  } else { orcEl.style.display = 'none'; }
-  renderTrack();
-  document.getElementById('feedback').textContent = '';
-  document.getElementById('feedback').className = 'feedback';
-  document.getElementById('result').innerHTML = '';
-  const ob = document.getElementById('output-block'); if(ob) ob.style.display = 'none';
-
-  // Editor starts empty in both modes. In DEV the solution ghost shows behind
-  // (Tab to insert); in player mode the editor is clean until misses reveal it.
-  const ed = document.getElementById('editor');
-  ed.value = '';
-  updateGhost();
-  syncDevJump();
-
-  // Schema chips
-  renderSchema(w.schema);
-
-  // Build the lane from the active phase solution (phase 0 for regular waves).
-  const db = freshDB(w.schema);
-  const sol = execQuery(db, currentPhaseSolution());
-  db.close();
-  // Derive each enemy's archetype from its `type` column when present, so a
-  // mixed-type lane (e.g. Wave 6's Raiders OR Wardens) actually LOOKS mixed.
-  // Falls back to the wave's enemyArch for waves whose result has no type.
-  // Phase-0 enemies are marked shielded so they render with the shield ring.
-  const isPhased = !!(w.phases);
-  enemiesLive = sol.rows.map((row, i) => {
-    const obj = {}; sol.columns.forEach((c,j)=>obj[c]=row[j]);
-    return {
-      name: obj.name || obj.id || ('Target '+(i+1)),
-      archetype: archFromType(obj.type) || w.enemyArch || 'warden',
-      threat: (obj.threat_level != null) ? Number(obj.threat_level) : null,
-      maxHp: ENEMY_MAXHP, hp: ENEMY_MAXHP, advance: 0, alive: true,
-      shielded: isPhased,
-      spriteAlt: i % 2 === 1
-    };
-  });
-  document.getElementById('field-status').textContent =
-    `${enemiesLive.length} contact${enemiesLive.length!==1?'s':''} on your scope — scan them, then weave the query that locks them.`;
-  intel.clear(); engageLoadout.clear(); updateEngageButton();
-  drawField();
-  hideOverlay();
-}
-
-// Campaign path: where you've been, where you are, where you're going.
-function renderTrack(){
-  const el = document.getElementById('track');
-  el.innerHTML = WAVES.map((w,i)=>{
-    const done = state.cleared.includes(w.id);
-    const cur = i === state.wave;
-    const cls = cur ? 'current' : (done ? 'done' : '');
-    const mark = done && !cur ? '✓' : w.id;
-    return `<div class="track-step ${cls}"><span class="dot">${mark}</span>${esc(w.concept)}</div>`;
-  }).join('');
-  // keep the current step scrolled into view
-  const curEl = el.querySelector('.current');
-  if(curEl) curEl.scrollIntoView({inline:'center', block:'nearest'});
-}
-
-function renderSchema(schema){
-  // Parse "CREATE TABLE name (col type, ...)" blocks into chips.
-  const row = document.getElementById('schema-row');
-  row.innerHTML = '';
-  const re = /CREATE TABLE (\w+)\s*\(([^;]+)\)/gi;
-  let m;
-  while((m = re.exec(schema))){
-    const tbl = m[1];
-    const cols = m[2].split(',').map(c => c.trim().split(/\s+/)[0]).join(', ');
-    const chip = document.createElement('div');
-    chip.className = 'schema-tbl';
-    chip.innerHTML = `<b>${tbl}</b> (${cols})`;
-    row.appendChild(chip);
-  }
-}
-
-/* ─── EDITOR / DEV MODE ──────────────────────────────────────────────────── */
-// Player-mode reveal: split the solution into words and uncover the first
-// `frac` of them, masking the rest with dots so the shape of the query shows.
-function maskedSolution(frac){
-  const parts = currentPhaseSolution().split(/(\s+)/);   // keep the whitespace
-  const words = parts.filter(p=>p.trim().length).length;
-  const reveal = Math.max(1, Math.ceil(words * frac));
-  let shown = 0;
-  return parts.map(p=>{
-    if(!p.trim().length) return p;
-    return (++shown <= reveal) ? p : p.replace(/\S/g,'·');
-  }).join('');
-}
-function revealedPrefix(frac){
-  const words = currentPhaseSolution().split(/\s+/);
-  const reveal = Math.max(1, Math.ceil(words.length * frac));
-  return words.slice(0, reveal).join(' ');
-}
-function updateGhost(){
-  const ghost = document.getElementById('ghost');
-  const ed = document.getElementById('editor');
-  // The ghost is PERSISTENT — shows the solution (or partial reveal) behind
-  // the transparent textarea so the player types OVER the grey letters.
-  // Their bright text covers the grey at matching positions; unfilled positions
-  // stay grey as a continuous guide. This applies in DEV mode and in player
-  // mode whenever the reveal has been triggered by misses.
-  if(state.devMode){
-    ghost.textContent = currentPhaseSolution();
-    ghost.style.display = 'block';
-    ed.placeholder = '';
-  } else if(revealFrac > 0){
-    ghost.textContent = maskedSolution(revealFrac);
-    ghost.style.display = 'block';
-    ed.placeholder = '';
-  } else {
-    ghost.style.display = 'none';
-    ed.placeholder = 'Write your SQL here…';
-  }
-}
-// Toggle body.typing on focus/blur so the mobile-portrait CSS can shrink the
-// battlefield while the keyboard is up — keeps both visible.
-document.getElementById('editor').addEventListener('focus', () => document.body.classList.add('typing'));
-document.getElementById('editor').addEventListener('blur',  () => document.body.classList.remove('typing'));
-document.getElementById('editor').addEventListener('input', () => {
-  updateGhost();
-  // Reactive feedback: the WHOLE Oracle silhouette glows briefly with each
-  // keystroke. Using element.animate() instead of a CSS class toggle because
-  // SVG elements don't expose offsetWidth — the usual class-toggle reflow
-  // restart trick is a silent no-op on them (only the first keystroke fired).
-  const oracle = document.getElementById('oracle');
-  if(!oracle) return;
-  oracle.animate([
-    { filter: 'drop-shadow(0 0 0 rgba(125,191,184,0))' },
-    { filter: 'drop-shadow(0 0 12px rgba(125,191,184,.7))', offset: 0.4 },
-    { filter: 'drop-shadow(0 0 0 rgba(125,191,184,0))' }
-  ], { duration: 320, easing: 'ease-out' });
-});
-document.getElementById('editor').addEventListener('keydown', e => {
-  if(e.key === 'Tab' && !e.target.value && (state.devMode || revealFrac > 0)){
-    e.preventDefault();
-    // Dev mode inserts the whole answer; player mode inserts only the part
-    // that's been uncovered so far, leaving the rest to recall.
-    e.target.value = state.devMode ? currentPhaseSolution() : revealedPrefix(revealFrac);
-    // Tab-borrow does NOT flip waveFriction:
-    //   - DEV mode: it's the dev's convenience and should still earn fatality.
-    //   - Player mode: Tab is only available when revealFrac > 0, which can
-    //     only happen AFTER a miss has already flipped waveFriction.
-    updateGhost();
-  } else if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){
-    e.preventDefault();
-    runQuery();
-  } else if((e.key === 'F' || e.key === 'f') && e.altKey && e.shiftKey){
-    e.preventDefault();
-    formatSQL();
-  } else if(e.key === 'Backspace'){
-    playMelodyBackspace();
-  } else if(e.key && e.key.length === 1){
-    // Code-as-melody Tier 1: a soft pentatonic ping per printable keystroke.
-    playMelodyType(e.key);
-    // Code-as-melody Tier 2: brighter chime when a SQL keyword just finished.
-    // Word-boundary chars (space, ; , ( ) .) end a word — peek at the last word
-    // already in the editor (this keydown hasn't appended its char yet).
-    if(' ;,().'.includes(e.key)){
-      const m = (e.target.value || '').match(/(\w+)\s*$/);
-      if(m && SQL_KEYWORDS.includes(m[1].toUpperCase())){
-        const kw = m[1].toUpperCase();
-        setTimeout(()=>playMelodyKeyword(kw), 35);
-      }
-    }
-  }
-});
-
-function toggleDev(){
-  state.devMode = !state.devMode;
-  document.getElementById('dev-btn').classList.toggle('on', state.devMode);
-  document.getElementById('dev-hint').style.visibility = state.devMode ? 'visible' : 'hidden';
-  document.getElementById('dev-jump').style.display = state.devMode ? 'inline-block' : 'none';
-  // Fresh slate when switching modes — clear the editor and reset the miss
-  // counters so the new mode starts cleanly (no stale reveal carrying over).
-  document.getElementById('editor').value = '';
-  waveTries = 0; revealFrac = 0; autopiloted = false; waveFriction = false;
-  updateGhost(); save();
-}
-
-// Dev-only wave picker — populates a <select> with every wave and jumps to it.
-function populateDevJump(){
-  const sel = document.getElementById('dev-jump');
-  sel.innerHTML = WAVES.map((w,i) => `<option value="${i}">${w.id}. ${w.concept}</option>`).join('');
-  syncDevJump();
-}
-function syncDevJump(){
-  const sel = document.getElementById('dev-jump');
-  if(sel) sel.value = String(state.wave);
-}
-function jumpToWave(idx){
-  const n = Number(idx);
-  if(!Number.isInteger(n) || n < 0 || n >= WAVES.length) return;
-  state.wave = n;
-  state.baseHP = 100; updateHP();   // full HP for a clean test of the wave
-  save();
-  loadWave();
-}
-
-/* ─── HINTS (progressive) ────────────────────────────────────────────────── */
-// (cycleHint removed — the persistent grey ghost in the editor IS the hint now.
-//  Wrong/syntax attempts drive the reveal directly; no separate hint button.)
 function esc(s){ return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+
+/* ─── VOICE — wry, warm, second-person; SQL punned against the fiction ───── */
+const WIN_BANNERS = ['DIRECT HIT!', 'LANE CLEARED!', 'SWARM SCATTERED!', 'CLEAN SWEEP!', 'TARGETS DOWN!', 'SECTOR SECURED!'];
+const FATALITY_BANNER = 'FATALITY!';
+const WIN_LINES = [
+  'The bridge crew breaks into zero-gravity applause.',
+  'The quartermaster tears up over a perfectly filtered manifest.',
+  'Somewhere in the engine room, a mechanic hums the SELECT you just wrote.',
+  'The nav computer prints your query and pins it to its corkboard.',
+  'Even the nebula seems to swirl a little prouder.',
+  'The Captain nods once. From her, that is a parade.',
+  'Sensor room reports the swarm filing a formal complaint.',
+  'That query landed like a docking clamp — first try, dead center.',
+  'The coffee synthesizer dispenses a celebratory double shot.',
+];
+const MISS_LINES = [
+  'The query went port, the swarm went starboard. Reunite them.',
+  'The targeting computer squinted at that one. Adjust and refire.',
+  'Bold shot, Chief — wrong constellation entirely.',
+  'The swarm is being awfully polite about that volley.',
+  'Close enough to rattle their hulls, not to crack them.',
+  'Your WHERE wandered off into open space. Round it up.',
+  'The nav computer coughed politely and looked away.',
+  'Wrong lock, right spirit. Line it up again.',
+  'That one grazed a comet. The comet is fine. The swarm is too.',
+];
 /* ─── LANGUAGE MODULE: KEYWORDS + FORMAT BUTTON ──────────────────────────── */
 /* SQL keywords we recognise in our wave set. Used by formatSQL() to uppercase
    them in place — pure presentation, the engine accepts any case.
@@ -1025,7 +538,7 @@ const SQL_KEYWORDS = [
 ];
 function formatSQL(){
   const ed = document.getElementById('editor');
-  if(!ed.value) return;
+  if(!ed || !ed.value) return;
   // Split on quoted string literals so we don't mangle data values like
   // 'Raider' — odd-indexed segments are the strings and stay untouched.
   const parts = ed.value.split(/('(?:[^']|'')*')/g);
@@ -1037,116 +550,10 @@ function formatSQL(){
     parts[i] = seg;
   }
   ed.value = parts.join('');
-  // No waveFriction flip — formatting is pure presentation, not borrowing.
-  updateGhost();
+  // Pure presentation — the engine accepts any case.
+  syncGhost();
 }
 /* ─── END LANGUAGE MODULE: KEYWORDS + FORMAT BUTTON ──────────────────────── */
-/* On-the-job panel: where this concept gets used in a real analyst role + a
-   plain example of the ask. Names the concept/parts but never the full query. */
-function showJob(){
-  const w = currentWave();
-  const j = w.onTheJob || {};
-  const uses = j.uses || w.realWorld || '';
-  let body = '';
-  if(uses)      body += `<div class="job-line"><span class="lbl">Where you'll use ${esc(w.concept)}</span>${esc(uses)}</div>`;
-  if(j.example) body += `<div class="job-line eg"><span class="lbl">For example</span>${esc(j.example)}</div>`;
-  showOverlay('💼', 'On the job', body, 'Back to the query');
-}
-// (pulseHint removed with the Show hint button.)
-
-/* ─── RUN QUERY ──────────────────────────────────────────────────────────── */
-function runQuery(){
-  if(busy || !SQLjs) return;
-  const w = currentWave();
-  const sql = document.getElementById('editor').value.trim();
-  const fb = document.getElementById('feedback');
-  const resEl = document.getElementById('result');
-  resEl.innerHTML = '';
-  if(!sql){ setFb('warn', 'Write a query first — or press Tab to borrow the answer in dev mode.'); return; }
-
-  // Tier 1: security / banned verbs — a failed attempt, lightly punished.
-  if(!isSafe(sql)){
-    waveTries++; waveFriction = true;
-    setFb('err', 'Only read queries are allowed here (SELECT, WHERE, JOIN…). No table changes — and the slip costs you a little base integrity.');
-    syntaxHit();
-    applyMissAssist();
-    save();
-    return;
-  }
-
-  state.attempts++;
-  let player, expected;
-  const db = freshDB(w.schema);
-  try{
-    player = execQuery(db, sql);
-    expected = execQuery(db, currentPhaseSolution());
-  }catch(e){
-    db.close();
-    // Tier 2: syntax error — a failed attempt, lightly punished.
-    waveTries++; waveFriction = true;
-    setFb('err', `Syntax error — check your spelling and punctuation. The swarm clips your base. (${e.message})`);
-    syntaxHit();
-    applyMissAssist();
-    save();
-    return;
-  }
-  db.close();
-
-  // Code-as-melody Tier 3: a pleasant chord on every successful Execute,
-  // richness scales with the query's attackTier (no chord on syntax/banned errors).
-  playMelodyExecute(sql);
-  showResult(player);
-  recordIntel(player.columns);   // arm Engage buffs from what the scan revealed
-
-  const ordered = solutionIsOrdered(currentPhaseSolution());
-  if(sameResult(player, expected, ordered)){
-    state.correct++;
-    // Decide NOW (synchronously) whether clearing this phase leads to phase 2
-    // or a full wave clear. Passing the flag into fatality/volley avoids any
-    // race between state and a deferred callback reading currentWave() later.
-    const hasNextPhase = !!(w.phases && state.phase < w.phases.length - 1);
-    // Cold first-try → fatality. Autopiloted typing-through → ALSO fatality
-    // (reward for completing the guided journey: Mike's "make their winning
-    // attempt perform fatality as a reward" when they reach the full Vision).
-    if(!waveFriction || autopiloted){
-      const visionWin = autopiloted && waveFriction;
-      setFb('ok', hasNextPhase
-        ? '⚡ Shields fractured — phase 2 loading…'
-        : (visionWin
-            ? '👁 ORACLE\'S VISION — channeled to victory. Lane neutralized.'
-            : '⚡ FATALITY — flawless execution. Lane neutralized.'));
-      fatality(hasNextPhase);
-    } else {
-      // Friction-ed correct → existing multi-volley chip (they're still drilling).
-      const hit = correctHit();
-      const willClear = enemiesLive.filter(e=>e.alive).every(e => e.hp - hit <= 0);
-      setFb('ok', willClear && hasNextPhase
-        ? `Direct hit — shields down! Phase 2 begins.`
-        : willClear
-        ? `Direct hit — lane down! Targets neutralized.`
-        : `Volley lands for ${hit} — the swarm reels. Hit them again to finish the job.`);
-      volley(hasNextPhase);
-    }
-  } else {
-    // Valid but wrong result set → wasted turn (+ friendly fire if over-broad).
-    waveTries++; waveFriction = true;
-    const fp = falsePositives(player, expected);
-    const heavyNote = impendingStrike() ? ' ⚡ Charged strike incoming — a correct query breaks it!' : '';
-    setFb('warn', fp > 0
-      ? `Over-broad — ${fp} stray row${fp!==1?'s':''} hit your own base (friendly fire), and the swarm strikes back. Tighten the filter and fire again.${heavyNote}`
-      : `Wrong lock — you targeted ${player.rows.length}, not the right ${expected.rows.length}. The swarm strikes back. Adjust and fire again.${heavyNote}`);
-    missTurn(fp);
-    applyMissAssist();
-  }
-  save();
-}
-
-function setFb(kind, msg){
-  const fb = document.getElementById('feedback');
-  fb.className = 'feedback ' + kind;
-  fb.textContent = msg;
-}
-// Columns that describe a target's strength/durability — when the player
 // queries one, we render it as a readable gauge bar so the battlefield is
 // legible straight from the table ("scan the threat, then calibrate"). Pure
 // presentation: the data, query and combat are untouched.
@@ -1163,30 +570,6 @@ function gaugeCell(v, max){
   const col = ratio > 0.66 ? 'var(--red)' : ratio > 0.33 ? 'var(--yellow)' : 'var(--green)';
   return `<td class="gauge-td"><span class="gauge"><span class="gauge-bar" style="width:${pct}%;background:${col}"></span></span><span class="gauge-val">${esc(v)}</span></td>`;
 }
-function showResult(r){
-  const el = document.getElementById('result');
-  const block = document.getElementById('output-block');
-  if(!r.columns.length){ el.innerHTML = '<div class="result-meta">Query ran — no rows returned.</div>'; }
-  else {
-    const gi = gaugeColIndex(r.columns);
-    const gMax = gi >= 0 ? Math.max(...r.rows.map(row => Number(row[gi])).filter(n => !isNaN(n)), 0) : 0;
-    const thead = `<tr>${r.columns.map(c=>`<th>${esc(c)}</th>`).join('')}</tr>`;
-    const tbody = r.rows.map(row=>`<tr>${row.map((v,ci)=>
-      ci === gi ? gaugeCell(v, gMax) : `<td>${v==null?'NULL':esc(v)}</td>`
-    ).join('')}</tr>`).join('');
-    el.innerHTML = `<table class="result-tbl"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`
-      + `<div class="result-meta">${r.rows.length} row${r.rows.length!==1?'s':''} returned</div>`;
-  }
-  if(block) block.style.display = 'block';
-  // Auto-scroll into view on ALL widths — reading output is its own skill
-  // and the result should always announce itself. block:'nearest' avoids
-  // jarring jumps when it's already visible (e.g. desktop side-by-side).
-  requestAnimationFrame(()=>{
-    const target = block || el;
-    target.scrollIntoView({behavior:'smooth', block:'nearest'});
-  });
-}
-
 /* ─── BATTLEFIELD (SVG) ──────────────────────────────────────────────────── */
 const FIELD_W = 800, FIELD_H = 320;
 // Legacy lane geometry — still referenced by a couple of helpers (laneY/enemyX).
@@ -1473,140 +856,31 @@ function applyBaseDmg(dmg){
   beep(160, 140);
 }
 
-// CORRECT query → a volley that chips every living enemy by maxHp/rounds.
-// Repeating the correct query (waveRounds of them) whittles the lane to zero —
-// the Final-Fantasy-style exchange. Survivors creep a step between volleys.
-/* ─── ENGAGE: intel → action (vertical slice) ────────────────────────────────
-   The query stage gathers intel; each strength/identity column you successfully
-   scan ARMS a buff. In the Engage stage you spend those buffs on an auto-aim
-   strike. Pure payoff layered on top — it reads your analysis, never changes the
-   queries, objectives, or combat math. Gated to Wave 1 for the prototype. */
-const ENGAGE_BUFFS = {
-  threat_level: { name:'Overcharge Lock', icon:'⚡',
-    desc:'You scanned threat levels — route extra power to the hottest target and hit it first.' },
-  type:         { name:'Weak-Point Tag', icon:'🎯',
-    desc:'You profiled each contact’s type — your shots strike the exposed core for a critical hit.' },
-};
-const intel = new Set();          // columns scanned this wave that arm a buff
-let engageLoadout = new Set();    // buffs the player selected for this strike
-
-function recordIntel(columns){
-  if(!Array.isArray(columns)) return;
-  let added = false;
-  columns.forEach(c => { const k = String(c).toLowerCase(); if(ENGAGE_BUFFS[k] && !intel.has(k)){ intel.add(k); added = true; } });
-  if(added) updateEngageButton();
-}
-function updateEngageButton(){
-  const btn = document.getElementById('engage-btn');
-  if(!btn) return;
-  btn.classList.toggle('show', state.wave === 0 && intel.size >= 1);  // slice gate: Wave 1
-}
-function openEngage(){
-  engageLoadout = new Set();
-  const row = document.getElementById('buff-row');
-  row.innerHTML = Object.keys(ENGAGE_BUFFS).map(k => {
-    const b = ENGAGE_BUFFS[k], on = intel.has(k);
-    return `<div class="buff-card ${on?'':'locked'}" data-buff="${k}" ${on?`onclick="toggleBuff('${k}')"`:''}>
-      <div class="bn"><span>${b.icon} ${b.name}</span><span class="bmark">${on?'◯':'🔒'}</span></div>
-      <div class="bd">${on?b.desc:'Locked — scan this attribute in the query stage to arm it.'}</div></div>`;
-  }).join('');
-  document.getElementById('engage').classList.add('show');
-}
-function toggleBuff(k){
-  if(!intel.has(k)) return;
-  engageLoadout.has(k) ? engageLoadout.delete(k) : engageLoadout.add(k);
-  const card = document.querySelector(`.buff-card[data-buff="${k}"]`);
-  if(card){ const on = engageLoadout.has(k); card.classList.toggle('on', on); card.querySelector('.bmark').textContent = on ? '◉' : '◯'; }
-}
-function closeEngage(){ document.getElementById('engage').classList.remove('show'); }
-
-function engageFire(){
-  if(busy) return;
-  closeEngage();
-  busy = true; successFlash();
-  const svg = document.getElementById('field');
-  // Non-destructive: snapshot HP/alive so the wave state is untouched afterward.
-  const snap = enemiesLive.map(en => ({ hp: en.hp, alive: en.alive }));
-  const overcharge = engageLoadout.has('threat_level');
-  const weak = engageLoadout.has('type');
-  let order = enemiesLive.map((en,i)=>({en,i})).filter(o=>o.en.alive);
-  if(overcharge) order.sort((a,b)=>(b.en.threat||0)-(a.en.threat||0));  // hottest first
-  const STEP = 200;
-  order.forEach((o, idx) => {
-    setTimeout(() => {
-      const p = enemyPos(o.i, o.en);
-      const beams = weak ? 3 : 1;
-      for(let b=0;b<beams;b++){
-        const off = (b-(beams-1)/2)*10;
-        const beam = document.createElementNS(SVGNS,'line');
-        beam.setAttribute('x1', HELM_X+off); beam.setAttribute('y1', HELM_Y);
-        beam.setAttribute('x2', p.x); beam.setAttribute('y2', p.y);
-        beam.setAttribute('stroke', weak ? '#ffd95c' : 'var(--accent2)');
-        beam.setAttribute('stroke-width', overcharge && idx===0 ? 5 : 3);
-        beam.setAttribute('opacity','0.9');
-        svg.appendChild(beam);
-        setTimeout(()=>beam.remove(), 200);
-      }
-      setTimeout(() => {
-        o.en.alive = false; o.en.hp = 0;
-        const node = svg.querySelector(`.enemy[data-i="${o.i}"]`);
-        if(node) node.classList.add('hit');
-        spawnBoom(svg, p.x, p.y);
-        if(overcharge && idx === 0){ spawnShockwave(svg, p.x, p.y, '#ffd95c'); screenShake(); }
-        spawnDmg(svg, p.x, p.y, weak ? 'CRIT' : (overcharge && idx===0 ? '⚡MAX' : '✦'), 'dmg-perfect');
-        beep(300 + Math.random()*220, 70);
-      }, 170);
-    }, idx * STEP);
-  });
-  const settle = order.length * STEP + 480;
-  setTimeout(() => {
-    drawField();
-    // restore wave state (prototype payoff is a simulation, not the real clear)
-    enemiesLive.forEach((en,i)=>{ en.hp = snap[i].hp; en.alive = snap[i].alive; });
-    drawField();
-    busy = false;
-    const parts = [];
-    if(overcharge) parts.push('⚡ Overcharge melted the priority target');
-    if(weak) parts.push('🎯 Weak-Point crits tore through the rest');
-    if(!parts.length) parts.push('Clean sweep — though armed intel would have hit far harder.');
-    showOverlay('🛰', 'Sector neutralized', parts.join('<br>') + '<br><br><i>Prototype: your scans drove that strike. Back to the console to keep clearing.</i>', 'Back to console');
-  }, settle);
-}
-
-function volley(isPhaseKill = false){
+/* ─── COMBAT RESOLUTION — one correct query clears the lane ──────────────────
+   Clean solve (no misses) → FATALITY detonation. Solved after misses → a full
+   volley sweep. Both end the wave; `done` fires when the animation settles. */
+function volleyClear(done){
   busy = true;
   successFlash();
-  // A correct query interrupts any wind-up — good play is always safe.
-  enemiesLive.forEach(en=>{ en.charge = 0; en.primed = false; });
   const svg = document.getElementById('field');
-  const hit = correctHit();
-  // Layered attack: tier-1 waves get a single bolt; richer queries get
-  // more beams, a base halo pulse, and impact shockwaves. Same combat math.
+  if(!svg){ enemiesLive.forEach(en=>{ en.alive=false; en.hp=0; }); busy=false; return done(); }
   const tier = attackTier(currentPhaseSolution());
   const beamsPerTarget = Math.min(tier, 4);
   const strokeW = tier >= 4 ? 4 : 3;
   const targets = [];
   enemiesLive.forEach((en,i)=>{
     if(!en.alive) return;
-    en.hp -= hit;
+    en.hp = 0;
     const p = enemyPos(i, en);
-    targets.push({ i, x: p.x, y: p.y, dead: en.hp <= 0 });
+    targets.push({ i, x: p.x, y: p.y });
   });
-  // Sound sting layers with tier — same melody, more harmonics.
   beep(660, 70); setTimeout(()=>beep(880,90),90);
   if(tier >= 3) setTimeout(()=>beep(1100, 110), 180);
   if(tier >= 5) setTimeout(()=>beep(1318, 130), 270);
-  // Base halo pulse on tier 3+ — the Oracle "winds up" before the strike.
-  if(tier >= 3){
-    const core = document.getElementById('base-core');
-    if(core){ core.classList.add('volley-pulse'); setTimeout(()=>core.classList.remove('volley-pulse'), 620); }
-  }
-  const STEP = 60, FLIGHT = 160;
+  const STEP = 70, FLIGHT = 160;
   targets.forEach((t, idx)=>{
     const delay = idx * STEP;
-    // Fan of beams — count grows with tier, offsets read as a "spread shot".
     for(let b = 0; b < beamsPerTarget; b++){
-      const beamDelay = delay + b * 18;
       const off = (b - (beamsPerTarget-1)/2) * 12;
       setTimeout(()=>{
         const beam = document.createElementNS(SVGNS,'line');
@@ -1617,53 +891,32 @@ function volley(isPhaseKill = false){
         beam.setAttribute('opacity','0.9');
         svg.appendChild(beam);
         setTimeout(()=>beam.remove(), FLIGHT + 40);
-      }, beamDelay);
+      }, delay + b * 18);
     }
     setTimeout(()=>{
-      spawnDmg(svg, t.x, t.y, '-' + hit, 'dmg-hit');
       const node = svg.querySelector(`.enemy[data-i="${t.i}"]`);
-      if(t.dead){
-        if(node) node.classList.add('hit');
-        spawnBoom(svg, t.x, t.y);
-        if(tier >= 4) spawnShockwave(svg, t.x, t.y);
-        beep(200 + Math.random()*140, 70);
-      } else if(node){
-        node.classList.add('flash');
-        if(tier >= 4) spawnShockwave(svg, t.x, t.y);
-      }
+      if(node) node.classList.add('hit');
+      spawnBoom(svg, t.x, t.y);
+      if(tier >= 4) spawnShockwave(svg, t.x, t.y);
+      spawnDmg(svg, t.x, t.y, '✦', 'dmg-hit');
+      beep(200 + Math.random()*140, 70);
     }, delay + FLIGHT);
   });
-  const settle = (targets.length ? (targets.length-1)*STEP : 0) + FLIGHT + 320;
+  const settle = (targets.length ? (targets.length-1)*STEP : 0) + FLIGHT + 420;
   setTimeout(()=>{
-    enemiesLive.forEach(en=>{ if(en.hp <= 0) en.alive = false; });
-    const cleared = enemiesLive.every(en=>!en.alive);
-    if(cleared){
-      drawField();
-      busy = false;
-      isPhaseKill ? phaseTransition() : waveCleared();
-    } else {
-      drawField();
-      // Clear the editor so the next volley is re-typed from memory — the drill.
-      const ed = document.getElementById('editor'); ed.value = ''; updateGhost();
-      busy = false;
-      if(state.baseHP <= 0) waveLost();
-    }
+    enemiesLive.forEach(en=>{ en.alive = false; });
+    if(document.getElementById('field')) drawField();
+    busy = false;
+    done();
   }, settle);
 }
 
-// FATALITY — a first-try clean clear (no syntax errors, no wrong tries, no
-// hint clicks, no Tab-borrowing). Every living enemy detonates in a tight
-// stagger, no slow chip; rewards a player who recalled the query cold.
-// isPhaseKill: decided synchronously in runQuery() before any animation fires,
-// so there's no risk of reading stale state inside a deferred callback.
-function fatality(isPhaseKill = false){
+// FATALITY — a clean no-miss clear: every contact detonates in a tight stagger.
+function fatality(done){
   busy = true;
   successFlash();
   const svg = document.getElementById('field');
-  // Interrupt any wind-up — clean play always cancels charges.
-  enemiesLive.forEach(en=>{ en.charge = 0; en.primed = false; });
-  // Ascending A-minor arpeggio — triumphant, musical, distinct from a regular volley.
-  // A3 → C4 → E4 → A4 → C5, fast stagger (55ms apart).
+  if(!svg){ enemiesLive.forEach(en=>{ en.alive=false; en.hp=0; }); busy=false; return done(); }
   if(state.sfx){
     const _c = audioCtx();
     [220.00, 261.63, 329.63, 440.00, 523.25].forEach((f, i)=>{
@@ -1677,11 +930,7 @@ function fatality(isPhaseKill = false){
       o.start(t); o.stop(t + 0.35);
     });
   }
-  // Layered: a fatality on a higher-tier wave gets more impact rings + glow.
   const tier = attackTier(currentPhaseSolution());
-  // Oracle halo pulse — bigger for fatalities than regular volleys.
-  const core = document.getElementById('base-core');
-  if(core){ core.classList.add('volley-pulse'); setTimeout(()=>core.classList.remove('volley-pulse'), 720); }
   const targets = [];
   enemiesLive.forEach((en,i)=>{
     if(!en.alive) return;
@@ -1689,76 +938,30 @@ function fatality(isPhaseKill = false){
     const p = enemyPos(i, en);
     targets.push({ i, x: p.x, y: p.y });
   });
-  const STEP = 50;   // tight stagger so it reads as one decisive strike
+  const STEP = 50;
   targets.forEach((t, idx)=>{
     setTimeout(()=>{
       const node = svg.querySelector(`.enemy[data-i="${t.i}"]`);
       if(node) node.classList.add('hit');
       spawnBoom(svg, t.x, t.y);
-      // Every fatality gets a golden shockwave; tier 4+ adds a second ring.
       spawnShockwave(svg, t.x, t.y, '#ffd95c');
       if(tier >= 4) setTimeout(()=>spawnShockwave(svg, t.x, t.y, '#ffd95c'), 120);
       spawnDmg(svg, t.x, t.y, '⚡', 'dmg-perfect');
       beep(260 + Math.random()*260, 70);
     }, idx * STEP);
   });
-  const settle = (targets.length ? (targets.length-1) * STEP : 0) + 520;
+  const settle = (targets.length ? (targets.length-1) * STEP : 0) + 560;
   setTimeout(()=>{
     enemiesLive.forEach(en=>{ en.alive = false; });
-    drawField();
+    if(document.getElementById('field')) drawField();
     busy = false;
-    isPhaseKill ? phaseTransition() : waveCleared(true);
+    done();
   }, settle);
 }
 
-// The swarm's turn: the frontmost living enemy lunges and fires a bolt at the
-// base — the Final-Fantasy-style counterattack. Raiders and Wardens wind up
-// over consecutive misses; when their charge completes they unleash a heavier
-// strike (telegraphed the turn before). Scouts never charge — pure light chip.
-function enemyAttack(){
-  const svg = document.getElementById('field');
-  const living = enemiesLive.map((en,i)=>({en,i})).filter(o=>o.en.alive);
-  if(!living.length) return;
-  const atk = living.reduce((a,b)=> b.en.advance > a.en.advance ? b : a);
-  const a = archOf(atk.en);
-  // Charge bookkeeping → decide normal vs heavy strike, then set the telegraph
-  // for next turn so the player can see a wind-up coming and clear it.
-  let heavy = false, dmg = (currentWave().enemyDmg != null) ? currentWave().enemyDmg : a.hit;
-  if(a.charge > 0){
-    atk.en.charge = (atk.en.charge || 0) + 1;
-    if(atk.en.charge >= a.charge){ heavy = true; dmg = a.charged; atk.en.charge = 0; }
-  }
-  enemiesLive.forEach(en=>{ en.primed = (en === atk.en) && a.charge > 0 && (en.charge === a.charge - 1); });
-
-  const { x, y } = enemyPos(atk.i, atk.en);
-  const node = svg.querySelector(`.enemy[data-i="${atk.i}"]`);
-  if(node) node.classList.add('lunge');
-  const bolt = document.createElementNS(SVGNS,'line');
-  bolt.setAttribute('x1', x); bolt.setAttribute('y1', y);
-  bolt.setAttribute('x2', HELM_X); bolt.setAttribute('y2', HELM_Y);
-  bolt.setAttribute('stroke', heavy ? '#ffb648' : 'var(--red)');
-  bolt.setAttribute('stroke-width', heavy ? '6' : '3');
-  bolt.setAttribute('class', heavy ? 'charge-bolt' : 'enemy-bolt');
-  svg.appendChild(bolt);
-  beep(heavy ? 90 : 140, heavy ? 200 : 120);
-  setTimeout(()=>{
-    bolt.remove();
-    const core = document.getElementById('base-core');
-    if(core){ const cls = heavy ? 'base-hit-heavy' : 'base-hit'; core.classList.add(cls); setTimeout(()=>core.classList.remove(cls), heavy ? 520 : 360); }
-    spawnDmg(svg, HELM_X, HELM_Y, '-' + dmg + (heavy ? ' ⚡' : ''), heavy ? 'dmg-charged' : 'dmg-ff');
-    applyBaseDmg(dmg);
-    if(!heavy) drawField();   // refresh so a new telegraph ring shows on the primed foe
-  }, 220);
-}
-
-// VALID-but-WRONG query → the enemy gets its turn and strikes you for a little
-// damage. Over-broad (false-positive) rows add friendly-fire on top.
-function missTurn(falsePos){
-  busy = true;
+// A miss that costs the base: red flash, shake, damage number at the helm.
+function missFx(dmg){
   damageFlash(); screenShake();
-  // Dissonant tritone stab — immediate "that was wrong" audio signal.
-  // C5 + F#5 (523 + 740 Hz): bright register cuts through the low bass hits.
-  // Sawtooth for bite; both notes fire together as a sharp dissonant chord.
   if(state.sfx){
     const c = audioCtx();
     [523.25, 739.99].forEach((f, i)=>{
@@ -1772,319 +975,30 @@ function missTurn(falsePos){
       o.start(t); o.stop(t + 0.20);
     });
   }
-  enemyAttack();                                 // the swarm hits back
-  const ffDmg = Math.min(falsePos, 6) * FF_DMG;  // extra self-inflicted hits if over-broad
-  if(ffDmg > 0){
-    setTimeout(()=>{ spawnDmg(document.getElementById('field'), HELM_X, HELM_Y - 24, '-' + ffDmg + ' FF', 'dmg-ff'); }, 300);
-    applyBaseDmg(ffDmg);
-  }
-  setTimeout(()=>{
-    busy = false;
-    if(state.baseHP <= 0) waveLost();
-  }, 600);
+  const svg = document.getElementById('field');
+  if(svg && dmg > 0) spawnDmg(svg, HELM_X, HELM_Y, '-' + dmg, 'dmg-ff');
+  if(dmg > 0) applyBaseDmg(dmg);
 }
 
-// A standard counterattack's damage from the frontmost foe (no charge).
-function standardAttackDmg(){
-  const living = enemiesLive.filter(e=>e.alive);
-  if(!living.length) return 6;
-  const atk = living.reduce((a,b)=> b.advance > a.advance ? b : a);
-  return (currentWave().enemyDmg != null) ? currentWave().enemyDmg : archOf(atk).hit;
-}
-// SYNTAX ERROR / BANNED VERB → a lighter punishment: half of a standard strike,
-// no creep and no full lunge. Still counts as a failed attempt (drives reveal).
-function syntaxHit(){
+// SYNTAX ERROR / BANNED VERB — a lighter clip than a bad firing solution.
+function syntaxFx(){
   damageFlash(); screenShake();
-  const dmg = Math.max(1, Math.ceil(standardAttackDmg() * 0.5));
+  const dmg = 4;
   const svg = document.getElementById('field');
-  const core = document.getElementById('base-core');
-  if(core){ core.classList.add('base-hit'); setTimeout(()=>core.classList.remove('base-hit'), 360); }
-  spawnDmg(svg, HELM_X, HELM_Y, '-' + dmg, 'dmg-ff');
+  if(svg) spawnDmg(svg, HELM_X, HELM_Y, '-' + dmg, 'dmg-ff');
   beep(150, 110);
   applyBaseDmg(dmg);
-  if(state.baseHP <= 0) waveLost();
-}
-
-// "Learn by failing" — each wrong attempt powers up the Oracle visually and
-// sonically. The Oracle gets stronger as the player struggles, so failure
-// feels like progress, not punishment. Capped at 3 (the AUTOPILOT_AT threshold).
-function setOracleCharge(level){
-  const fp = document.querySelector('.field-pane');
-  if(!fp) return;
-  fp.classList.remove('charge-1','charge-2','charge-3');
-  if(level >= 1) fp.classList.add('charge-' + Math.min(3, level));
-}
-// Audio companion to the visual charge — a harmonic stack that grows with
-// each miss. Miss 1 = A2 alone. Miss 2 = A2 + A3 (octave). Miss 3 = A2 + A3 + E4
-// (fifth) — full power-up triad, signals the Oracle is ready.
-function playPowerUp(level){
-  if(!state.sfx) return;
-  const c = audioCtx();
-  const tones = [110.00];
-  if(level >= 2) tones.push(220.00);
-  if(level >= 3) tones.push(329.63);
-  tones.forEach((f, i) => {
-    const o = c.createOscillator(), g = c.createGain();
-    o.type = 'triangle'; o.frequency.value = f;
-    const t = c.currentTime + i * 0.045;
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.050, t + 0.04);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
-    o.connect(g); g.connect(c.destination);
-    o.start(t); o.stop(t + 0.60);
-  });
-}
-// Briefing collapse — the lore prose stays hidden by default on mobile so
-// the player sees only the 🎯 objective. Tap ⓘ to reveal context.
-function toggleBriefingInfo(){
-  const br = document.querySelector('.briefing');
-  const btn = document.getElementById('briefing-info-btn');
-  if(!br) return;
-  const open = br.classList.toggle('expanded');
-  if(btn){
-    btn.classList.toggle('expanded', open);
-    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-  }
-}
-
-// After any failed attempt (player mode only): uncover more of the answer, and
-// once the player has missed AUTOPILOT_AT times, let autopilot finish it.
-function applyMissAssist(){
-  setOracleCharge(waveTries);               // visual power-up (always — even in dev for the look)
-  playPowerUp(waveTries);                   // audio harmonic stack grows with misses
-  if(state.devMode) return;                 // dev mode already shows the full answer
-  if(waveTries >= AUTOPILOT_AT){ autopilot(); return; }
-  const ed = document.getElementById('editor');
-  ed.value = '';                            // clear so the growing reveal is visible in the ghost
-  revealFrac = waveTries / AUTOPILOT_AT;     // 1/3, then 2/3
-  updateGhost();
-}
-
-// AUTOPILOT — fills the solution, explains the concept in human terms with a
-// non-tech analogy, then hands back so the player fires it themselves.
-// ORACLE'S VISION — at 3 misses the Oracle silently reveals the full solution
-// as a persistent grey ghost in the editor. NO overlay popup interrupts —
-// the grey text IS the cue. The player must type through to finish (no
-// escape hatch). Completing the wave from here triggers a fatality animation
-// as the reward — see runQuery() correct path. The Oracle's Vision
-// celebration screen shows AFTER the win, not before — see waveCleared().
-function autopilot(){
-  revealFrac = 1;                           // ghost shows full solution
-  document.getElementById('editor').value = '';   // fresh canvas to type into
-  updateGhost();
-  if(autopiloted) return;                   // cue inline once per wave
-  autopiloted = true;
-  // Track which lessons needed the full Vision — surfaced in Course Complete
-  // so the player knows where to drill next run. De-duped per wave id.
-  const wid = currentWave().id;
-  if(!Array.isArray(state.visionWaves)) state.visionWaves = [];
-  if(state.visionWaves.indexOf(wid) === -1){ state.visionWaves.push(wid); save(); }
-  setFb('warn', '👁 <b>Oracle\'s Vision</b> reveals the answer — type over the grey letters to channel it.');
 }
 
 function updateHP(){
-  document.getElementById('hp-num').textContent = state.baseHP;
+  const num = document.getElementById('hp-num');
   const fill = document.getElementById('hp-fill');
-  fill.style.width = state.baseHP + '%';
-  fill.style.background = state.baseHP > 50 ? 'var(--green)' : state.baseHP > 25 ? 'var(--yellow)' : 'var(--red)';
-}
-
-/* ─── WIN / LOSE ─────────────────────────────────────────────────────────── */
-function waveCleared(wasFatality){
-  const w = currentWave();
-  // Cold-recall fatality (no friction at all) is the gold standard. An
-  // autopiloted typing-through win ALSO gets the fatality animation as
-  // reward — but the recognition screen marks it differently.
-  const isColdFatality = !!wasFatality && !waveFriction;
-  const isVisionWin    = !!wasFatality && autopiloted;
-  const showFatalityVibe = isColdFatality || isVisionWin;
-  if(isColdFatality) state.fatalities = (state.fatalities || 0) + 1;
-  if(!state.cleared.includes(w.id)) state.cleared.push(w.id);
-  save();
-  celebrate();
-  // Last wave → course complete screen instead of regular overlay.
-  if(state.wave >= WAVES.length - 1){
-    if(showFatalityVibe) setTimeout(()=>beep(988,130), 360);
-    setTimeout(showCourseComplete, 900);
-    return;
-  }
-  const next = WAVES[state.wave + 1];
-  const overlayTitle = isVisionWin ? "Oracle's Vision" : 'Wave Cleared';
-  const overlayIcon  = isVisionWin ? '👁' : (isColdFatality ? '⚡' : '🏆');
-  // Oracle reacts to the win (SQL TD New blend) — her voice opens the clear
-  // screen, mirroring the Archaeology mentor's win line. Optional per wave.
-  const mentorWin = (w.captain && w.captain.win) ? w.captain.win : (w.oracle && w.oracle.win ? w.oracle.win : null);
-  const orcWin = mentorWin ? `<div class=”orc-overlay-line”>🔮 “${esc(mentorWin)}”</div>` : '';
-  const body = orcWin + (isVisionWin
-    ? `You channeled the Vision and finished the wave. <b style="color:var(--accent2)">${esc(w.concept)}</b> is yours now — next time, try it cold.`
-      + `<br><span style="color:var(--muted);font-size:13px">Next up — Wave ${next.id}: <b style="color:var(--text)">${esc(next.concept)}</b> · ${esc(next.title)}</span>`
-    : `Concept locked in: <b style="color:var(--accent2)">${esc(w.concept)}</b>. Accuracy: ${accuracy()}%.`
-      + `<br><span style="color:var(--muted);font-size:13px">Next up — Wave ${next.id}: <b style="color:var(--text)">${esc(next.concept)}</b> · ${esc(next.title)}</span>`);
-  showOverlay(overlayIcon, overlayTitle, body, `Start Wave ${next.id}: ${next.concept} →`);
-  // Fatality badge — only for cold-recall wins. Vision wins are recognized
-  // by the overlay title itself (no double-badge needed).
-  const badge = document.getElementById('ov-firsttry');
-  badge.textContent = '⚡ FATALITY — flawless execution';
-  badge.classList.toggle('show', isColdFatality);
-  // Vocab chips reinforce the analyst terminology this wave introduced.
-  const tw = document.getElementById('ov-terms');
-  tw.innerHTML = (w.terms && w.terms.length)
-    ? `<div class="terms-label">Terms unlocked</div>` + w.terms.map(t=>`<span class="term-chip">${esc(t)}</span>`).join('')
-    : '';
-  if(isFatality){ setTimeout(()=>beep(988,130),360); }
-  maybeBreak();
-}
-function waveLost(){
-  showOverlay('💥', 'Base Overrun',
-    `The swarm broke through. Reset your base and try this query again — every analyst debugs.`,
-    'Retry Wave');
-}
-function accuracy(){ return state.attempts ? Math.round(100*state.correct/state.attempts) : 100; }
-
-function showOverlay(big, title, text, btn){
-  // reset reward decorations; waveCleared() re-enables them as needed
-  document.getElementById('ov-firsttry').classList.remove('show');
-  document.getElementById('ov-terms').innerHTML = '';
-  document.getElementById('ov-big').textContent = big;
-  document.getElementById('ov-title').textContent = title;
-  document.getElementById('ov-text').innerHTML = text;
-  document.getElementById('ov-btn').textContent = btn;
-  // Secondary button is opt-in per-overlay — autopilot turns it on for Replay.
-  document.getElementById('ov-btn-secondary').style.display = 'none';
-  document.getElementById('overlay').classList.add('show');
-}
-function hideOverlay(){
-  document.getElementById('overlay').classList.remove('show');
-  document.getElementById('ov-btn-secondary').style.display = 'none';
-}
-// Reset the current wave from scratch: full HP, fresh attempt counters, no
-// reveal, no autopilot history, no friction — a clean run can still earn fatality.
-function replayWave(){
-  state.baseHP = 100; updateHP();
-  save();
-  loadWave();
-}
-/* ─── PHASE MECHANIC ─────────────────────────────────────────────────────── */
-// Update the Phase N/N chip in the briefing — hidden for single-phase waves.
-function updatePhaseIndicator(){
-  const w = currentWave();
-  const el = document.getElementById('phase-indicator');
-  if(w.phases && w.phases.length > 1){
-    el.style.display = 'inline-flex';
-    el.textContent = `⚡ Phase ${state.phase + 1} / ${w.phases.length}`;
-  } else {
-    el.style.display = 'none';
+  if(num) num.textContent = state.baseHP;
+  if(fill){
+    fill.style.width = state.baseHP + '%';
+    fill.style.background = state.baseHP > 50 ? 'var(--green)' : state.baseHP > 25 ? 'var(--yellow)' : 'var(--red)';
   }
 }
-
-// Called when the player clears phase N and a next phase exists.
-// Flashes "SHIELDS DOWN", resets per-phase counters, loads phase N+1 enemies.
-function phaseTransition(){
-  busy = true;
-  const svg = document.getElementById('field');
-  // Big two-line flash: "⚡ SHIELDS DOWN" + "— PHASE 2 —" below it.
-  const mkTxt = (txt, y, sz, fill) => {
-    const el = document.createElementNS('http://www.w3.org/2000/svg','text');
-    el.setAttribute('x', String(FIELD_W / 2)); el.setAttribute('y', String(y));
-    el.setAttribute('text-anchor','middle'); el.setAttribute('dominant-baseline','middle');
-    el.setAttribute('fill', fill); el.setAttribute('font-size', String(sz));
-    el.setAttribute('font-weight','700'); el.setAttribute('font-family','var(--font)');
-    el.setAttribute('pointer-events','none'); el.textContent = txt;
-    return el;
-  };
-  const flashEl  = mkTxt('⚡ SHIELDS DOWN',  FIELD_H/2 - 18, 48, 'var(--yellow)');
-  const flashEl2 = mkTxt('— PHASE 2 —', FIELD_H/2 + 30, 22, 'var(--accent2)');
-  svg.appendChild(flashEl); svg.appendChild(flashEl2);
-  const anim = [{opacity:0},{opacity:1,offset:.07},{opacity:1,offset:.68},{opacity:0}];
-  flashEl.animate(anim,  {duration:1350, easing:'ease-out'});
-  flashEl2.animate(anim, {duration:1350, easing:'ease-out', delay:60});
-  // Triumphant ascending sting for the phase break
-  beep(523,70); setTimeout(()=>beep(659,80),80); setTimeout(()=>beep(784,100),170); setTimeout(()=>beep(1047,140),280);
-
-  setTimeout(()=>{
-    if(flashEl.parentNode)  flashEl.remove();
-    if(flashEl2.parentNode) flashEl2.remove();
-    const w = currentWave();
-    state.phase++;
-    // Reset all per-phase counters — the player starts phase 2 fresh.
-    waveTries = 0; revealFrac = 0; autopiloted = false; waveFriction = false;
-    hintLevel = 0;
-    setOracleCharge(0);            // phase 2 = clean slate for the power-up
-    document.getElementById('editor').value = '';
-    // Rebuild enemies from phase-2 solution — no shields this time.
-    const db = freshDB(w.schema);
-    const sol = execQuery(db, w.phases[state.phase].solution);
-    db.close();
-    enemiesLive = sol.rows.map((row,i)=>{
-      const obj={}; sol.columns.forEach((c,j)=>obj[c]=row[j]);
-      return {
-        name: obj.name || obj.id || ('Target '+(i+1)),
-        archetype: archFromType(obj.type) || w.enemyArch || 'warden',
-        maxHp: ENEMY_MAXHP, hp: ENEMY_MAXHP, advance: 0, alive: true,
-        shielded: false
-      };
-    });
-    // Update briefing and objective — flash the card border + pop the chip.
-    const ph = w.phases[state.phase];
-    document.getElementById('b-text').innerHTML = ph.briefing;
-    setObjective(ph.objective);
-    updatePhaseIndicator();
-    // Visual "you are in a new phase" cues: briefing border flashes yellow,
-    // phase chip pops to draw the eye.
-    const bc = document.querySelector('.briefing');
-    if(bc){ bc.classList.remove('phase-new'); void bc.offsetWidth; bc.classList.add('phase-new'); }
-    const pi = document.getElementById('phase-indicator');
-    if(pi){ pi.classList.remove('pop'); void pi.offsetWidth; pi.classList.add('pop'); }
-    updateGhost();
-    setFb('ok', '⚡ Shields fractured — <b style="color:var(--yellow)">Phase 2 begins.</b> Write your next query and fire.');
-    document.getElementById('field-status').textContent =
-      `${enemiesLive.length} exposed contact${enemiesLive.length!==1?'s':''} — finish them.`;
-    drawField();
-    busy = false;
-  }, 1400);
-}
-
-// Full campaign reset — back to wave 1, no cleared waves, fresh stats.
-function resetCampaign(){
-  state.wave = 0; state.phase = 0;
-  state.baseHP = 100;
-  state.cleared = [];
-  state.attempts = 0; state.correct = 0;
-  state.fatalities = 0; state.visionWaves = [];
-  state.started = Date.now();
-  updateHP();
-  save();
-  loadWave();
-}
-// Title-bar ↻ button: opens the shared overlay with two choices.
-function showResetOverlay(){
-  showOverlay('↻', 'Reset', 'Pick what to reset:', '↻ Reset this wave');
-  const sec = document.getElementById('ov-btn-secondary');
-  sec.textContent = '⟲ Reset all progress';
-  sec.style.display = 'inline-flex';
-}
-
-function overlayActionSecondary(){
-  const title = document.getElementById('ov-title').textContent;
-  if(title === "Oracle's Vision"){ hideOverlay(); replayWave(); return; }
-  if(title === 'Reset'){ hideOverlay(); resetCampaign(); return; }
-}
-function overlayAction(){
-  const title = document.getElementById('ov-title').textContent;
-  if(title === "Oracle's Vision"){ hideOverlay(); document.getElementById('editor').focus(); return; }
-  if(title === 'On the job'){ hideOverlay(); return; }
-  if(title === 'Sector neutralized'){ hideOverlay(); document.getElementById('editor').focus(); return; }
-  if(title === 'Reset'){ hideOverlay(); replayWave(); return; }
-  if(title === 'Base Overrun'){
-    state.baseHP = 100; updateHP(); save(); loadWave(); return;
-  }
-  // advance (or wrap on campaign clear)
-  state.wave = (state.wave + 1) % WAVES.length;
-  if(state.wave === 0){ state.baseHP = 100; updateHP(); }
-  save();
-  loadWave();
-}
-
 /* ─── COURSE COMPLETE + PLAYER PROFILE ──────────────────────────────────── */
 const PROFILE_LS = 'sqlquest_profile';
 function loadProfile(){
@@ -2205,7 +1119,6 @@ function restartFromComplete(){
   document.getElementById('complete-screen').classList.remove('show');
   resetCampaign();
 }
-
 /* ─── AUDIO (focus hum + chimes) ─────────────────────────────────────────── */
 let actx = null, musicGain = null, musicTimer = null, musicStep = 0;
 function audioCtx(){
@@ -2271,7 +1184,6 @@ async function toggleMelody(){
   updateAudioBtns();
   save();
 }
-
 /* ─── CODE-AS-MELODY (opt-in; requires SFX on) ──────────────────────────────
    Three tiers of auditory feedback that stay in key with the background music:
    - Tier 1: a soft pentatonic ping per keystroke (always in A-minor's orbit)
@@ -2618,37 +1530,6 @@ function startMusic(){
   musicTimer = setInterval(tick, BAR * 1000);
 }
 function stopMusic(){ if(musicTimer){ clearInterval(musicTimer); musicTimer = null; } }
-
-/* Don't keep playing after the app is closed/backgrounded: stop the music and
-   suspend the AudioContext when the page is hidden; resume on return if audio
-   is still enabled and the campaign has started. */
-function suspendAudio(){ stopMusic(); if(actx && actx.state === 'running') actx.suspend(); }
-function resumeAudioIfActive(){
-  const onSplash = document.getElementById('splash').classList.contains('show');
-  if(onSplash) return;
-  // ALWAYS resume the AudioContext on return — SFX, melody, and keystroke
-  // sounds all share one context. Only restart the music scheduler if music
-  // is enabled. Without this, mobile visibility events (URL bar collapse,
-  // tab switch, screen lock) leave the context permanently suspended → silence.
-  if(actx) actx.resume();
-  if(state.music) startMusic();
-}
-document.addEventListener('visibilitychange', ()=>{ document.hidden ? suspendAudio() : resumeAudioIfActive(); });
-window.addEventListener('pagehide', suspendAudio);
-
-/* Start screen → first user gesture, so the AudioContext is allowed to play.
-   Starting the campaign opts you into music; tap the speaker to mute. */
-function startGame(){
-  document.getElementById('splash').classList.remove('show');
-  // SFX defaults on (the celebration / hit chimes need it); music respects the
-  // saved/default pref (off for new players — they opt in via the 🎵 button).
-  state.sfx = true;
-  updateAudioBtns();
-  audioCtx();                 // create/resume inside the click gesture (audio unlock)
-  if(state.music) startMusic();
-  save();
-}
-
 /* ─── CELEBRATE (confetti + toast) ───────────────────────────────────────── */
 function celebrate(){
   const overlay = document.getElementById('confetti');
@@ -2669,7 +1550,6 @@ function showToast(msg){
   t.textContent = msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), 2000);
 }
-
 /* ─── BREAK NUDGE (ultradian) ────────────────────────────────────────────── */
 let breakShown = false;
 function maybeBreak(){
@@ -2688,7 +1568,6 @@ function dismissBreak(){
 /* ─── THEME ──────────────────────────────────────────────────────────────── */
 function applyTheme(){ document.body.classList.toggle('light', state.theme === 'light'); }
 function toggleTheme(){ state.theme = state.theme === 'light' ? 'dark' : 'light'; applyTheme(); save(); }
-
 /* ─── MOBILE SETTINGS MENU ──────────────────────────────────────────────────
    On phone-sized screens the DEV / wave-picker / theme / reset controls
    collapse into a ⚙ button that opens a small dropdown panel anchored to
@@ -2709,46 +1588,571 @@ document.addEventListener('click', (e)=>{
   if(b) b.setAttribute('aria-expanded', 'false');
 });
 
+/* ═══ SCREENS — Trail-style single-page flow ═════════════════════════════════
+   Title → Sector chart → Briefing → Firing console → Debrief. One #app div;
+   each screenXxx() sets innerHTML and wires its own handlers. */
+const app = document.getElementById('app');
+
+function statbar(){
+  const w = currentWave();
+  return `<div class="statbar" id="statbar">
+    <span class="chip">🛰 Wave <b id="wave-num">${w.id}</b>/<span id="wave-total">${WAVES.length}</span> · <span id="wave-concept">${esc(w.concept)}</span></span>
+    <span class="chip hp-wrap">⚡ BASE <span class="hp-bar"><span class="hp-fill" id="hp-fill" style="display:block;height:100%"></span></span> <b id="hp-num">${state.baseHP}</b></span>
+    <span class="chip">🔥 <b id="streak-num">${state.streak || 0}</b> streak</span>
+  </div>`;
+}
+
+// Sector chart strip — Trail's CRT trail map in Quest teal-on-void.
+function sectorChart(){
+  let line = '';
+  WAVES.forEach((w, i) => {
+    const done = state.cleared.includes(w.id);
+    const here = i === state.wave;
+    line += (done ? '══' : '──') + (here ? '[◆]' : done ? '[■]' : '[ ]');
+  });
+  const w = currentWave();
+  const left = WAVES.length - state.wave - 1;
+  return `<div class="panel crt"><div class="tmscroll">LAUNCH ${line}══► CORE</div>
+    <div class="tmline">📍 wave <b>${w.id}</b> of ${WAVES.length} — ${esc(w.concept)} · ${left === 0 ? 'the Core is this sector' : `${left} sector${left === 1 ? '' : 's'} to the Core`}</div></div>`;
+}
+
+// Concept mastery rail — every wave, lit when cleared (Trail's skill path).
+function masteryRail(){
+  return `<div class="track" id="track" tabindex="0" role="group" aria-label="Campaign progress">` +
+    WAVES.map((w,i)=>{
+      const done = state.cleared.includes(w.id);
+      const cur = i === state.wave;
+      const cls = cur ? 'current' : (done ? 'done' : '');
+      const mark = done && !cur ? '✓' : w.id;
+      return `<div class="track-step ${cls}"><span class="dot">${mark}</span>${esc(w.concept)}</div>`;
+    }).join('') + `</div>`;
+}
+
+/* 1 — TITLE */
+function screenTitle(){
+  state.screen = 'title';
+  const hasRun = state.begun && (state.wave > 0 || state.cleared.length > 0);
+  app.innerHTML = `
+    <h1>SQL <span class="q">QUEST</span></h1>
+    <div class="panel crt center">
+      <p style="margin:4px 0">The swarm reads your queries before you finish typing.<br><span class="dim">Type better queries.</span></p>
+    </div>
+    <div class="panel">
+      <p>Command your turret with real SQL. Every wave is a firing solution — the Captain briefs you, you write the query, the lane lights up. ${WAVES.length} waves, one concept each: the SQL analysts get hired for.</p>
+      ${hasRun ? `<p class="dim">A campaign is underway — wave ${currentWave().id} of ${WAVES.length} (${esc(currentWave().concept)}), ${state.cleared.length} sector${state.cleared.length===1?'':'s'} cleared.</p>` : ''}
+    </div>
+    <div class="btnrow" style="flex-direction:column;align-items:center">
+      <button class="btn btn-primary splash-start" onclick="startGame()">${hasRun ? `▶ Resume — Wave ${currentWave().id} ▸` : '▶ Launch Campaign'}</button>
+      ${hasRun ? `<button class="btn btn-ghost" onclick="resetCampaign()">↻ New campaign</button>` : ''}
+      <a class="btn btn-ghost" href="guide.html">📖 Study Guide — all ${WAVES.length} concepts explained</a>
+    </div>
+    <p class="center dim" style="font-family:var(--mono);font-size:11px">Build · <span id="build-ts">${BUILD_TS}</span></p>`;
+}
+
+function startGame(){
+  state.begun = true;
+  state.sfx = true;
+  updateAudioBtns();
+  audioCtx();               // create/resume inside the click gesture (audio unlock)
+  if(state.music) startMusic();
+  save();
+  screenMap();
+}
+
+/* 2 — SECTOR CHART */
+function screenMap(){
+  state.screen = 'map';
+  const w = currentWave();
+  app.innerHTML = `
+    ${statbar()}
+    ${sectorChart()}
+    <h2>Sector chart</h2>
+    <div class="panel">
+      <p class="dim" style="margin-bottom:9px">One concept per sector. A step turns <b style="color:var(--green)">green</b> once you've cleared it — dimmed just means it's further out.</p>
+      ${masteryRail()}
+    </div>
+    <div class="btnrow">
+      <button class="btn btn-primary" onclick="screenStory()">Advance to the swarm ▸</button>
+      <a class="btn btn-ghost" href="guide.html">📖 Study Guide</a>
+    </div>`;
+  const curEl = app.querySelector('#track .current');
+  if(curEl) curEl.scrollIntoView({inline:'center', block:'nearest'});
+}
+
+/* 3 — BRIEFING (the Captain's story) */
+function waveStory(w){
+  const ph = (w.phases && w.phases[state.phase]) ? w.phases[state.phase] : null;
+  return w.story || (w.captain && w.captain.intro) || (ph ? ph.briefing : w.briefing) || '';
+}
+function screenStory(){
+  state.screen = 'story';
+  const w = currentWave();
+  app.innerHTML = `
+    ${statbar()}
+    <h2>Sector ${w.id} — ${esc(w.title)}</h2>
+    <div class="panel">
+      <div><span class="badge">${esc(w.concept)}</span>${(w.reinforces||[]).length ? ` <span class="badge" style="color:var(--yellow);border-color:rgba(212,168,73,.4)">🔁 Recall: ${w.reinforces.map(esc).join(', ')}</span>` : ''}</div>
+      <div class="story-who" style="margin-top:11px">🎖️ Captain's briefing</div>
+      <p class="story">${waveStory(w)}</p>
+    </div>
+    <div class="btnrow">
+      <button class="btn btn-primary" onclick="screenTask()">On to the firing console ▸</button>
+      <button class="btn btn-ghost" onclick="screenMap()">◂ Sector chart</button>
+    </div>`;
+}
+
+/* 4 — FIRING CONSOLE (the task) */
+function schemaStripHtml(w){
+  const rows = [];
+  const re = /CREATE TABLE (\w+)\s*\(([^;]+)\)/gi;
+  let m;
+  while((m = re.exec(w.schema))){
+    const cols = m[2].split(',').map(c => c.trim().split(/\s+/)[0]).join(', ');
+    rows.push(`<div>▦ <span class="sstable">${esc(m[1])}</span> <span class="dim">(</span><span class="sscols">${esc(cols)}</span><span class="dim">)</span></div>`);
+  }
+  return `<div class="schemastrip">${rows.join('')}</div>`;
+}
+function currentObjective(){
+  const w = currentWave();
+  return (w.phases && w.phases[state.phase]) ? w.phases[state.phase].objective : w.objective;
+}
+function objectiveHtml(){
+  const t = currentObjective() || '';
+  const i = t.indexOf('Hint:');
+  const goal = (i === -1 ? t : t.slice(0, i)).trim();
+  const hint = (i === -1 ? '' : t.slice(i + 5)).trim();
+  const w = currentWave();
+  const phaseChip = (w.phases && w.phases.length > 1) ? ` <span class="badge" style="color:var(--yellow)">⚡ Phase ${state.phase + 1}/${w.phases.length}</span>` : '';
+  return `<div class="objective"><span class="tag">🎯 Firing solution${phaseChip}</span>${goal}<div class="obj-hint">${hint}</div></div>`;
+}
+function pipsHtml(){
+  return [0,1,2].map(i => `<i class="${i < Math.min(waveTries,3) ? 'used' : ''}"></i>`).join('');
+}
+
+function prepareWave(){
+  const w = currentWave();
+  const db = freshDB(w.schema);
+  const sol = execQuery(db, currentPhaseSolution());
+  db.close();
+  const isPhased = !!(w.phases) && state.phase === 0 && w.phases.length > 1;
+  enemiesLive = sol.rows.map((row, i) => {
+    const obj = {}; sol.columns.forEach((c,j)=>obj[c]=row[j]);
+    return {
+      name: obj.name || obj.id || ('Target '+(i+1)),
+      archetype: archFromType(obj.type) || w.enemyArch || 'warden',
+      threat: (obj.threat_level != null) ? Number(obj.threat_level) : null,
+      maxHp: ENEMY_MAXHP, hp: ENEMY_MAXHP, advance: 0, alive: true,
+      shielded: isPhased,
+      spriteAlt: i % 2 === 1
+    };
+  });
+}
+
+function screenTask(fresh){
+  state.screen = 'task';
+  const w = currentWave();
+  if(fresh !== false){
+    waveTries = 0; handedOver = false; waveFriction = false;
+    if(state.phase >= (w.phases ? w.phases.length : 1)) state.phase = 0;
+    prepareWave();
+  }
+  app.innerHTML = `
+    ${statbar()}
+    ${objectiveHtml()}
+    <div class="field-pane">
+      <div class="field-status" id="field-status">${enemiesLive.length} contact${enemiesLive.length!==1?'s':''} on your scope — weave the query that locks them.</div>
+      <svg id="field-bg" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+      <svg id="field" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+    <div class="ed-wrap">
+      <textarea id="editor" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="SQL query editor" placeholder="Write your SQL here… (case-insensitive — lowercase is fine)"></textarea>
+      <div class="ed-ghost" id="ghost" aria-hidden="true"></div>
+    </div>
+    ${schemaStripHtml(w)}
+    <div class="ed-row">
+      <button class="btn btn-primary" onclick="submitAnswer()" style="font-family:var(--mono);letter-spacing:.02em">▶ Execute <span class="kbd">Ctrl+↵</span></button>
+      <button class="btn btn-ghost btn-sm" onclick="formatSQL()" id="format-btn" title="Uppercase SQL keywords (Alt+Shift+F)">Format</button>
+      <a class="btn btn-ghost btn-sm" href="guide.html">📖 Study Guide</a>
+      <button class="btn btn-ghost btn-sm" onclick="screenStory()">◂ Re-read the briefing</button>
+      <span class="spacer"></span>
+      <span class="dev-note" id="dev-hint" style="visibility:${state.devMode?'visible':'hidden'}">DEV — <span class="kbd">Tab</span> inserts the answer</span>
+    </div>
+    <div class="ruleline">Runs used <span class="trypips" id="trypips">${pipsHtml()}</span>
+      &nbsp;·&nbsp; 1st miss is free &nbsp;·&nbsp; 2nd fills in half the code &nbsp;·&nbsp; 3rd hands you the solution</div>
+    <div class="feedback" id="feedback"></div>
+    <div id="result"></div>`;
+  buildFieldBg();
+  drawField();
+  wireEditor();
+  updateHP();
+}
+
+// The Prism ghost underlay: the textarea's text is transparent; the ghost shows
+// the same SQL syntax-highlighted, so the console reads like a real terminal.
+function syncGhost(){
+  const ed = document.getElementById('editor'), ghost = document.getElementById('ghost');
+  if(!ed || !ghost) return;
+  if(window.Prism && Prism.languages && Prism.languages.sql){
+    ghost.innerHTML = Prism.highlight(ed.value, Prism.languages.sql, 'sql');
+  } else {
+    ghost.textContent = ed.value;
+  }
+}
+function wireEditor(){
+  const ed = document.getElementById('editor');
+  if(!ed) return;
+  syncGhost();
+  ed.addEventListener('input', syncGhost);
+  ed.addEventListener('keydown', e => {
+    if(e.key === 'Tab' && state.devMode){
+      e.preventDefault();
+      ed.value = currentPhaseSolution();
+      syncGhost();
+    } else if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){
+      e.preventDefault();
+      submitAnswer();
+    } else if((e.key === 'F' || e.key === 'f') && e.altKey && e.shiftKey){
+      e.preventDefault();
+      formatSQL(); syncGhost();
+    } else if(e.key === 'Backspace'){
+      playMelodyBackspace();
+    } else if(e.key && e.key.length === 1){
+      playMelodyType(e.key);
+      if(' ;,().'.includes(e.key)){
+        const m = (ed.value || '').match(/(\w+)\s*$/);
+        if(m && SQL_KEYWORDS.includes(m[1].toUpperCase())){
+          const kw = m[1].toUpperCase();
+          setTimeout(()=>playMelodyKeyword(kw), 35);
+        }
+      }
+    }
+  });
+}
+
+/* ─── GRADING — Trail's escalating help + diagnostic coaching ────────────── */
+function setFb(kind, msg){
+  const fb = document.getElementById('feedback');
+  if(!fb) return;
+  fb.className = 'feedback ' + kind;
+  fb.innerHTML = msg;
+}
+
+// Pre-fill ~half of the solution into the editor, cut at a word boundary.
+function fillHalf(){
+  const answer = currentPhaseSolution();
+  const toks = answer.split(/\s+/);
+  const target = answer.length * 0.5;
+  let acc = '', i = 0;
+  while(i < toks.length - 1 && acc.length < target){ acc += (acc ? ' ' : '') + toks[i]; i++; }
+  if(!acc) acc = toks[0] || '';
+  const ed = document.getElementById('editor');
+  if(ed){ ed.value = acc + ' '; syncGhost(); ed.focus(); ed.setSelectionRange(ed.value.length, ed.value.length); }
+}
+
+// Diagnostic coaching (ported from Trail's whatsOff): name WHAT is off — never
+// flavor alone. Shape, order, too many rows (friendly fire), or too few.
+function whatsOff(r){
+  if(r.reason === 'sql-error'){
+    const col = /no such column: ?([\w.]+)/i.exec(r.error || '');
+    if(col) return `There's no column called <b>${esc(col[1])}</b> — check the schema strip for the real names.`;
+    const tbl = /no such table: ?([\w.]+)/i.exec(r.error || '');
+    if(tbl) return `There's no table called <b>${esc(tbl[1])}</b> — this wave's tables are listed in the schema strip.`;
+    return `Syntax error — check spelling and punctuation. (${esc(r.error || 'query failed')})`;
+  }
+  if(r.reason === 'banned')
+    return `Only read queries fire from this console (SELECT, WHERE, JOIN…) — no table changes mid-battle.`;
+  const p = r.player || { columns: [], rows: [] };
+  const e = r.expected || { columns: [], rows: [] };
+  if(r.reason === 'wrong-shape')
+    return `Shape check: the firing solution wants <b>${e.columns.length}</b> column${e.columns.length===1?'':'s'} (${e.columns.map(esc).join(', ')}) — yours returned <b>${p.columns.length}</b>${p.columns.length ? ` (${p.columns.map(esc).join(', ')})` : ''}.`;
+  if(r.reason === 'wrong-order')
+    return `Right targets, wrong order — check your ORDER BY (and whether it should be DESC).`;
+  if(p.rows.length > e.rows.length){
+    const fp = falsePositives(p, e);
+    return `Too broad — you're hitting allied scouts${fp ? ` (${fp} stray row${fp===1?'':'s'})` : ''}. Yours returned <b>${p.rows.length}</b>, the solution wants <b>${e.rows.length}</b>. Tighten the WHERE.`;
+  }
+  if(p.rows.length < e.rows.length)
+    return `Too few — yours returned <b>${p.rows.length}</b>, the solution wants <b>${e.rows.length}</b>. A filter is dropping targets it shouldn't.`;
+  return `Same row count, different rows — compare your values against the lane.`;
+}
+
+// Results/Messages tabs — "(N rows returned in X ms)". Reading output is a skill.
+function queryOutput(r, execMs){
+  const messages = [];
+  if(r.reason === 'sql-error' || r.reason === 'banned'){
+    messages.push(`<div class="msgline err">Error: ${esc(r.error || 'query rejected')}</div>`);
+  } else {
+    const n = r.player ? r.player.rows.length : 0;
+    messages.push(`<div class="msgline">(${n} row${n===1?'':'s'} returned in ${execMs} ms)</div>`);
+  }
+  const hasGrid = r.player && r.player.columns.length;
+  const results = hasGrid ? renderRows(r.player) : '<div class="msgline dim">No result set.</div>';
+  const startTab = (r.reason === 'sql-error' || r.reason === 'banned') ? 'msg' : 'res';
+  const uid = 'out' + Date.now();
+  return `
+    <div class="outtabs">
+      <button id="${uid}-tres" class="${startTab==='res'?'on':''}" onclick="showOutTab('${uid}','res')">Results</button>
+      <button id="${uid}-tmsg" class="${startTab==='msg'?'on':''}" onclick="showOutTab('${uid}','msg')">Messages</button>
+    </div>
+    <div id="${uid}-res" class="outpane" style="display:${startTab==='res'?'block':'none'}">${results}</div>
+    <div id="${uid}-msg" class="outpane" style="display:${startTab==='msg'?'block':'none'}">${messages.join('')}</div>`;
+}
+function showOutTab(uid, tab){
+  for(const t of ['res','msg']){
+    document.getElementById(`${uid}-${t}`).style.display = t === tab ? 'block' : 'none';
+    document.getElementById(`${uid}-t${t}`).classList.toggle('on', t === tab);
+  }
+}
+function renderRows(res){
+  const gi = gaugeColIndex(res.columns);
+  const gMax = gi >= 0 ? Math.max(...res.rows.map(row => Number(row[gi])).filter(n => !isNaN(n)), 0) : 0;
+  const thead = `<tr>${res.columns.map(c=>`<th>${esc(c)}</th>`).join('')}</tr>`;
+  const tbody = res.rows.slice(0, 60).map(row=>`<tr>${row.map((v,ci)=>
+    ci === gi ? gaugeCell(v, gMax) : `<td>${v==null?'NULL':esc(v)}</td>`
+  ).join('')}</tr>`).join('');
+  return `<table class="result-tbl"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
+}
+
+function helplineHtml(diag, subline){
+  return `<div class="helpline"><b>${esc(pick(MISS_LINES))}</b>${diag ? `<br>🧭 ${diag}` : ''}${subline ? `<br><span class="dim">${subline}</span>` : ''}</div>`;
+}
+
+// A miss: escalate Trail-style. Returns the helper subline for the helpline.
+function applyMissAssist(kind){
+  waveTries++; waveFriction = true;
+  const pp = document.getElementById('trypips'); if(pp) pp.innerHTML = pipsHtml();
+  let sub;
+  if(waveTries === 1){
+    if(kind === 'syntax') syntaxFx(); // lighter clip, even on the "free" miss
+    sub = `First slip's on the house, Chief. Fix your query and fire again.`;
+  } else if(waveTries === 2){
+    kind === 'syntax' ? syntaxFx() : missFx(10);
+    fillHalf();
+    sub = `That one cost the base${kind==='syntax' ? ' a scrape' : ' (−10 integrity)'}. I dropped the first half of the solution into your console — finish the tail and fire.`;
+  } else {
+    kind === 'syntax' ? syntaxFx() : missFx(18);
+    handedOver = true;
+    const wid = currentWave().id;
+    if(!Array.isArray(state.visionWaves)) state.visionWaves = [];
+    if(state.visionWaves.indexOf(wid) === -1) state.visionWaves.push(wid);
+    const ed = document.getElementById('editor');
+    if(ed){ ed.value = currentPhaseSolution(); syncGhost(); ed.focus(); }
+    sub = `👁 <b>Oracle's Vision</b> — the full solution is in your console${kind==='syntax' ? '' : ' (−18 integrity)'}. Read it, press Execute, and watch what it does.`;
+  }
+  save();
+  if(state.baseHP <= 0){ screenLost(); return null; }
+  return sub;
+}
+
+function submitAnswer(){
+  if(busy || !SQLjs) return;
+  const w = currentWave();
+  const ed = document.getElementById('editor');
+  const sql = (ed ? ed.value : '').trim();
+  const out = document.getElementById('result');
+  if(!sql){ setFb('warn', 'Write a query first, then hit Execute — an empty run doesn\'t cost a pip.'); return; }
+
+  // Banned verbs — a lighter hit, but it still counts as a run.
+  if(!isSafe(sql)){
+    const r = { reason: 'banned', error: 'write/DDL verbs are locked — read-only console' };
+    const sub = applyMissAssist('syntax');
+    if(sub === null) return;
+    if(out) out.innerHTML = queryOutput(r, 1) + helplineHtml(whatsOff(r), sub);
+    return;
+  }
+
+  state.attempts++;
+  let player, expected, execMs;
+  const db = freshDB(w.schema);
+  try{
+    const t0 = performance.now();
+    player = execQuery(db, sql);
+    execMs = Math.max(1, Math.round(performance.now() - t0));
+    expected = execQuery(db, currentPhaseSolution());
+  }catch(e){
+    db.close();
+    const r = { reason: 'sql-error', error: e.message };
+    const sub = applyMissAssist('syntax');
+    if(sub === null) return;
+    if(out) out.innerHTML = queryOutput(r, 1) + helplineHtml(whatsOff(r), sub);
+    save();
+    return;
+  }
+  db.close();
+
+  playMelodyExecute(sql);
+  const ordered = solutionIsOrdered(currentPhaseSolution());
+  if(sameResult(player, expected, ordered)){
+    state.correct++;
+    const clean = !waveFriction;
+    const hasNextPhase = !!(w.phases && state.phase < w.phases.length - 1);
+    if(out) out.innerHTML = queryOutput({ reason: 'ok', player, expected }, execMs);
+    setFb('ok', hasNextPhase ? '⚡ Shields fractured — phase 2 loading…' : (clean ? '⚡ FATALITY — flawless execution.' : '✓ Firing solution locked. Volley away.'));
+    save();
+    const after = hasNextPhase ? nextPhase : ()=>waveCleared(clean);
+    clean ? fatality(after) : volleyClear(after);
+    return;
+  }
+
+  // Wrong result set.
+  const sameCols = player.columns.length === expected.columns.length &&
+    player.columns.every((c,i)=> String(c).toLowerCase() === String(expected.columns[i]).toLowerCase());
+  let reason = 'wrong-rows';
+  if(!sameCols) reason = 'wrong-shape';
+  else if(ordered && sameResult(player, expected, false)) reason = 'wrong-order';
+  const r = { reason, player, expected };
+  const sub = applyMissAssist('miss');
+  if(sub === null) return;
+  if(out) out.innerHTML = queryOutput(r, execMs) + helplineHtml(whatsOff(r), sub);
+  setFb('warn', esc('Wrong lock — see the diagnostic below the results.'));
+  save();
+}
+
+/* ─── PHASES (boss waves 22/23) ──────────────────────────────────────────── */
+function nextPhase(){
+  state.phase++;
+  waveTries = 0; handedOver = false;   // waveFriction persists — fatality means the WHOLE wave clean
+  prepareWave();
+  screenTask(false);
+  showToast('⚡ SHIELDS DOWN — Phase ' + (state.phase + 1));
+  setFb('ok', '⚡ Shields fractured — <b style="color:var(--yellow)">Phase ' + (state.phase + 1) + ' begins.</b> New firing solution above.');
+  beep(523,70); setTimeout(()=>beep(659,80),80); setTimeout(()=>beep(784,100),170);
+}
+
+/* 5 — DEBRIEF */
+function waveCleared(clean){
+  const w = currentWave();
+  const wasVision = handedOver;
+  if(clean) state.fatalities = (state.fatalities || 0) + 1;
+  state.streak = clean ? (state.streak || 0) + 1 : 0;
+  if(!state.cleared.includes(w.id)) state.cleared.push(w.id);
+  state.phase = 0;
+  save();
+  celebrate();
+  if(state.wave >= WAVES.length - 1){
+    setTimeout(showCourseComplete, 900);
+    return;
+  }
+  screenDebrief(clean, wasVision);
+  maybeBreak();
+}
+
+function screenDebrief(clean, wasVision){
+  state.screen = 'debrief';
+  const w = currentWave();
+  const next = WAVES[state.wave + 1];
+  const banner = clean ? FATALITY_BANNER : pick(WIN_BANNERS);
+  const flavor = wasVision
+    ? `You channeled the Vision and typed it through — <b>${esc(w.concept)}</b> is yours now. Next time, try it cold.`
+    : esc(pick(WIN_LINES));
+  const terms = (w.terms && w.terms.length)
+    ? `<div class="terms-wrap" style="justify-content:flex-start"><div class="terms-label">Terms unlocked</div>${w.terms.map(t=>`<span class="term-chip">${esc(t)}</span>`).join('')}</div>` : '';
+  const streakChip = (state.streak || 0) >= 2
+    ? `<p><span class="badge" style="color:var(--yellow);font-size:12px">🔥 ${state.streak} flawless waves running!</span></p>` : '';
+  app.innerHTML = `
+    ${statbar()}
+    <div class="winbanner">${banner}</div>
+    <p class="debrief-flavor">${flavor}</p>
+    <div class="panel">
+      ${clean ? `<p><span class="badge" style="color:var(--yellow)">⚡ FATALITY — first-try, no assists</span></p>` : ''}
+      ${streakChip}
+      <p>Sector ${w.id} cleared — <b style="color:var(--accent2)">${esc(w.concept)}</b> locked in. Campaign accuracy: <b class="amber">${accuracy()}%</b>.</p>
+      ${terms}
+      <p class="dim" style="margin-top:8px">Next up — Sector ${next.id}: <b style="color:var(--text)">${esc(next.concept)}</b> · ${esc(next.title)}</p>
+    </div>
+    <div class="btnrow">
+      <button class="btn btn-primary" onclick="advanceWave()">Next sector ▸</button>
+      <button class="btn btn-ghost" onclick="screenMap()">🗺 Sector chart</button>
+    </div>`;
+}
+
+function advanceWave(){
+  state.wave = Math.min(state.wave + 1, WAVES.length - 1);
+  state.phase = 0;
+  save();
+  screenStory();
+}
+
+/* LOSS */
+function screenLost(){
+  state.screen = 'lost';
+  app.innerHTML = `
+    ${statbar()}
+    <div class="winbanner" style="color:var(--red);text-shadow:0 0 18px rgba(224,92,92,.5)">BASE OVERRUN</div>
+    <p class="debrief-flavor">The swarm broke through. Every analyst debugs — patch the hull and run it again.</p>
+    <div class="panel"><p>Base integrity restores to full. Same sector, same firing solution — you've seen its shape now.</p></div>
+    <div class="btnrow"><button class="btn btn-primary" onclick="retryWave()">↻ Retry Sector ${currentWave().id}</button></div>`;
+}
+function retryWave(){
+  state.baseHP = 100; state.phase = 0;
+  save();
+  screenStory();
+}
+
+/* ─── DEV MODE + SETTINGS ────────────────────────────────────────────────── */
+function toggleDev(){
+  state.devMode = !state.devMode;
+  document.getElementById('dev-btn').classList.toggle('on', state.devMode);
+  document.getElementById('dev-jump').style.display = state.devMode ? 'inline-block' : 'none';
+  const hint = document.getElementById('dev-hint');
+  if(hint) hint.style.visibility = state.devMode ? 'visible' : 'hidden';
+  save();
+}
+function populateDevJump(){
+  const sel = document.getElementById('dev-jump');
+  sel.innerHTML = WAVES.map((w,i) => `<option value="${i}">${w.id}. ${w.concept}</option>`).join('');
+  sel.value = String(state.wave);
+}
+function jumpToWave(idx){
+  const n = Number(idx);
+  if(!Number.isInteger(n) || n < 0 || n >= WAVES.length) return;
+  state.wave = n; state.phase = 0;
+  state.baseHP = 100;
+  save();
+  screenStory();
+}
+function resetCampaign(){
+  state.wave = 0; state.phase = 0;
+  state.baseHP = 100;
+  state.cleared = [];
+  state.attempts = 0; state.correct = 0; state.streak = 0;
+  state.fatalities = 0; state.visionWaves = [];
+  state.started = Date.now();
+  save();
+  state.begun ? screenMap() : screenTitle();
+}
+function confirmReset(){
+  if(confirm('Reset ALL campaign progress and start from Sector 1?')) { state.begun = true; resetCampaign(); }
+}
+
+/* ─── AUDIO SUSPEND / RESUME (page visibility) ───────────────────────────── */
+function suspendAudio(){ stopMusic(); if(actx && actx.state === 'running') actx.suspend(); }
+function resumeAudioIfActive(){
+  if(state.screen === 'title') return;
+  if(actx) actx.resume();
+  if(state.music) startMusic();
+}
+document.addEventListener('visibilitychange', ()=>{ document.hidden ? suspendAudio() : resumeAudioIfActive(); });
+window.addEventListener('pagehide', suspendAudio);
+
 /* ─── INIT ───────────────────────────────────────────────────────────────── */
 async function init(){
   load();
   applyTheme();
-  document.getElementById('build-ts').textContent = BUILD_TS;
   updateAudioBtns();
-  document.getElementById('wave-total').textContent = WAVES.length;
   document.getElementById('dev-btn').classList.toggle('on', state.devMode);
-  document.getElementById('dev-hint').style.visibility = state.devMode ? 'visible' : 'hidden';
   populateDevJump();
   document.getElementById('dev-jump').style.display = state.devMode ? 'inline-block' : 'none';
-  updateHP();
-  setFb('warn', 'Loading SQL engine…');
+  if(state.wave >= WAVES.length) state.wave = 0;
   try{
     await bootSQL();
   }catch(e){
-    setFb('err', 'Could not load the SQL engine. Check your connection and reload.');
+    app.innerHTML = '<div class="panel"><p class="amber">Could not load the SQL engine. Check your connection and reload.</p></div>';
     return;
   }
-  if(state.wave >= WAVES.length) state.wave = 0;
-  loadWave();
-  setFb('', '');
+  screenTitle();
 }
 init();
-</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/prism.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/components/prism-sql.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
-<script>
-// Real-time syntax highlighting for the SQL editor (Prism.js)
-const editor = document.getElementById('editor');
-const highlighter = document.getElementById('ghost');
-
-editor.addEventListener('input', () => {
-  highlighter.textContent = editor.value;
-  Prism.highlightElement(highlighter);
-});
-
-// Apply Prism line numbers on init
-Prism.highlightElement(highlighter);
 </script>
 </body>
 </html>
