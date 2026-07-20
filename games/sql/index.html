@@ -342,6 +342,26 @@ main.appmain{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touc
 .winbanner{font-family:var(--mono);font-size:1.7rem;font-weight:700;color:var(--yellow);text-align:center;letter-spacing:.06em;text-shadow:0 0 18px rgba(212,168,73,.5);margin:8px 0 4px}
 .debrief-flavor{text-align:center;color:var(--muted);font-style:italic;margin-bottom:12px}
 
+/* MODE TABS — Build / Blanks / Type (Trail's mode tabs, Quest skin) */
+.modetabs{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 8px}
+.modetabs button{font:600 12.5px var(--font);background:var(--surf2);color:var(--muted);border:1px solid var(--border);border-radius:20px;padding:7px 14px;cursor:pointer;transition:.15s}
+.modetabs button:hover{color:var(--text);border-color:var(--accent)}
+.modetabs button.on{background:rgba(88,170,162,.14);color:var(--accent2);border-color:var(--accent)}
+
+/* BUILD PAD — tap-token builder */
+.buildpad{background:var(--surf);border:1px solid var(--border);border-radius:var(--r2);padding:10px 12px;margin-top:9px}
+.bgroup{margin-bottom:7px}
+.blabel{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.tok{font:500 12.5px var(--mono);background:var(--surf2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 10px;margin:3px 4px 0 0;cursor:pointer;transition:.12s}
+.tok:hover{border-color:var(--accent);color:var(--accent2)}
+.tok.kw{color:#66d9ef}
+.tok.fn{color:#a1efe4}
+.tok.tb{color:var(--accent2);font-weight:700}
+.tok.col{color:var(--yellow)}
+.tok.val{color:#e6db74}
+.tok.op{color:#f92672}
+.tok.ctl{color:var(--muted)}
+
 /* MASTERY RAIL on the sector chart (vertical variant of .track) */
 .rail{display:flex;flex-direction:column;gap:5px;max-height:44vh;overflow-y:auto;padding-right:4px}
 .rail .track-step{width:100%}
@@ -377,12 +397,13 @@ main.appmain{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touc
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/prism.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/components/prism-sql.min.js"></script>
+<script src="builder.js"></script>
 <script src="waves.js"></script>
 <script>
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "July 20, 2026 · 3:27 PM ET";
+const BUILD_TS = "July 20, 2026 · 4:33 PM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, fatalities: 0, visionWaves: [], streak: 0,
@@ -395,6 +416,15 @@ let waveTries = 0;         // misses this wave — drives the Trail-style escala
 let handedOver = false;    // 3rd miss: the full solution is in the editor
 let waveFriction = false;  // ANY miss this wave — disqualifies a FATALITY
 const HAND_OVER_AT = 3;    // misses before the full solution is handed over
+/* Input modes (Trail's system): Build taps tokens, Blanks finishes the wave's
+   starter skeleton, Type is full manual. Type = ace pay — misses sting less.
+   All three feed the SAME editor and grader. */
+const INPUT_LS = 'sqlquest-input-v1';
+let inputMode = localStorage.getItem(INPUT_LS) || 'build';
+if(!['build','blanks','type'].includes(inputMode)) inputMode = 'build';
+const MISS_COSTS = { build: [10, 18], blanks: [9, 16], type: [8, 14] };  // [miss2, miss3] HP
+let buildTokens = [];   // tapped tokens for the current wave (Build mode)
+let PAD_FLAT = [];      // index -> token text, so onclick never fights quoting
 
 function load(){
   try{ Object.assign(state, JSON.parse(localStorage.getItem(LS)) || {}); }catch(e){}
@@ -1749,6 +1779,7 @@ function screenTask(fresh){
   const w = currentWave();
   if(fresh !== false){
     waveTries = 0; handedOver = false; waveFriction = false;
+    buildTokens = [];
     if(state.phase >= (w.phases ? w.phases.length : 1)) state.phase = 0;
     prepareWave();
   }
@@ -1760,10 +1791,12 @@ function screenTask(fresh){
       <svg id="field-bg" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
       <svg id="field" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid meet"></svg>
     </div>
+    ${modeTabsHtml()}
     <div class="ed-wrap">
       <textarea id="editor" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="SQL query editor" placeholder="Write your SQL here… (case-insensitive — lowercase is fine)"></textarea>
       <div class="ed-ghost" id="ghost" aria-hidden="true"></div>
     </div>
+    ${inputMode === 'build' ? builderHtml() : ''}
     ${schemaStripHtml(w)}
     <div class="ed-row">
       <button class="btn btn-primary" onclick="submitAnswer()" style="font-family:var(--mono);letter-spacing:.02em">▶ Execute <span class="kbd">Ctrl+↵</span></button>
@@ -1772,14 +1805,97 @@ function screenTask(fresh){
       <button class="btn btn-ghost btn-sm" onclick="screenStory()">◂ Re-read the briefing</button>
     </div>
     <div class="ruleline">Runs used <span class="trypips" id="trypips">${pipsHtml()}</span>
-      &nbsp;·&nbsp; 1st miss is free &nbsp;·&nbsp; 2nd fills in half the code &nbsp;·&nbsp; 3rd hands you the solution</div>
+      &nbsp;·&nbsp; 1st miss is free &nbsp;·&nbsp; 2nd fills in half the code (−${MISS_COSTS[inputMode][0]} HP) &nbsp;·&nbsp; 3rd hands you the solution (−${MISS_COSTS[inputMode][1]} HP)${inputMode === 'type' ? ' &nbsp;·&nbsp; ⌨ ace pay: lighter miss sting' : ''}</div>
     <div class="feedback" id="feedback"></div>
     <div id="result"></div>`;
   buildFieldBg();
   drawField();
   wireEditor();
+  applyModeFill(fresh !== false);
   updateHP();
 }
+
+/* ─── INPUT MODES — Build / Blanks / Type (ported from Trail) ────────────── */
+function modeTabsHtml(){
+  const tab = (m, label) => `<button class="${inputMode === m ? 'on' : ''}" onclick="setInputMode('${m}')">${label}</button>`;
+  return `<div class="modetabs" role="group" aria-label="Input mode">
+    ${tab('build', '👆 Build — tap the tokens')}
+    ${tab('blanks', '⌨ Blanks — finish the skeleton')}
+    ${tab('type', '⌨ Type — full manual, ace pay')}
+  </div>`;
+}
+// The wave's blank-scaffold starter (phase-aware; later phases fall back to empty).
+function currentStarter(){
+  const w = currentWave();
+  const ph = w.phases && w.phases[state.phase];
+  if(ph && ph.starter) return ph.starter;
+  return state.phase === 0 ? (w.starter || '') : '';
+}
+// Initial editor content per mode. `fresh` = a brand-new wave/phase render;
+// a mode-switch re-render keeps whatever the switch handler decided.
+function applyModeFill(fresh){
+  const ed = document.getElementById('editor');
+  if(!ed) return;
+  if(inputMode === 'build'){ ed.value = TrailBuilder.assemble(buildTokens); }
+  else if(inputMode === 'blanks' && fresh){ ed.value = currentStarter(); }
+  syncGhost();
+}
+function setInputMode(m){
+  if(m === inputMode || !['build','blanks','type'].includes(m)) return;
+  const ed = document.getElementById('editor');
+  const keep = ed ? ed.value : '';
+  inputMode = m;
+  localStorage.setItem(INPUT_LS, m);
+  screenTask(false);   // re-render; misses, enemies, and pips all survive
+  const ed2 = document.getElementById('editor');
+  if(!ed2) return;
+  if(m === 'type'){ ed2.value = keep; }                                   // pro road keeps your text
+  else if(m === 'build'){ buildTokens = []; ed2.value = ''; }             // clean pad
+  else { ed2.value = handedOver ? keep : (currentStarter() || ''); }      // blanks re-lays the skeleton
+  syncGhost();
+}
+
+// Parse the wave schema into the builder's table shape: [{table, columns:[{name}]}].
+function builderTables(){
+  const w = currentWave();
+  const out = [];
+  const re = /CREATE TABLE (\w+)\s*\(([^;]+)\)/gi;
+  let m;
+  while((m = re.exec(w.schema))){
+    out.push({ table: m[1], columns: m[2].split(',').map(c => ({ name: c.trim().split(/\s+/)[0] })) });
+  }
+  return out;
+}
+function builderHtml(){
+  const pad = TrailBuilder.padFor({ answer: currentPhaseSolution() }, builderTables());
+  PAD_FLAT = [];
+  const group = (label, toks, cls) => {
+    if(!toks.length) return '';
+    return `<div class="bgroup"><span class="blabel">${label}</span><br>${toks.map(t => {
+      const k = PAD_FLAT.push(t) - 1;
+      return `<button class="tok ${cls}" onclick="tapToken(${k})">${esc(t)}</button>`;
+    }).join('')}</div>`;
+  };
+  return `<div class="buildpad">
+    ${group('keywords', pad.keywords, 'kw')}
+    ${group('functions', pad.funcs, 'fn')}
+    ${group('tables', pad.tables, 'tb')}
+    ${group('columns', pad.columns, 'col')}
+    ${group('values', pad.values, 'val')}
+    ${group('operators', pad.ops, 'op')}
+    <div class="bgroup">
+      <button class="tok ctl" onclick="tapUndo()">⌫ Undo</button>
+      <button class="tok ctl" onclick="tapClear()">Clear</button>
+    </div>
+  </div>`;
+}
+function syncBuild(){
+  const ed = document.getElementById('editor');
+  if(ed){ ed.value = TrailBuilder.assemble(buildTokens); syncGhost(); }
+}
+function tapToken(k){ buildTokens.push(PAD_FLAT[k]); syncBuild(); }
+function tapUndo(){ buildTokens.pop(); syncBuild(); }
+function tapClear(){ buildTokens = []; syncBuild(); }
 
 // The Prism ghost underlay: the textarea's text is transparent; the ghost shows
 // the same SQL syntax-highlighted, so the console reads like a real terminal.
@@ -1836,7 +1952,11 @@ function fillHalf(){
   while(i < toks.length - 1 && acc.length < target){ acc += (acc ? ' ' : '') + toks[i]; i++; }
   if(!acc) acc = toks[0] || '';
   const ed = document.getElementById('editor');
-  if(ed){ ed.value = acc + ' '; syncGhost(); ed.focus(); ed.setSelectionRange(ed.value.length, ed.value.length); }
+  if(ed){
+    ed.value = acc + ' ';
+    if(inputMode === 'build') buildTokens = acc ? acc.split(/\s+/) : [];
+    syncGhost(); ed.focus(); ed.setSelectionRange(ed.value.length, ed.value.length);
+  }
 }
 
 // Diagnostic coaching (ported from Trail's whatsOff): name WHAT is off — never
@@ -1916,18 +2036,24 @@ function applyMissAssist(kind){
     if(kind === 'syntax') syntaxFx(); // lighter clip, even on the "free" miss
     sub = `First slip's on the house, Chief. Fix your query and fire again.`;
   } else if(waveTries === 2){
-    kind === 'syntax' ? syntaxFx() : missFx(10);
+    const cost = MISS_COSTS[inputMode][0];
+    kind === 'syntax' ? syntaxFx() : missFx(cost);
     fillHalf();
-    sub = `That one cost the base${kind==='syntax' ? ' a scrape' : ' (−10 integrity)'}. I dropped the first half of the solution into your console — finish the tail and fire.`;
+    sub = `That one cost the base${kind==='syntax' ? ' a scrape' : ` (−${cost} integrity)`}. I dropped the first half of the solution into your console — finish the tail and fire.`;
   } else {
-    kind === 'syntax' ? syntaxFx() : missFx(18);
+    const cost3 = MISS_COSTS[inputMode][1];
+    kind === 'syntax' ? syntaxFx() : missFx(cost3);
     handedOver = true;
     const wid = currentWave().id;
     if(!Array.isArray(state.visionWaves)) state.visionWaves = [];
     if(state.visionWaves.indexOf(wid) === -1) state.visionWaves.push(wid);
     const ed = document.getElementById('editor');
-    if(ed){ ed.value = currentPhaseSolution(); syncGhost(); ed.focus(); }
-    sub = `👁 <b>Oracle's Vision</b> — the full solution is in your console${kind==='syntax' ? '' : ' (−18 integrity)'}. Read it, press Execute, and watch what it does.`;
+    if(ed){
+      ed.value = currentPhaseSolution();
+      if(inputMode === 'build') buildTokens = ed.value.trim().split(/\s+/);
+      syncGhost(); ed.focus();
+    }
+    sub = `👁 <b>Oracle's Vision</b> — the full solution is in your console${kind==='syntax' ? '' : ` (−${cost3} integrity)`}. Read it, press Execute, and watch what it does.`;
   }
   save();
   if(state.baseHP <= 0){ screenLost(); return null; }
@@ -2002,6 +2128,7 @@ function submitAnswer(){
 function nextPhase(){
   state.phase++;
   waveTries = 0; handedOver = false;   // waveFriction persists — fatality means the WHOLE wave clean
+  buildTokens = [];
   prepareWave();
   screenTask(false);
   showToast('⚡ SHIELDS DOWN — Phase ' + (state.phase + 1));
@@ -2046,6 +2173,7 @@ function screenDebrief(clean, wasVision){
     <div class="panel">
       ${clean ? `<p><span class="badge" style="color:var(--yellow)">⚡ FATALITY — first-try, no assists</span></p>` : ''}
       ${streakChip}
+      ${inputMode === 'type' ? '<p><span class="badge" style="color:var(--accent2)">⌨ Ace bonus — flown full manual (lighter miss sting)</span></p>' : ''}
       <p>Sector ${w.id} cleared — <b style="color:var(--accent2)">${esc(w.concept)}</b> locked in. Campaign accuracy: <b class="amber">${accuracy()}%</b>.</p>
       ${terms}
       <p class="dim" style="margin-top:8px">Next up — Sector ${next.id}: <b style="color:var(--text)">${esc(next.concept)}</b> · ${esc(next.title)}</p>
