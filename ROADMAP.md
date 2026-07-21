@@ -9,7 +9,10 @@ then moves into **Now / Next / Later / Icebox**. Done items drop to **Shipped**.
 ---
 
 ## Now (actively building)
-- **Awaiting Mike's playtest of Tasks #81–#83** (2026-07-21, live). Next task number = **#84**.
+- **Awaiting Mike's playtest of Tasks #81–#84** (2026-07-21, live). Next task number = **#85**.
+
+## Shipped 2026-07-21 (headline)
+- **[P1] Ship presence + attack motion** (Task #84) — hulls were drawing at ~50 CSS px on a 200px scope strip with most of the 800×320 window unused. Pane to 270px (215 mobile), sprite base 80 → 116 units, and the formation moved off a circle onto an **ellipse** (rx 248 / ry 88) so the width actually gets used. Result: 96–126 px hulls on desktop, roughly 2–2.5×. Motion: per-hull idle drift + roll on out-of-phase clocks (delays reuse the existing jitter hash), bolts **drawn** helm-to-target over ~200 ms instead of blinking in, muzzle flare + helm kick on every volley, 14-shard detonations scaled to the hull, white-hot flash on the struck sprite, and a fatality that fires one gold salvo at everything at once. All transform/opacity/filter only and all off under `prefers-reduced-motion`. `tests/shipfx.spec.js` measures rendered hull size, proves no wave's formation overlaps or leaves the window, and reads the Web Animations API for travel time.
 
 ## Decisions needed from Mike
 - **[P1] Action-RPG Phases 2–5 need re-scoping before anyone builds them.** They were designed on top of the pre-v2 combat loop — repeat `rounds` volleys, enemy counterattacks, creep — and the v2 redesign removed all three (one correct query now clears a wave). Loot drops "on enemy death" and meta progression that grants "more HP / better rewards" no longer have mechanics to hang off. Three ways out: **(a)** re-scope the phases around the v2 loop — cosmetics earned per clean clear rather than per kill; **(b)** shelve the RPG layer and spend the time on content (Tier 4–5 waves, review beats); **(c)** put some of the old combat back. Recommendation: **(a)**, and only after the Tier 4–5 content lands — the campaign is 23 waves and stops.
@@ -121,7 +124,7 @@ This alignment means:
 - **[P2] Starter helper text (lighter than dev text)** — Mike: "add helper text to start them off, just like the developer text but it gives less — just start them off." Dev mode shows the *full* solution as a ghost (Tab inserts it); for normal play, surface a lighter, always-available scaffold that gets a player moving without handing over the answer. Ideas: pre-seed the editor with the wave's `starter` skeleton (the `____`-blanked shell already in waves.js) on a fresh wave, or a "Give me a starting point" nudge that drops in just the opening clause (`SELECT … FROM …`) and leaves the player to finish. Keep it clearly less than the dev ghost.
 - **[P1] Celestial theme — deeper narrative pass** — battlefield reskin + psychedelic-celestial backdrop shipped; next carry the theme into wave briefings (swarm/turret → motes/Spire/constellations), the splash tagline, concept framing, and naming. Keep instructional text crisp (don't let flavor bury the SQL lesson).
 - **[P1] Spaced-retrieval scheduled review waves** — foundation shipped (`reinforces` field + Recall-drill chip + layered solutions; the 9-wave beginner ramp already layers + recalls). Next: as the intermediate waves (10+) land, author dedicated "Recon" review beats on expanding gaps (~1, 3, 7 waves after a concept is introduced) that re-test an earlier verb in a *fresh* schema. Truly works retrieval into combat.
-- **[P2] Turret muzzle flash + recoil** — make the base feel like it fires, not just the enemies exploding.
+- **[P2] Turret muzzle flash + recoil — SHIPPED Task #84** (2026-07-21). A flare at the helm plus a short kick on the whole scope every time a volley goes out.
 - **[P2] Per-wave combat tuning pass** — once Mike plays it, dial `rounds`/`creep` per wave so each fight reinforces without going stale.
 
 ## Future products (spin-offs from this codebase)
