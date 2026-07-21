@@ -285,7 +285,9 @@ main.appmain{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touc
 .helpline{background:var(--surf);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:var(--r2);padding:9px 12px;margin-top:9px;font-size:13.5px;line-height:1.55}
 .helpline b{color:var(--accent2)}
 
-/* DEBRIEF */
+/* DEBRIEF — post-solve teaching cards */
+.teach{background:var(--surf);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:var(--r2);padding:11px 14px;margin-bottom:10px;font-size:14px;line-height:1.6}
+.teach-h{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent2);margin-bottom:6px}
 .winbanner{font-family:var(--mono);font-size:1.7rem;font-weight:700;color:var(--yellow);text-align:center;letter-spacing:.06em;text-shadow:0 0 18px rgba(212,168,73,.5);margin:8px 0 4px}
 .debrief-flavor{text-align:center;color:var(--muted);font-style:italic;margin-bottom:12px}
 
@@ -388,7 +390,7 @@ main.appmain{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touc
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "July 21, 2026 · 6:58 PM ET";
+const BUILD_TS = "July 21, 2026 · 7:07 PM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, fatalities: 0, visionWaves: [], streak: 0,
@@ -396,6 +398,7 @@ const state = {
 };
 let SQLjs = null;          // initSqlJs module
 let enemiesLive = [];      // live battlefield enemies for current wave
+let offTargets = [];       // rows outside the firing solution — hold fire on these
 let busy = false;          // lock during animations
 let waveTries = 0;         // misses this wave — drives the Trail-style escalating help
 let handedOver = false;    // 3rd miss: the full solution is in the editor
@@ -576,14 +579,35 @@ const FIELD_W = 800, FIELD_H = 320;
 const HELM_X = FIELD_W / 2, HELM_Y = FIELD_H - 8;
 // Bearing formation — contacts sit on a ring around you, evenly spaced, so the
 // scope reads as space in every direction rather than a single lane.
-const RING_R = 90;
-function enemyPos(i){
-  const N = enemiesLive.length;
+const RING_R = 90, OFF_RING_R = 132;
+function ringPos(i, n, r, offset){
   const cx = FIELD_W / 2, cy = FIELD_H / 2;
-  const bearing = (i / Math.max(1, N)) * Math.PI * 2;
-  const x = cx + Math.cos(bearing) * RING_R;
-  const y = cy + Math.sin(bearing) * RING_R * (FIELD_H / FIELD_W);  // scale for aspect
+  const bearing = (i / Math.max(1, n)) * Math.PI * 2 + (offset || 0);
+  const x = cx + Math.cos(bearing) * r;
+  const y = cy + Math.sin(bearing) * r * (FIELD_H / FIELD_W);  // scale for aspect
   return { x: Math.max(40, Math.min(FIELD_W - 40, x)), y: Math.max(40, Math.min(FIELD_H - 40, y)) };
+}
+function enemyPos(i){ return ringPos(i, enemiesLive.length, RING_R); }
+// Allies hold a wider, offset ring so they never sit under a hostile.
+function offTargetPos(i){ return ringPos(i, offTargets.length, OFF_RING_R, Math.PI / offTargets.length); }
+
+/* Deterministic per-contact cosmetic jitter. Seeded off the wave id and the
+   row's index so a lane of five Raiders reads as five distinct ships — and so
+   the jitter never re-rolls when drawField() redraws mid-wave. Pure cosmetics:
+   nothing here touches targeting, damage or grading. */
+function hash32(str){
+  let h = 2166136261;
+  for(let i = 0; i < str.length; i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return (h >>> 0) / 4294967295;
+}
+function jitterOf(en, i){
+  const seed = `${currentWave().id}:${state.phase}:${i}:${en.name}`;
+  const a = hash32(seed), b = hash32(seed + 'h'), c = hash32(seed + 'r');
+  return {
+    scale: 0.9 + a * 0.22,          // ±11% hull size
+    hue: Math.round((b - 0.5) * 34), // gentle hue swing inside the archetype colour
+    spin: Math.round(c * 360)        // resting attitude, so no two ships align
+  };
 }
 const ENEMY_MAXHP = 100;   // every contact starts here; one correct volley clears the scope
 /* Layered attack: derive a tier (1–5) from how many operative SQL clauses
@@ -686,8 +710,9 @@ function drawField(){
   const svg = document.getElementById('field');
   buildFieldBg();   // ensure the persistent animated backdrop exists
   let s = fieldDefs();
-  // Oracle removed — full viewport now shows space around you.
-  // enemies spread across bearings around the player
+  // Allied contacts sit on an outer ring, drawn first so hostiles read on top.
+  s += offTargets.map((al, i) => offTargetFigure(offTargetPos(i), al)).join('');
+  // Hostiles spread across bearings around you.
   enemiesLive.forEach((en,i)=>{
     if(!en.alive) return;
     const { x, y } = enemyPos(i);
@@ -695,7 +720,7 @@ function drawField(){
     const barW = 48, barH = 5, barX = x - barW/2, barY = y - 66;
     const hpCol = frac > 0.5 ? 'var(--green)' : frac > 0.25 ? 'var(--yellow)' : 'var(--red)';
     s += `<g class="enemy" data-i="${i}">`
-      + enemyFigure(x, y, en)
+      + enemyFigure(x, y, en, i)
       // HP bar
       + `<rect x="${barX}" y="${barY}" width="${barW}" height="${barH}" rx="2" fill="var(--surf2)" stroke="var(--border)" stroke-width="0.5"/>`
       + `<rect x="${barX}" y="${barY}" width="${(barW*frac).toFixed(1)}" height="${barH}" rx="2" fill="${hpCol}"/>`
@@ -723,17 +748,34 @@ function shipSpriteFor(en){
   const arch = en && en.archetype || 'warden';
   return (en && en.spriteAlt) ? (SHIP_SPRITES_ALT[arch] || SHIP_SPRITES[arch]) : (SHIP_SPRITES[arch] || 'enemies/enemy_84.png');
 }
-function enemyFigure(x, y, en){
+function enemyFigure(x, y, en, i){
   const a = archOf(en);
+  const j = jitterOf(en, i);
   const shield = (en && en.shielded)
     ? `<circle class="shield-ring" cx="${x}" cy="${y}" r="${a.ro + 22}" fill="none" stroke="var(--accent2)" stroke-width="2.5"/>`
     : '';
   const label = (en.archetype || '').charAt(0).toUpperCase() + (en.archetype || '').slice(1);
-  const sz = 80;
-  return `<circle cx="${x}" cy="${y}" r="56" fill="url(#${a.halo})"/>`
+  const sz = 80 * j.scale;
+  return `<circle cx="${x}" cy="${y}" r="${(56 * j.scale).toFixed(1)}" fill="url(#${a.halo})"/>`
     + shield
-    + `<image href="${shipSpriteFor(en)}" x="${x-sz/2}" y="${y-sz/2}" width="${sz}" height="${sz}" class="mote-core" style="filter:drop-shadow(0 0 8px ${a.stroke})"/>`
+    + `<image href="${shipSpriteFor(en)}" x="${(x-sz/2).toFixed(1)}" y="${(y-sz/2).toFixed(1)}" width="${sz.toFixed(1)}" height="${sz.toFixed(1)}" class="mote-core"`
+    +   ` transform="rotate(${j.spin} ${x} ${y})"`
+    +   ` style="filter:drop-shadow(0 0 8px ${a.stroke}) hue-rotate(${j.hue}deg)"/>`
     + `<text x="${x}" y="${y+63}" fill="#cdd6ff" font-size="13" text-anchor="middle" font-family="var(--mono)">${label}</text>`;
+}
+
+/* OFF-TARGET CONTACTS — rows the firing solution deliberately leaves out.
+   Deliberately NOT called allies: the source table is literally `enemies`, so
+   the schema strip would contradict that copy. These are contacts you weren't
+   tasked to hit. Dashed blue rings, no hull, no HP bar — clearly not targets.
+   Over-broad queries already cost base integrity; this is the picture that
+   makes that cost legible instead of arbitrary. */
+function offTargetFigure(p, c){
+  return `<g class="offtarget" opacity="0.62">`
+    + `<circle cx="${p.x}" cy="${p.y}" r="26" fill="none" stroke="#7fb4ff" stroke-width="1.5" stroke-dasharray="4 5"/>`
+    + `<circle cx="${p.x}" cy="${p.y}" r="9" fill="#7fb4ff" opacity="0.55"/>`
+    + `<text x="${p.x}" y="${p.y+42}" fill="#9dc4ff" font-size="11" text-anchor="middle" font-family="var(--mono)">${esc(c.name)}</text>`
+    + `</g>`;
 }
 
 const SVGNS = 'http://www.w3.org/2000/svg';
@@ -1656,10 +1698,38 @@ function pipsHtml(){
   return [0,1,2].map(i => `<i class="${i < Math.min(waveTries,3) ? 'used' : ''}"></i>`).join('');
 }
 
+/* Which rows is the firing solution deliberately NOT hitting?
+   Before this, the scope only ever showed the answer — so an over-broad query
+   cost base integrity for hitting rows the player never saw. Now we re-read the
+   solution's source table and put everything it leaves behind on an outer ring.
+   Bailed on when there is no honest row identity to show:
+     - aggregates / GROUP BY collapse rows, so nothing is left out
+     - JOIN waves, where `name` can come from a different table than FROM
+     - waves with no `name` column at all */
+const MAX_OFF_TARGETS = 5;
+function computeOffTargets(db, sol, solutionSql){
+  if(/\b(COUNT|SUM|AVG|MIN|MAX)\s*\(/i.test(solutionSql)) return [];
+  if(/\b(GROUP\s+BY|JOIN)\b/i.test(solutionSql)) return [];
+  const nameCol = sol.columns.findIndex(c => String(c).toLowerCase() === 'name');
+  if(nameCol === -1) return [];
+  const from = /\bFROM\s+(\w+)/i.exec(solutionSql);
+  if(!from) return [];
+  let all;
+  try{ all = execQuery(db, `SELECT name FROM ${from[1]}`); }catch(e){ return []; }
+  const targeted = new Set(sol.rows.map(r => String(r[nameCol])));
+  const out = [];
+  all.rows.forEach(r => {
+    const n = String(r[0]);
+    if(!targeted.has(n) && !out.some(o => o.name === n)) out.push({ name: n });
+  });
+  return out.slice(0, MAX_OFF_TARGETS);
+}
+
 function prepareWave(){
   const w = currentWave();
   const db = freshDB(w.schema);
   const sol = execQuery(db, currentPhaseSolution());
+  offTargets = computeOffTargets(db, sol, currentPhaseSolution());
   db.close();
   const isPhased = !!(w.phases) && state.phase === 0 && w.phases.length > 1;
   enemiesLive = sol.rows.map((row, i) => {
@@ -1688,7 +1758,7 @@ function screenTask(fresh){
     ${statbar()}
     ${objectiveHtml()}
     <div class="field-pane">
-      <div class="field-status" id="field-status">${enemiesLive.length} contact${enemiesLive.length!==1?'s':''} on your scope — weave the query that locks them.</div>
+      <div class="field-status" id="field-status">${enemiesLive.length} hostile${enemiesLive.length!==1?'s':''} on your scope — weave the query that locks them.${offTargets.length ? ` <span style="color:#9dc4ff">${offTargets.length} contact${offTargets.length!==1?'s':''} outside your orders — a loose filter sweeps them up too.</span>` : ''}</div>
       <svg id="field-bg" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
       <svg id="field" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid meet"></svg>
     </div>
@@ -1880,7 +1950,7 @@ function whatsOff(r){
     return `Right targets, wrong order — check your ORDER BY (and whether it should be DESC).`;
   if(p.rows.length > e.rows.length){
     const fp = falsePositives(p, e);
-    return `Too broad — you're hitting allied scouts${fp ? ` (${fp} stray row${fp===1?'':'s'})` : ''}. Yours returned <b>${p.rows.length}</b>, the solution wants <b>${e.rows.length}</b>. Tighten the WHERE.`;
+    return `Too broad — you're firing on contacts outside your orders${fp ? ` (${fp} stray row${fp===1?'':'s'})` : ''}. Yours returned <b>${p.rows.length}</b>, the solution wants <b>${e.rows.length}</b>. Tighten the WHERE.`;
   }
   if(p.rows.length < e.rows.length)
     return `Too few — yours returned <b>${p.rows.length}</b>, the solution wants <b>${e.rows.length}</b>. A filter is dropping targets it shouldn't.`;
@@ -2055,6 +2125,31 @@ function waveCleared(clean){
   maybeBreak();
 }
 
+/* POST-SOLVE TEACHING — `explain` and `onTheJob` were authored per wave and
+   then orphaned by the v2 redesign (their old home was the pre-solve left
+   panel, which leaked too much). They belong AFTER the shot lands: the wave is
+   already won, so plain-words closure and a real-job framing can't shortcut the
+   retrieval. Waves without the data just render nothing. */
+function debriefTeaching(w){
+  const ex = w.explain || {}, job = w.onTheJob || {};
+  const blocks = [];
+  if(ex.simple || ex.analogy){
+    blocks.push(`<div class="teach">
+      <div class="teach-h">🔍 What you just did</div>
+      ${ex.simple ? `<p>${ex.simple}</p>` : ''}
+      ${ex.analogy ? `<p class="dim" style="margin-top:6px">🧭 ${ex.analogy}</p>` : ''}
+    </div>`);
+  }
+  if(job.uses || job.example){
+    blocks.push(`<div class="teach">
+      <div class="teach-h">💼 On the job</div>
+      ${job.uses ? `<p>${job.uses}</p>` : ''}
+      ${job.example ? `<p class="dim" style="margin-top:6px">${job.example}</p>` : ''}
+    </div>`);
+  }
+  return blocks.join('');
+}
+
 function screenDebrief(clean, wasVision){
   state.screen = 'debrief';
   const w = currentWave();
@@ -2079,6 +2174,7 @@ function screenDebrief(clean, wasVision){
       ${terms}
       <p class="dim" style="margin-top:8px">Next up — Sector ${next.id}: <b style="color:var(--text)">${esc(next.concept)}</b> · ${esc(next.title)}</p>
     </div>
+    ${debriefTeaching(w)}
     <div class="btnrow">
       <button class="btn btn-primary" onclick="advanceWave()">Next sector ▸</button>
       <button class="btn btn-ghost" onclick="screenMap()">🗺 Sector chart</button>
