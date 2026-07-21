@@ -185,10 +185,46 @@ header .hp-wrap{margin-right:4px}
 .dmg-hit{fill:#ffd9a0}
 .dmg-ff{fill:var(--red)}
 @keyframes dmgfloat{0%{opacity:0;transform:translateY(5px)}20%{opacity:1}100%{opacity:0;transform:translateY(-16px)}}
-.dmg-perfect{fill:#ffd95c;font-size:22px;font-weight:800;filter:drop-shadow(0 0 6px rgba(255,217,92,.6))}
+.dmg-perfect{fill:#ffd95c;font-size:26px;font-weight:800;filter:drop-shadow(0 0 6px rgba(255,217,92,.6))}
 /* Layered-attack VFX — escalates per attackTier(). */
-.shockwave{animation:shock-expand .7s ease-out forwards;transform-origin:center;transform-box:fill-box}
-@keyframes shock-expand{0%{r:6;opacity:.9;stroke-width:2.5}100%{r:46;opacity:0;stroke-width:.6}}
+.shockwave{animation:shock-expand .78s ease-out forwards;transform-origin:center;transform-box:fill-box}
+@keyframes shock-expand{0%{r:8;opacity:.95;stroke-width:3.5}100%{r:86;opacity:0;stroke-width:.8}}
+
+/* ── SHIP IDLE MOTION ──────────────────────────────────────────────────────
+   Hulls drift and roll gently while they wait. Two animations run on one
+   element (a translate and a rotate), each with its own negative delay from
+   the ship's jitter hash, so a formation never pulses in unison. Transform
+   only — cheap to composite, and it can't touch layout. */
+.ship{transform-box:fill-box;transform-origin:center;animation:ship-drift 7.5s ease-in-out infinite, ship-roll 19s ease-in-out infinite}
+@keyframes ship-drift{0%,100%{transform:translate(0,0)}50%{transform:translate(0,-7px)}}
+@keyframes ship-roll{0%,100%{rotate:-2.5deg}50%{rotate:2.5deg}}
+.ship-halo{transform-box:fill-box;transform-origin:center;animation:halo-breathe 5.5s ease-in-out infinite}
+@keyframes halo-breathe{0%,100%{opacity:.7;transform:scale(1)}50%{opacity:1;transform:scale(1.09)}}
+.off-ring{transform-box:fill-box;transform-origin:center;animation:spin-cw 26s linear infinite}
+
+/* ── VOLLEY ────────────────────────────────────────────────────────────────
+   The beam is DRAWN from the helm to the target rather than just appearing:
+   a full-length line masked by its own dash, with the offset animating to 0.
+   That gives real travel time, which is what made the old flat lines read as
+   a blink instead of a shot. */
+.beam{stroke-linecap:round;animation:beam-fly var(--fly,190ms) cubic-bezier(.3,.7,.4,1) forwards}
+@keyframes beam-fly{0%{stroke-dashoffset:var(--len);opacity:.35}35%{opacity:1}100%{stroke-dashoffset:0;opacity:.9}}
+.beam-fade{animation:beam-out .22s ease-in forwards}
+@keyframes beam-out{to{opacity:0}}
+/* Muzzle flash + recoil at the helm — you should feel the console fire. */
+.muzzle{transform-box:fill-box;transform-origin:center;animation:muzzle-pop .26s ease-out forwards}
+@keyframes muzzle-pop{0%{transform:scale(.3);opacity:.95}100%{transform:scale(2.1);opacity:0}}
+.field-pane.recoil #field{animation:helm-kick .2s ease-out}
+@keyframes helm-kick{0%{transform:translateY(0)}35%{transform:translateY(5px)}100%{transform:translateY(0)}}
+/* A hull takes the hit: white-hot flash. This targets the sprite itself, NOT
+   the .enemy group — the group already owns the enemy-die fade, and two rules
+   setting `animation` on one element means only the later one ever runs. */
+.enemy.struck image{animation:struck .34s ease-out}
+@keyframes struck{0%{filter:brightness(4) saturate(0)}40%{filter:brightness(1.7)}100%{filter:none}}
+@media (prefers-reduced-motion:reduce){
+  .ship,.ship-halo,.off-ring{animation:none}
+  .field-pane.recoil #field,.enemy.struck image{animation:none}
+}
 /* Screen shake + damage flash — wrong-answer juice */
 .screen-shake{animation:screen-shake .25s ease-out}
 @keyframes screen-shake{0%,100%{transform:translate(0,0)}20%{transform:translate(-5px,-3px)}40%{transform:translate(5px,3px)}60%{transform:translate(-3px,5px)}80%{transform:translate(3px,-5px)}}
@@ -254,11 +290,11 @@ main.appmain{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touc
 .badge{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--accent);background:var(--surf2);border:1px solid var(--border);padding:2px 9px;border-radius:4px;margin-right:6px}
 
 /* COMPACT BATTLEFIELD STRIP — the canopy view, shrunk to a viewport band */
-.field-pane{position:relative;height:200px;border-radius:var(--r2);overflow:hidden;margin:12px 0;border:1px solid rgba(88,170,162,.35);
+.field-pane{position:relative;height:270px;border-radius:var(--r2);overflow:hidden;margin:12px 0;border:1px solid rgba(88,170,162,.35);
   background:radial-gradient(125% 95% at 50% 16%, #16235a 0%, #0b1130 56%, #07101a 100%)}
 .field-pane::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:6;
   background:radial-gradient(135% 125% at 50% 10%, transparent 52%, rgba(4,8,14,.6) 100%)}
-@media (max-width:600px){.field-pane{height:170px}}
+@media (max-width:600px){.field-pane{height:215px}}
 
 /* EDITOR — terminal look; typed text renders via the Prism ghost underlay */
 #editor{color:transparent;caret-color:#e8e0d4}
@@ -393,7 +429,7 @@ main.appmain{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touc
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "July 21, 2026 · 7:11 PM ET";
+const BUILD_TS = "July 21, 2026 · 7:34 PM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, fatalities: 0, visionWaves: [], streak: 0,
@@ -587,20 +623,30 @@ function gaugeCell(v, max){
 const FIELD_W = 800, FIELD_H = 320;
 // First-person helm: YOU fire from the bottom-centre of the view, and enemy
 // hits register there too. (The Oracle figure was retired in the v2 redesign.)
-const HELM_X = FIELD_W / 2, HELM_Y = FIELD_H - 8;
+// Pulled up off the very edge so the muzzle flash isn't half-clipped by the pane.
+const HELM_X = FIELD_W / 2, HELM_Y = FIELD_H - 20;
 // Bearing formation — contacts sit on a ring around you, evenly spaced, so the
 // scope reads as space in every direction rather than a single lane.
-const RING_R = 90, OFF_RING_R = 132;
-function ringPos(i, n, r, offset){
+/* Formation geometry. The scope is a wide 800x320 window, so the contacts sit
+   on an ELLIPSE rather than a circle — a circle wasted most of the width and
+   forced the ships small to stop them overlapping vertically. Hostiles take the
+   inner ellipse, off-target contacts a wider one outside them. */
+const RING_RX = 248, RING_RY = 88;
+const OFF_RX = 338, OFF_RY = 124;
+const SHIP_SIZE = 116;   // base sprite size in viewBox units, before per-ship jitter
+function ringPos(i, n, rx, ry, offset){
   const cx = FIELD_W / 2, cy = FIELD_H / 2;
-  const bearing = (i / Math.max(1, n)) * Math.PI * 2 + (offset || 0);
-  const x = cx + Math.cos(bearing) * r;
-  const y = cy + Math.sin(bearing) * r * (FIELD_H / FIELD_W);  // scale for aspect
-  return { x: Math.max(40, Math.min(FIELD_W - 40, x)), y: Math.max(40, Math.min(FIELD_H - 40, y)) };
+  // Start at the top of the ellipse so a lone contact sits dead ahead, not
+  // off to one side, and so small formations read as a wedge.
+  const bearing = (i / Math.max(1, n)) * Math.PI * 2 - Math.PI / 2 + (offset || 0);
+  const x = cx + Math.cos(bearing) * rx;
+  const y = cy + Math.sin(bearing) * ry;
+  // Keep the whole hull plus its label inside the window.
+  return { x: Math.max(72, Math.min(FIELD_W - 72, x)), y: Math.max(74, Math.min(FIELD_H - 62, y)) };
 }
-function enemyPos(i){ return ringPos(i, enemiesLive.length, RING_R); }
-// Allies hold a wider, offset ring so they never sit under a hostile.
-function offTargetPos(i){ return ringPos(i, offTargets.length, OFF_RING_R, Math.PI / offTargets.length); }
+function enemyPos(i){ return ringPos(i, enemiesLive.length, RING_RX, RING_RY); }
+// Off-targets hold a wider, offset ellipse so they never sit under a hostile.
+function offTargetPos(i){ return ringPos(i, offTargets.length, OFF_RX, OFF_RY, Math.PI / Math.max(1, offTargets.length)); }
 
 /* Deterministic per-contact cosmetic jitter. Seeded off the wave id and the
    row's index so a lane of five Raiders reads as five distinct ships — and so
@@ -721,14 +767,15 @@ function drawField(){
   const svg = document.getElementById('field');
   buildFieldBg();   // ensure the persistent animated backdrop exists
   let s = fieldDefs();
-  // Allied contacts sit on an outer ring, drawn first so hostiles read on top.
+  // Off-target contacts sit on the outer ellipse, drawn first so hostiles read on top.
   s += offTargets.map((al, i) => offTargetFigure(offTargetPos(i), al)).join('');
   // Hostiles spread across bearings around you.
   enemiesLive.forEach((en,i)=>{
     if(!en.alive) return;
     const { x, y } = enemyPos(i);
     const frac = Math.max(0, en.hp) / en.maxHp;
-    const barW = 48, barH = 5, barX = x - barW/2, barY = y - 66;
+    const sz = SHIP_SIZE * jitterOf(en, i).scale;
+    const barW = 62, barH = 6, barX = x - barW/2, barY = y - sz*0.5 - 16;
     const hpCol = frac > 0.5 ? 'var(--green)' : frac > 0.25 ? 'var(--yellow)' : 'var(--red)';
     s += `<g class="enemy" data-i="${i}">`
       + enemyFigure(x, y, en, i)
@@ -762,17 +809,24 @@ function shipSpriteFor(en){
 function enemyFigure(x, y, en, i){
   const a = archOf(en);
   const j = jitterOf(en, i);
+  const sz = SHIP_SIZE * j.scale;
   const shield = (en && en.shielded)
-    ? `<circle class="shield-ring" cx="${x}" cy="${y}" r="${a.ro + 22}" fill="none" stroke="var(--accent2)" stroke-width="2.5"/>`
+    ? `<circle class="shield-ring" cx="${x}" cy="${y}" r="${(sz * 0.62).toFixed(1)}" fill="none" stroke="var(--accent2)" stroke-width="3"/>`
     : '';
   const label = (en.archetype || '').charAt(0).toUpperCase() + (en.archetype || '').slice(1);
-  const sz = 80 * j.scale;
-  return `<circle cx="${x}" cy="${y}" r="${(56 * j.scale).toFixed(1)}" fill="url(#${a.halo})"/>`
+  /* Idle motion: each hull drifts and rolls on its own clock. The delay comes
+     out of the same jitter hash as its size, so no two ships ever breathe in
+     unison — and because the delay is negative the motion is already mid-cycle
+     on the first frame instead of every ship starting from rest together. */
+  const drift = `animation-delay:-${(j.spin / 40).toFixed(2)}s,-${(j.hue / 6 + 4).toFixed(2)}s`;
+  return `<g class="ship" style="${drift}">`
+    + `<circle class="ship-halo" cx="${x}" cy="${y}" r="${(sz * 0.72).toFixed(1)}" fill="url(#${a.halo})"/>`
     + shield
     + `<image href="${shipSpriteFor(en)}" x="${(x-sz/2).toFixed(1)}" y="${(y-sz/2).toFixed(1)}" width="${sz.toFixed(1)}" height="${sz.toFixed(1)}" class="mote-core"`
     +   ` transform="rotate(${j.spin} ${x} ${y})"`
-    +   ` style="filter:drop-shadow(0 0 8px ${a.stroke}) hue-rotate(${j.hue}deg)"/>`
-    + `<text x="${x}" y="${y+63}" fill="#cdd6ff" font-size="13" text-anchor="middle" font-family="var(--mono)">${label}</text>`;
+    +   ` style="filter:drop-shadow(0 0 12px ${a.stroke}) hue-rotate(${j.hue}deg)"/>`
+    + `<text x="${x}" y="${(y + sz*0.5 + 20).toFixed(1)}" fill="#cdd6ff" font-size="14" text-anchor="middle" font-family="var(--mono)">${label}</text>`
+    + `</g>`;
 }
 
 /* OFF-TARGET CONTACTS — rows the firing solution deliberately leaves out.
@@ -783,37 +837,67 @@ function enemyFigure(x, y, en, i){
    makes that cost legible instead of arbitrary. */
 function offTargetFigure(p, c){
   return `<g class="offtarget" opacity="0.62">`
-    + `<circle cx="${p.x}" cy="${p.y}" r="26" fill="none" stroke="#7fb4ff" stroke-width="1.5" stroke-dasharray="4 5"/>`
-    + `<circle cx="${p.x}" cy="${p.y}" r="9" fill="#7fb4ff" opacity="0.55"/>`
-    + `<text x="${p.x}" y="${p.y+42}" fill="#9dc4ff" font-size="11" text-anchor="middle" font-family="var(--mono)">${esc(c.name)}</text>`
+    + `<circle class="off-ring" cx="${p.x}" cy="${p.y}" r="34" fill="none" stroke="#7fb4ff" stroke-width="1.8" stroke-dasharray="5 7"/>`
+    + `<circle cx="${p.x}" cy="${p.y}" r="11" fill="#7fb4ff" opacity="0.55"/>`
+    + `<text x="${p.x}" y="${p.y+53}" fill="#9dc4ff" font-size="12" text-anchor="middle" font-family="var(--mono)">${esc(c.name)}</text>`
     + `</g>`;
 }
 
 const SVGNS = 'http://www.w3.org/2000/svg';
-function spawnBoom(svg, x, y){
-  const g = document.createElementNS(SVGNS,'g');
-  const ring = document.createElementNS(SVGNS,'circle');
-  ring.setAttribute('cx',x); ring.setAttribute('cy',y); ring.setAttribute('r',16);
-  ring.setAttribute('fill','none'); ring.setAttribute('stroke','var(--yellow)'); ring.setAttribute('stroke-width','3');
-  ring.setAttribute('class','boom boom-ring');
-  const flash = document.createElementNS(SVGNS,'circle');
-  flash.setAttribute('cx',x); flash.setAttribute('cy',y); flash.setAttribute('r',15);
-  flash.setAttribute('fill','#ffd9a0'); flash.setAttribute('class','boom boom-flash');
-  g.appendChild(ring); g.appendChild(flash);
-  const N = 7;
-  for(let k=0;k<N;k++){
-    const a = (Math.PI*2*k)/N + Math.random()*0.5;
-    const dist = 22 + Math.random()*18;
-    const sh = document.createElementNS(SVGNS,'circle');
-    sh.setAttribute('cx',x); sh.setAttribute('cy',y); sh.setAttribute('r',(2 + Math.random()*1.6).toFixed(1));
-    sh.setAttribute('fill', k%2 ? 'var(--red)' : 'var(--accent2)');
-    sh.setAttribute('class','boom boom-shard');
+function svgEl(tag, attrs, cls){
+  const el = document.createElementNS(SVGNS, tag);
+  for(const k in attrs) el.setAttribute(k, attrs[k]);
+  if(cls) el.setAttribute('class', cls);
+  return el;
+}
+/* Detonation, scaled to the hull it's tearing apart. `scale` is the ship's own
+   jitter scale so a big Warden goes up bigger than a Scout. */
+function spawnBoom(svg, x, y, scale){
+  const k = scale || 1;
+  const g = svgEl('g');
+  g.appendChild(svgEl('circle', {cx:x, cy:y, r:26*k, fill:'none', stroke:'var(--yellow)', 'stroke-width':4}, 'boom boom-ring'));
+  g.appendChild(svgEl('circle', {cx:x, cy:y, r:24*k, fill:'#ffd9a0'}, 'boom boom-flash'));
+  const N = 14;
+  for(let i=0;i<N;i++){
+    const a = (Math.PI*2*i)/N + Math.random()*0.4;
+    const dist = (34 + Math.random()*34) * k;
+    const sh = svgEl('circle', {cx:x, cy:y, r:(2.2 + Math.random()*2.6).toFixed(1),
+      fill: i%3 === 0 ? '#ffd9a0' : (i%3 === 1 ? 'var(--red)' : 'var(--accent2)')}, 'boom boom-shard');
     sh.style.setProperty('--dx', (Math.cos(a)*dist).toFixed(1)+'px');
     sh.style.setProperty('--dy', (Math.sin(a)*dist).toFixed(1)+'px');
     g.appendChild(sh);
   }
   svg.appendChild(g);
-  setTimeout(()=>g.remove(), 620);
+  setTimeout(()=>g.remove(), 700);
+}
+/* One shot, drawn from the helm to the target over `fly` ms. Two stacked lines:
+   a wide soft glow and a bright core, so the bolt has body at this ship size. */
+function spawnBeam(svg, from, to, color, width, fly){
+  const len = Math.hypot(to.x - from.x, to.y - from.y);
+  const g = svgEl('g');
+  [[width * 2.6, 0.22], [width, 0.95]].forEach(([w, op]) => {
+    const l = svgEl('line', {x1:from.x, y1:from.y, x2:to.x, y2:to.y, stroke:color,
+      'stroke-width':w.toFixed(1), opacity:op, 'stroke-dasharray':len.toFixed(1)}, 'beam');
+    l.style.setProperty('--len', len.toFixed(1));
+    l.style.setProperty('--fly', fly + 'ms');
+    g.appendChild(l);
+  });
+  svg.appendChild(g);
+  setTimeout(()=>{ g.querySelectorAll('line').forEach(l => l.classList.add('beam-fade')); }, fly);
+  setTimeout(()=>g.remove(), fly + 260);
+  return len;
+}
+// The console kicks: a flare at the helm plus a short shove on the whole scope.
+function helmFire(svg, color, tier){
+  svg.appendChild(svgEl('ellipse', {cx:HELM_X, cy:HELM_Y, rx:16 + tier*5, ry:9 + tier*2.5,
+    fill:color, opacity:0.9}, 'muzzle'));
+  const pane = svg.closest('.field-pane');
+  if(pane){
+    pane.classList.remove('recoil');
+    void pane.offsetWidth;           // HTMLElement here, so the reflow restart works
+    pane.classList.add('recoil');
+  }
+  setTimeout(()=>{ svg.querySelectorAll('.muzzle').forEach(m => m.remove()); }, 320);
 }
 
 // Floating number above a point (damage / friendly-fire).
@@ -844,43 +928,40 @@ function volleyClear(done){
   if(!svg){ enemiesLive.forEach(en=>{ en.alive=false; en.hp=0; }); busy=false; return done(); }
   const tier = attackTier(currentPhaseSolution());
   const beamsPerTarget = Math.min(tier, 4);
-  const strokeW = tier >= 4 ? 4 : 3;
+  const strokeW = tier >= 4 ? 5 : 3.5;
   const targets = [];
   enemiesLive.forEach((en,i)=>{
     if(!en.alive) return;
     en.hp = 0;
     const p = enemyPos(i);
-    targets.push({ i, x: p.x, y: p.y });
+    targets.push({ i, x: p.x, y: p.y, scale: jitterOf(en, i).scale });
   });
   beep(660, 70); setTimeout(()=>beep(880,90),90);
   if(tier >= 3) setTimeout(()=>beep(1100, 110), 180);
   if(tier >= 5) setTimeout(()=>beep(1318, 130), 270);
-  const STEP = 70, FLIGHT = 160;
+  // FLIGHT is now real travel time — the bolt is drawn across the gap rather
+  // than blinking into place, which is what made the old volley read as static.
+  const STEP = 78, FLIGHT = 200;
   targets.forEach((t, idx)=>{
     const delay = idx * STEP;
+    setTimeout(()=>helmFire(svg, 'var(--accent2)', tier), delay);
     for(let b = 0; b < beamsPerTarget; b++){
-      const off = (b - (beamsPerTarget-1)/2) * 12;
+      const off = (b - (beamsPerTarget-1)/2) * 14;
       setTimeout(()=>{
-        const beam = document.createElementNS(SVGNS,'line');
-        beam.setAttribute('x1', HELM_X + off); beam.setAttribute('y1', HELM_Y);
-        beam.setAttribute('x2', t.x); beam.setAttribute('y2', t.y + off * 0.5);
-        beam.setAttribute('stroke', 'var(--accent2)');
-        beam.setAttribute('stroke-width', strokeW);
-        beam.setAttribute('opacity','0.9');
-        svg.appendChild(beam);
-        setTimeout(()=>beam.remove(), FLIGHT + 40);
-      }, delay + b * 18);
+        spawnBeam(svg, {x: HELM_X + off, y: HELM_Y}, {x: t.x, y: t.y + off * 0.4},
+          'var(--accent2)', strokeW, FLIGHT);
+      }, delay + b * 22);
     }
     setTimeout(()=>{
       const node = svg.querySelector(`.enemy[data-i="${t.i}"]`);
-      if(node) node.classList.add('hit');
-      spawnBoom(svg, t.x, t.y);
+      if(node){ node.classList.add('struck'); setTimeout(()=>node.classList.add('hit'), 110); }
+      spawnBoom(svg, t.x, t.y, t.scale);
       if(tier >= 4) spawnShockwave(svg, t.x, t.y);
       spawnDmg(svg, t.x, t.y, '✦', 'dmg-hit');
       beep(200 + Math.random()*140, 70);
     }, delay + FLIGHT);
   });
-  const settle = (targets.length ? (targets.length-1)*STEP : 0) + FLIGHT + 420;
+  const settle = (targets.length ? (targets.length-1)*STEP : 0) + FLIGHT + 460;
   setTimeout(()=>{
     enemiesLive.forEach(en=>{ en.alive = false; });
     if(document.getElementById('field')) drawField();
@@ -914,21 +995,26 @@ function fatality(done){
     if(!en.alive) return;
     en.hp = 0;
     const p = enemyPos(i);
-    targets.push({ i, x: p.x, y: p.y });
+    targets.push({ i, x: p.x, y: p.y, scale: jitterOf(en, i).scale });
   });
-  const STEP = 50;
+  // A flawless clear gets ONE gold salvo that goes out to everything at once,
+  // then the formation comes apart in a tight stagger. No travel delay per
+  // target — a fatality should feel instantaneous next to a worked-for volley.
+  helmFire(svg, '#ffd95c', 5);
+  targets.forEach(t => spawnBeam(svg, {x: HELM_X, y: HELM_Y}, {x: t.x, y: t.y}, '#ffd95c', 5.5, 130));
+  const STEP = 58;
   targets.forEach((t, idx)=>{
     setTimeout(()=>{
       const node = svg.querySelector(`.enemy[data-i="${t.i}"]`);
-      if(node) node.classList.add('hit');
-      spawnBoom(svg, t.x, t.y);
+      if(node){ node.classList.add('struck'); setTimeout(()=>node.classList.add('hit'), 120); }
+      spawnBoom(svg, t.x, t.y, t.scale * 1.15);
       spawnShockwave(svg, t.x, t.y, '#ffd95c');
-      if(tier >= 4) setTimeout(()=>spawnShockwave(svg, t.x, t.y, '#ffd95c'), 120);
+      if(tier >= 4) setTimeout(()=>spawnShockwave(svg, t.x, t.y, '#ffd95c'), 130);
       spawnDmg(svg, t.x, t.y, '⚡', 'dmg-perfect');
       beep(260 + Math.random()*260, 70);
-    }, idx * STEP);
+    }, 140 + idx * STEP);
   });
-  const settle = (targets.length ? (targets.length-1) * STEP : 0) + 560;
+  const settle = (targets.length ? (targets.length-1) * STEP : 0) + 700;
   setTimeout(()=>{
     enemiesLive.forEach(en=>{ en.alive = false; });
     if(document.getElementById('field')) drawField();
