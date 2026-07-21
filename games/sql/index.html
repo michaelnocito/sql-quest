@@ -314,6 +314,9 @@ main.appmain{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touc
 /* MASTERY RAIL on the sector chart (vertical variant of .track) */
 .rail{display:flex;flex-direction:column;gap:5px;max-height:44vh;overflow-y:auto;padding-right:4px}
 .rail .track-step{width:100%}
+/* Practice range — the rail rows become buttons; every drill is open. */
+.prac-row{font:inherit;font-family:var(--mono);font-size:11px;text-align:left;cursor:pointer;transition:.15s}
+.prac-row:hover{border-color:var(--accent);color:var(--text)}
 
 /* ═══ PHONE PASS — keep this block LAST ═════════════════════════════════════
    Same lesson SQL Trail learned: a later same-selector rule wins specificity
@@ -390,7 +393,7 @@ main.appmain{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touc
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "July 21, 2026 · 7:07 PM ET";
+const BUILD_TS = "July 21, 2026 · 7:11 PM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, fatalities: 0, visionWaves: [], streak: 0,
@@ -399,6 +402,14 @@ const state = {
 let SQLjs = null;          // initSqlJs module
 let enemiesLive = [];      // live battlefield enemies for current wave
 let offTargets = [];       // rows outside the firing solution — hold fire on these
+/* PRACTICE MODE — the lesson without the game. No integrity loss, no stats, no
+   campaign progress: pick any wave, write queries, see what comes back. Mike's
+   framing: don't lock someone into a campaign if they only came in to practise.
+   The escalating help still works — a stuck player should never be stranded —
+   it just costs nothing. state.wave is borrowed while practising and put back
+   on the way out, so a practice run can't move the campaign. */
+let practice = false;
+let campaignWave = 0;
 let busy = false;          // lock during animations
 let waveTries = 0;         // misses this wave — drives the Trail-style escalating help
 let handedOver = false;    // 3rd miss: the full solution is in the editor
@@ -1562,6 +1573,11 @@ const app = document.getElementById('app');
 
 function statbar(){
   const w = currentWave();
+  // Practice hides the campaign's stakes entirely — no integrity, no streak.
+  if(practice) return `<div class="statbar" id="statbar">
+    <span class="chip">🎯 <b>Practice</b> · nothing at stake</span>
+    <span class="chip">Drill <b>${w.id}</b>/${WAVES.length} · ${esc(w.concept)}</span>
+  </div>`;
   return `<div class="statbar" id="statbar">
     <span class="chip">🛰 Wave <b id="wave-num">${w.id}</b>/<span id="wave-total">${WAVES.length}</span> · <span id="wave-concept">${esc(w.concept)}</span></span>
     <span class="chip hp-wrap">⚡ BASE <span class="hp-bar"><span class="hp-fill" id="hp-fill" style="display:block;height:100%"></span></span> <b id="hp-num">${state.baseHP}</b></span>
@@ -1610,6 +1626,7 @@ function screenTitle(){
     </div>
     <div class="btnrow" style="flex-direction:column;align-items:center">
       <button class="btn btn-primary splash-start" onclick="startGame()">${hasRun ? `▶ Resume — Wave ${currentWave().id} ▸` : '▶ Launch Campaign'}</button>
+      <button class="btn btn-ghost" onclick="enterPractice()">🎯 Practice — any concept, nothing at stake</button>
       ${hasRun ? `<button class="btn btn-ghost" onclick="resetCampaign()">↻ New campaign</button>` : ''}
       <a class="btn btn-ghost" href="guide.html">📖 Study Guide — all ${WAVES.length} concepts explained</a>
     </div>
@@ -1624,6 +1641,58 @@ function startGame(){
   if(state.music) startMusic();
   save();
   screenMap();
+}
+
+/* ─── PRACTICE MODE ──────────────────────────────────────────────────────── */
+function enterPractice(){
+  practice = true;
+  campaignWave = state.wave;      // borrowed; restored on the way out
+  state.sfx = true;
+  updateAudioBtns();
+  audioCtx();                     // unlock audio inside the click gesture
+  screenPractice();
+}
+function exitPractice(){
+  practice = false;
+  state.wave = campaignWave;
+  state.phase = 0;
+  screenTitle();
+}
+// Every wave is open in practice — nothing is locked, nothing is scored.
+function screenPractice(){
+  state.screen = 'practice';
+  state.phase = 0;
+  const rows = WAVES.map((w, i) => {
+    const done = state.cleared.includes(w.id);
+    return `<button class="track-step prac-row ${done ? 'done' : ''}" onclick="practiceWave(${i})">
+      <span class="dot">${done ? '✓' : w.id}</span>${esc(w.concept)} <span class="dim">· ${esc(w.title)}</span></button>`;
+  }).join('');
+  app.innerHTML = `
+    <h2>🎯 Practice range</h2>
+    <div class="panel">
+      <p>Every drill is open, nothing is scored. Base integrity doesn't move, misses cost nothing, and your campaign stays exactly where you left it — pick a concept and write queries until it sticks.</p>
+      <p class="dim" style="margin-top:7px">Stuck? The same escalating help works here: a second miss fills in half, a third hands you the whole solution. It just doesn't cost you anything.</p>
+    </div>
+    <div class="rail">${rows}</div>
+    <div class="btnrow"><button class="btn btn-ghost" onclick="exitPractice()">◂ Back to the title</button></div>`;
+}
+function practiceWave(i){
+  state.wave = i;
+  state.phase = 0;
+  screenTask();
+}
+function screenPracticeDone(){
+  state.screen = 'practice-done';
+  const w = currentWave();
+  app.innerHTML = `
+    <div class="winbanner">DRILL CLEARED</div>
+    <p class="debrief-flavor">${esc(w.concept)} — landed.</p>
+    ${debriefTeaching(w)}
+    <div class="btnrow">
+      <button class="btn btn-primary" onclick="practiceWave(${state.wave})">↻ Run it again</button>
+      <button class="btn btn-ghost" onclick="screenPractice()">🎯 Pick another drill</button>
+    </div>`;
+  celebrate();
 }
 
 /* 2 — SECTOR CHART */
@@ -1773,10 +1842,14 @@ function screenTask(fresh){
       <button class="btn btn-primary" onclick="submitAnswer()" style="font-family:var(--mono);letter-spacing:.02em">▶ Execute <span class="kbd">Ctrl+↵</span></button>
       <button class="btn btn-ghost btn-sm" onclick="formatSQL()" id="format-btn" title="Uppercase SQL keywords (Alt+Shift+F)">Format</button>
       <a class="btn btn-ghost btn-sm" href="guide.html">📖 Study Guide</a>
-      <button class="btn btn-ghost btn-sm" onclick="screenStory()">◂ Re-read the briefing</button>
+      ${practice
+        ? `<button class="btn btn-ghost btn-sm" onclick="screenPractice()">◂ Back to drills</button>`
+        : `<button class="btn btn-ghost btn-sm" onclick="screenStory()">◂ Re-read the briefing</button>`}
     </div>
     <div class="ruleline">Runs used <span class="trypips" id="trypips">${pipsHtml()}</span>
-      &nbsp;·&nbsp; 1st miss is free &nbsp;·&nbsp; 2nd fills in half the code (−${MISS_COSTS[inputMode][0]} HP) &nbsp;·&nbsp; 3rd hands you the solution (−${MISS_COSTS[inputMode][1]} HP)${inputMode === 'type' ? ' &nbsp;·&nbsp; ⌨ ace pay: lighter miss sting' : ''}</div>
+      ${practice
+        ? '&nbsp;·&nbsp; nothing costs integrity here &nbsp;·&nbsp; 2nd miss fills in half &nbsp;·&nbsp; 3rd hands you the solution'
+        : `&nbsp;·&nbsp; 1st miss is free &nbsp;·&nbsp; 2nd fills in half the code (−${MISS_COSTS[inputMode][0]} HP) &nbsp;·&nbsp; 3rd hands you the solution (−${MISS_COSTS[inputMode][1]} HP)${inputMode === 'type' ? ' &nbsp;·&nbsp; ⌨ ace pay: lighter miss sting' : ''}`}</div>
     <div class="feedback" id="feedback"></div>
     <div id="result"></div>`;
   buildFieldBg();
@@ -2004,20 +2077,26 @@ function applyMissAssist(kind){
   const pp = document.getElementById('trypips'); if(pp) pp.innerHTML = pipsHtml();
   let sub;
   if(waveTries === 1){
-    if(kind === 'syntax') syntaxFx(); // lighter clip, even on the "free" miss
-    sub = `First slip's on the house, Chief. Fix your query and fire again.`;
+    if(kind === 'syntax' && !practice) syntaxFx(); // lighter clip, even on the "free" miss
+    sub = practice
+      ? `No cost in practice — read the diagnostic, adjust, run it again.`
+      : `First slip's on the house, Chief. Fix your query and fire again.`;
   } else if(waveTries === 2){
-    const cost = MISS_COSTS[inputMode][0];
-    kind === 'syntax' ? syntaxFx() : missFx(cost);
+    const cost = practice ? 0 : MISS_COSTS[inputMode][0];
+    if(!practice) kind === 'syntax' ? syntaxFx() : missFx(cost);
     fillHalf();
-    sub = `That one cost the base${kind==='syntax' ? ' a scrape' : ` (−${cost} integrity)`}. I dropped the first half of the solution into your console — finish the tail and fire.`;
+    sub = practice
+      ? `Half the solution is in your console — finish the tail and run it.`
+      : `That one cost the base${kind==='syntax' ? ' a scrape' : ` (−${cost} integrity)`}. I dropped the first half of the solution into your console — finish the tail and fire.`;
   } else {
-    const cost3 = MISS_COSTS[inputMode][1];
-    kind === 'syntax' ? syntaxFx() : missFx(cost3);
+    const cost3 = practice ? 0 : MISS_COSTS[inputMode][1];
+    if(!practice) kind === 'syntax' ? syntaxFx() : missFx(cost3);
     handedOver = true;
-    const wid = currentWave().id;
-    if(!Array.isArray(state.visionWaves)) state.visionWaves = [];
-    if(state.visionWaves.indexOf(wid) === -1) state.visionWaves.push(wid);
+    if(!practice){
+      const wid = currentWave().id;
+      if(!Array.isArray(state.visionWaves)) state.visionWaves = [];
+      if(state.visionWaves.indexOf(wid) === -1) state.visionWaves.push(wid);
+    }
     const ed = document.getElementById('editor');
     if(ed){
       ed.value = currentPhaseSolution();
@@ -2026,8 +2105,8 @@ function applyMissAssist(kind){
     }
     sub = `👁 <b>Oracle's Vision</b> — the full solution is in your console${kind==='syntax' ? '' : ` (−${cost3} integrity)`}. Read it, press Execute, and watch what it does.`;
   }
-  save();
-  if(state.baseHP <= 0){ screenLost(); return null; }
+  if(!practice) save();
+  if(!practice && state.baseHP <= 0){ screenLost(); return null; }
   return sub;
 }
 
@@ -2048,7 +2127,7 @@ function submitAnswer(){
     return;
   }
 
-  state.attempts++;
+  if(!practice) state.attempts++;   // campaign accuracy shouldn't count drills
   let player, expected, execMs;
   const db = freshDB(w.schema);
   try{
@@ -2070,13 +2149,13 @@ function submitAnswer(){
   playMelodyExecute(sql);
   const ordered = solutionIsOrdered(currentPhaseSolution());
   if(sameResult(player, expected, ordered)){
-    state.correct++;
+    if(!practice) state.correct++;
     const clean = !waveFriction;
     const hasNextPhase = !!(w.phases && state.phase < w.phases.length - 1);
     if(out) out.innerHTML = queryOutput({ reason: 'ok', player, expected }, execMs);
     setFb('ok', hasNextPhase ? '⚡ Shields fractured — phase 2 loading…' : (clean ? '⚡ FATALITY — flawless execution.' : '✓ Firing solution locked. Volley away.'));
-    save();
-    const after = hasNextPhase ? nextPhase : ()=>waveCleared(clean);
+    if(!practice) save();
+    const after = hasNextPhase ? nextPhase : (practice ? screenPracticeDone : ()=>waveCleared(clean));
     clean ? fatality(after) : volleyClear(after);
     return;
   }
@@ -2092,7 +2171,7 @@ function submitAnswer(){
   if(sub === null) return;
   if(out) out.innerHTML = queryOutput(r, execMs) + helplineHtml(whatsOff(r), sub);
   setFb('warn', esc('Wrong lock — see the diagnostic below the results.'));
-  save();
+  if(!practice) save();
 }
 
 /* ─── PHASES (boss waves 22/23) ──────────────────────────────────────────── */
