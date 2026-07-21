@@ -126,16 +126,7 @@ header .hp-wrap{margin-right:4px}
 @keyframes spin-ccw{from{transform:rotate(360deg)}to{transform:rotate(0deg)}}
 .tw{animation-name:twinkle;animation-iteration-count:infinite;animation-timing-function:ease-in-out}
 @keyframes twinkle{0%,100%{opacity:var(--o,0.5)}50%{opacity:calc(var(--o,0.5)*0.25)}}
-/* geometric "celestial being" character idle motion (hero + enemies) */
-.spin-self{transform-box:fill-box;transform-origin:center}
-.s-cw-28{animation:spin-cw 28s linear infinite}
-.s-ccw-22{animation:spin-ccw 22s linear infinite}
-.s-cw-16{animation:spin-cw 16s linear infinite}
-.s-cw-9{animation:spin-cw 9s linear infinite}
-.s-ccw-11{animation:spin-ccw 11s linear infinite}
-.breathe{transform-box:fill-box;transform-origin:center;animation:breathe 6s ease-in-out infinite}
-@keyframes breathe{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:.95;transform:scale(1.07)}}
-@media (prefers-reduced-motion:reduce){#field-bg,.neb-a,.neb-b,.mandala,.tw,.spin-self,.breathe{animation:none}}
+@media (prefers-reduced-motion:reduce){#field-bg,.neb-a,.neb-b,.mandala,.tw{animation:none}}
 .field-status{position:absolute;top:10px;left:0;right:0;text-align:center;font-size:12px;color:var(--muted);pointer-events:none}
 /* Course-complete screen — full-page overlay with stats + personal best */
 #complete-screen{position:fixed;inset:0;background:rgba(23,21,19,.95);display:none;align-items:center;justify-content:center;z-index:50;overflow-y:auto;padding:20px}
@@ -190,44 +181,14 @@ header .hp-wrap{margin-right:4px}
 .enemy.hit{animation:enemy-die .26s ease-in forwards}
 @keyframes enemy-die{0%{opacity:.92}100%{opacity:0;transform:scale(.2)}}
 .enemy{transform-box:fill-box;transform-origin:center}
-.enemy.flash .mote-core{animation:enemy-flash .3s ease-out}
-@keyframes enemy-flash{0%{fill:#fff}55%{fill:var(--red)}100%{fill:#160f1e}}
 .dmgnum{font-family:var(--mono);font-size:13px;font-weight:700;pointer-events:none;animation:dmgfloat .8s ease-out forwards}
 .dmg-hit{fill:#ffd9a0}
 .dmg-ff{fill:var(--red)}
 @keyframes dmgfloat{0%{opacity:0;transform:translateY(5px)}20%{opacity:1}100%{opacity:0;transform:translateY(-16px)}}
-/* enemy turn: a wrong command lets the swarm strike back */
-.enemy.lunge{animation:enemy-lunge .34s ease-in-out}
-@keyframes enemy-lunge{0%{transform:translateX(0)}45%{transform:translateX(20px)}100%{transform:translateX(0)}}
-.enemy-bolt{pointer-events:none;animation:bolt-fade .26s linear forwards}
-@keyframes bolt-fade{0%{opacity:.95}100%{opacity:0}}
-.base-core{transform-box:fill-box;transform-origin:center}
-.base-core.base-hit{animation:base-hit .34s ease-out}
-@keyframes base-hit{0%{fill:#fff}40%{fill:var(--red)}100%{fill:var(--accent)}}
-/* charged strike: a foe winds up over repeated misses. A pulsing warning ring
-   telegraphs the heavy hit; one correct query interrupts it (see volley). */
-.charge-warn{transform-box:fill-box;transform-origin:center;animation:charge-pulse .9s ease-in-out infinite}
-@keyframes charge-pulse{0%,100%{transform:scale(1);opacity:.3}50%{transform:scale(1.28);opacity:.95}}
-.charge-bolt{pointer-events:none;animation:bolt-fade .3s linear forwards}
-.base-core.base-hit-heavy{animation:base-hit-heavy .5s ease-out}
-@keyframes base-hit-heavy{0%{fill:#fff;transform:scale(1.5)}45%{fill:var(--red)}100%{fill:var(--accent);transform:scale(1)}}
-.dmg-charged{fill:#ffb648;font-size:17px}
 .dmg-perfect{fill:#ffd95c;font-size:22px;font-weight:800;filter:drop-shadow(0 0 6px rgba(255,217,92,.6))}
 /* Layered-attack VFX — escalates per attackTier(). */
 .shockwave{animation:shock-expand .7s ease-out forwards;transform-origin:center;transform-box:fill-box}
 @keyframes shock-expand{0%{r:6;opacity:.9;stroke-width:2.5}100%{r:46;opacity:0;stroke-width:.6}}
-.base-core.volley-pulse{animation:volley-pulse .62s ease-out}
-@keyframes volley-pulse{0%{filter:drop-shadow(0 0 0 rgba(125,191,184,0));transform:scale(1)}45%{filter:drop-shadow(0 0 14px rgba(125,191,184,.85));transform:scale(1.18)}100%{filter:drop-shadow(0 0 0 rgba(125,191,184,0));transform:scale(1)}}
-/* Oracle charge — persistent visual escalation per wrong attempt. The class
-   lives on .field-pane (not #oracle) because drawField() rebuilds the SVG
-   between turns; the parent class survives the rebuild. */
-.field-pane.charge-1 #oracle{filter:drop-shadow(0 0 8px rgba(125,191,184,.55))}
-.field-pane.charge-2 #oracle{filter:drop-shadow(0 0 14px rgba(125,191,184,.75)) drop-shadow(0 0 26px rgba(125,191,184,.35))}
-.field-pane.charge-3 #oracle{animation:oracle-charge-3 1.8s ease-in-out infinite}
-@keyframes oracle-charge-3{
-  0%,100%{filter:drop-shadow(0 0 18px rgba(212,168,73,.7)) drop-shadow(0 0 8px rgba(125,191,184,.5))}
-  50%{filter:drop-shadow(0 0 32px rgba(212,168,73,1)) drop-shadow(0 0 50px rgba(125,191,184,.4))}
-}
 /* Screen shake + damage flash — wrong-answer juice */
 .screen-shake{animation:screen-shake .25s ease-out}
 @keyframes screen-shake{0%,100%{transform:translate(0,0)}20%{transform:translate(-5px,-3px)}40%{transform:translate(5px,3px)}60%{transform:translate(-3px,5px)}80%{transform:translate(3px,-5px)}}
@@ -238,34 +199,20 @@ header .hp-wrap{margin-right:4px}
 /* Phase mechanic: shielded enemies in phase-1 show a pulsing teal ring */
 .shield-ring{animation:shield-pulse 1.6s ease-in-out infinite}
 @keyframes shield-pulse{0%,100%{stroke-opacity:0.3;stroke-width:2}50%{stroke-opacity:0.85;stroke-width:3.5}}
-/* Phase indicator chip in the briefing */
-.phase-chip{display:inline-flex;align-items:center;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--yellow);background:var(--surf2);border:1px solid rgba(212,168,73,.45);padding:2px 9px;border-radius:4px;margin-top:6px;gap:5px}
-/* Reactive whole-Oracle keystroke glow is driven by the Web Animations API
-   (see the editor `input` handler) — CSS class-toggle restart fails on SVG
-   elements because they don't expose offsetWidth, so we can't force a reflow. */
-
 /* BREAK NUDGE */
 .break-nudge{position:fixed;bottom:0;left:0;right:0;background:var(--surf);border-top:1px solid var(--accent);padding:12px 16px;display:none;align-items:center;gap:12px;z-index:180;font-size:13px}
 .break-nudge.show{display:flex}
 .break-nudge .x{margin-left:auto}
-/* === SUB-DESKTOP BREAKPOINT (<900px): collapse the settings menu + tighten
-   the briefing. This covers desktop-narrow windows AND real phones — the
-   header just doesn't have room for 8 buttons regardless of device. === */
+/* === SUB-DESKTOP BREAKPOINT (<900px): collapse the settings menu. Covers
+   desktop-narrow windows AND real phones — the header just doesn't have room
+   for the full button row regardless of device. === */
 .more-group{display:contents}
 #more-btn{display:none}
 @media (max-width:899px){
   #more-btn{display:flex}
   .more-group{display:none;position:absolute;top:100%;right:10px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r2);padding:9px;gap:7px;flex-direction:column;align-items:stretch;box-shadow:0 6px 20px rgba(0,0,0,.4);z-index:120;min-width:160px}
   .more-group.open{display:flex}
-  .more-group .icon-btn{width:100%;height:36px;justify-content:flex-start;padding:0 12px;font-size:13px;border-radius:var(--r2)}
-  /* Compact briefing — lore prose collapses behind ⓘ (learn-by-typing). */
-  .briefing{padding:8px 11px;font-size:13px;margin-bottom:8px}
-  /* (prose default-hide + expanded styling now lives in the base CSS) */
-  .intel .obj{font-size:17px;line-height:1.3}
-  .intel-target{margin-top:7px;padding-top:6px}
-  .intel-tables{margin-top:7px;padding-top:6px}
-  .help-row{margin-top:6px;gap:5px}
-  .schema-row{margin-bottom:6px}
+  .more-group .icon-btn{width:100%;height:44px;justify-content:flex-start;padding:0 12px;font-size:13px;border-radius:var(--r2)}
 }
 
 /* ═══ TRAIL-STYLE SCREEN SHELL (2026-07-20 redesign) ══════════════════════
@@ -365,6 +312,44 @@ main.appmain{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touc
 /* MASTERY RAIL on the sector chart (vertical variant of .track) */
 .rail{display:flex;flex-direction:column;gap:5px;max-height:44vh;overflow-y:auto;padding-right:4px}
 .rail .track-step{width:100%}
+
+/* ═══ PHONE PASS — keep this block LAST ═════════════════════════════════════
+   Same lesson SQL Trail learned: a later same-selector rule wins specificity
+   ties, so an override block placed earlier silently loses. Everything below
+   is portrait-first — the card flow reads top-to-bottom, so we tune for a
+   thumb on a 375px screen rather than trying to force landscape. */
+
+/* Touch devices: every tappable control clears the 44px minimum. */
+@media (pointer:coarse){
+  .tok{padding:11px 13px;font-size:13.5px;min-height:44px}
+  .modetabs button{padding:11px 15px;min-height:44px}
+  .outtabs button{padding:11px 16px;min-height:44px}
+  .btn{padding:12px 18px;min-height:44px}
+  .btn-sm{padding:10px 14px;min-height:44px}
+  .icon-btn{width:44px;height:44px}
+}
+
+@media (max-width:600px){
+  #app{padding:12px 12px 72px}
+  #app h1{font-size:1.9rem;margin:16px 0 12px}
+  #app h2{font-size:1.15rem}
+  .panel{padding:11px 13px}
+  /* 16px is the floor that stops iOS Safari zooming the page on focus. The
+     ghost underlay MUST match the textarea's metrics exactly or the syntax
+     highlight drifts off the caret. */
+  #editor{font-size:16px;line-height:1.65;padding:12px 13px;min-height:132px}
+  .ed-ghost{font-size:16px;line-height:1.65;top:12px;left:13px;right:13px}
+  /* The build pad can run long on aggregate waves — cap it and scroll inside
+     so Execute never gets pushed off the bottom of the screen. */
+  .buildpad{max-height:38vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .btnrow{gap:8px}
+  .btnrow .btn{flex:1 1 100%;justify-content:center}
+  .statbar .chip{font-size:11.5px;padding:4px 9px}
+  .statbar .hp-bar{width:56px}
+  .objective{font-size:15px;padding:11px 12px}
+  .outpane{max-height:220px}
+  .ruleline{font-size:11.5px;line-height:1.6}
+}
 </style>
 </head>
 <body>
@@ -403,7 +388,7 @@ main.appmain{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touc
 /* ─── STATE ──────────────────────────────────────────────────────────────── */
 const LS = 'sqlquest';
 // Stamped at build time (Eastern, 12-hour). Update on each build.
-const BUILD_TS = "July 20, 2026 · 4:33 PM ET";
+const BUILD_TS = "July 21, 2026 · 6:58 PM ET";
 const state = {
   wave: 0, phase: 0, baseHP: 100, music: false, sfx: true, melody: false, theme: 'dark',
   cleared: [], attempts: 0, correct: 0, fatalities: 0, visionWaves: [], streak: 0,
@@ -586,36 +571,21 @@ function gaugeCell(v, max){
 }
 /* ─── BATTLEFIELD (SVG) ──────────────────────────────────────────────────── */
 const FIELD_W = 800, FIELD_H = 320;
-// Legacy lane geometry — still referenced by a couple of helpers (laneY/enemyX).
-const BASE_X = 720, LANE_TOP = 50, LANE_GAP = 56;
-// First-person helm: with the Oracle removed, YOU fire from the bottom-centre of
-// the view and enemy hits register there too. (Replaced the old Oracle origin.)
+// First-person helm: YOU fire from the bottom-centre of the view, and enemy
+// hits register there too. (The Oracle figure was retired in the v2 redesign.)
 const HELM_X = FIELD_W / 2, HELM_Y = FIELD_H - 8;
-// Bearing-based enemy positions — spread across the viewport like space around you.
-// Each enemy at a different angle (bearing) from the center, distance scaled by advancement.
-// Waves can override via optional `positions` array: [{x, y}, ...] in wave data.
-function enemyPos(i, en){
+// Bearing formation — contacts sit on a ring around you, evenly spaced, so the
+// scope reads as space in every direction rather than a single lane.
+const RING_R = 90;
+function enemyPos(i){
   const N = enemiesLive.length;
-  const w = state.wave < WAVES.length ? WAVES[state.wave] : null;
-
-  // If the wave defines explicit positions, use them (data-driven per scenario).
-  if(w && w.positions && w.positions[i]) return w.positions[i];
-
-  // Otherwise, spread enemies in a bearing formation across the viewport.
   const cx = FIELD_W / 2, cy = FIELD_H / 2;
-  const bearing = (i / Math.max(1, N)) * Math.PI * 2;  // evenly space around circle
-  const advDist = 90 + en.advance * 0.8;  // distance from center based on advancement
-  const x = cx + Math.cos(bearing) * advDist;
-  const y = cy + Math.sin(bearing) * advDist * (FIELD_H / FIELD_W);  // scale for aspect
+  const bearing = (i / Math.max(1, N)) * Math.PI * 2;
+  const x = cx + Math.cos(bearing) * RING_R;
+  const y = cy + Math.sin(bearing) * RING_R * (FIELD_H / FIELD_W);  // scale for aspect
   return { x: Math.max(40, Math.min(FIELD_W - 40, x)), y: Math.max(40, Math.min(FIELD_H - 40, y)) };
 }
-const ENEMY_MAXHP = 100;   // every enemy starts here; a correct volley chips maxHp/rounds
-const FF_DMG = 4;          // friendly-fire: base HP lost per over-broad (false-positive) row
-// (creep mechanic removed — FF-style combat now: enemies hold their squadron on the left, the Oracle on the right, animations travel between)
-function laneY(i){ return LANE_TOP + i * LANE_GAP; }
-function waveRounds(){ const r = currentWave().rounds; return (r && r > 0) ? r : 3; }
-// waveCreep() removed with the creep mechanic; `creep` field in waves.js is now ignored data.
-function correctHit(){ return Math.ceil(ENEMY_MAXHP / waveRounds()); }
+const ENEMY_MAXHP = 100;   // every contact starts here; one correct volley clears the scope
 /* Layered attack: derive a tier (1–5) from how many operative SQL clauses
    the wave's solution uses. Each new concept layer = a richer volley VFX.
    Tier 1 = SELECT only; +1 for WHERE; +1 for AND/OR/IN/BETWEEN/LIKE/NOT;
@@ -644,16 +614,6 @@ function spawnShockwave(svg, x, y, color){
   svg.appendChild(r);
   setTimeout(()=> r.remove(), 720);
 }
-// Will the frontmost foe's next counterattack be a heavy charged strike?
-function impendingStrike(){
-  const living = enemiesLive.filter(e=>e.alive);
-  if(!living.length) return false;
-  const atk = living.reduce((a,b)=> b.advance > a.advance ? b : a);
-  const a = archOf(atk);
-  return a.charge > 0 && ((atk.charge||0)+1) >= a.charge;
-}
-function enemyX(adv){ return 210 + adv * (BASE_X - 280) / 4; } // 4 steps to reach base; shifted right to fit wider doubled-size squadrons
-
 // Celestial Cartographer theme: the field is a window into a twilight sky.
 // Star positions are generated once so they stay put across the frequent
 // redraws (no flicker). Stars = data points; you weave them into constellations.
@@ -673,10 +633,6 @@ function fieldDefs(){
     + `</radialGradient>`
     + `<radialGradient id="haloWarden" cx="0.5" cy="0.5" r="0.5">`
     +   `<stop offset="0" stop-color="rgba(176,107,223,0.40)"/><stop offset="1" stop-color="rgba(176,107,223,0)"/>`
-    + `</radialGradient>`
-    + `<radialGradient id="spireGlow" cx="0.5" cy="0.5" r="0.5">`
-    +   `<stop offset="0" stop-color="rgba(125,191,184,0.55)"/>`
-    +   `<stop offset="1" stop-color="rgba(125,191,184,0)"/>`
     + `</radialGradient>`
     + `</defs>`;
 }
@@ -734,7 +690,7 @@ function drawField(){
   // enemies spread across bearings around the player
   enemiesLive.forEach((en,i)=>{
     if(!en.alive) return;
-    const { x, y } = enemyPos(i, en);
+    const { x, y } = enemyPos(i);
     const frac = Math.max(0, en.hp) / en.maxHp;
     const barW = 48, barH = 5, barX = x - barW/2, barY = y - 66;
     const hpCol = frac > 0.5 ? 'var(--green)' : frac > 0.25 ? 'var(--yellow)' : 'var(--red)';
@@ -748,51 +704,13 @@ function drawField(){
   svg.innerHTML = s;
 }
 
-// ── geometric character forms (psychedelic-celestial) ──────────────────────
-function polyPts(cx, cy, n, r, rot){
-  let p = [];
-  for(let i=0;i<n;i++){ const a = (rot||0) + i/n*Math.PI*2; p.push((cx+Math.cos(a)*r).toFixed(1)+','+(cy+Math.sin(a)*r).toFixed(1)); }
-  return p.join(' ');
-}
-function starPts(cx, cy, spikes, ro, ri){
-  let p = [];
-  for(let i=0;i<spikes*2;i++){ const a = -Math.PI/2 + i/(spikes*2)*Math.PI*2; const r = (i%2)?ri:ro; p.push((cx+Math.cos(a)*r).toFixed(1)+','+(cy+Math.sin(a)*r).toFixed(1)); }
-  return p.join(' ');
-}
-// The Oracle — a radiant geometric figure: pulsing aura, slow-rotating
-// starburst halo, counter-rotating orbit ring, inner hexagon + glowing core.
-// Full Oracle on every wave (per Mike — the complexity-per-wave gating was
-// reverted). Whole-Oracle wrapper #oracle is the target for the keystroke pulse
-// (a glow that lights up the entire silhouette).
-function heroFigure(hx, hy){
-  let spokes = '';
-  for(let i=0;i<12;i++){ const a=i/12*Math.PI*2; spokes += `<line x1="${(hx+Math.cos(a)*37).toFixed(1)}" y1="${(hy+Math.sin(a)*37).toFixed(1)}" x2="${(hx+Math.cos(a)*97).toFixed(1)}" y2="${(hy+Math.sin(a)*97).toFixed(1)}" stroke="var(--accent2)" stroke-opacity="0.5" stroke-width="2.2"/>`; }
-  let nodes = '';
-  for(let i=0;i<6;i++){ const a=i/6*Math.PI*2; nodes += `<circle cx="${(hx+Math.cos(a)*71).toFixed(1)}" cy="${(hy+Math.sin(a)*71).toFixed(1)}" r="5" fill="var(--accent2)"/>`; }
-  return `<g id="oracle">`
-    + `<ellipse class="breathe" cx="${hx}" cy="${hy}" rx="109" ry="146" fill="url(#spireGlow)"/>`
-    + `<g class="spin-self s-cw-28"><polygon points="${starPts(hx,hy,6,93,41)}" fill="none" stroke="var(--accent)" stroke-opacity="0.55" stroke-width="2.2"/>${spokes}</g>`
-    + `<g class="spin-self s-ccw-22"><circle cx="${hx}" cy="${hy}" r="71" fill="none" stroke="var(--accent)" stroke-opacity="0.35" stroke-width="1.5"/>${nodes}</g>`
-    + `<polygon points="${polyPts(hx,hy,6,36,Math.PI/6)}" fill="var(--surf2)" stroke="var(--accent)" stroke-width="2.8"/>`
-    + `<circle id="base-core" class="base-core" cx="${hx}" cy="${hy}" r="26" fill="var(--accent)"/>`
-    + `<polygon points="${polyPts(hx,hy-1,3,15,-Math.PI/2)}" fill="var(--bg)" fill-opacity="0.55"/>`
-    + `<text x="${hx}" y="${FIELD_H-4}" fill="var(--muted)" font-size="14" text-anchor="middle" font-family="var(--mono)">ORACLE</text>`
-    + `</g>`;
-}
-// Void-being archetypes — each wave's foes get a distinct silhouette so the
-// player reads the threat at a glance. Scouts are nimble 3-point shards,
-// Raiders are 5-point red stars, Wardens are heavy 6-point violet crystals.
-// All keep class "mote-core" + fill "#160f1e" so the hit-flash keyframe works.
-// Combat behavior, by archetype:
-//   hit      — base counterattack damage on a wrong query
-//   charge   — consecutive wrong queries needed to unleash a heavy strike
-//              (0 = never charges; the foe stays pure light chip damage)
-//   charged  — the heavy-strike damage when a wind-up completes
-// A correct query always interrupts a wind-up (see volley), so good play is safe.
+// Void-being archetypes — each contact gets a distinct silhouette so the player
+// reads the threat at a glance. Scouts are nimble cyan shards, Raiders are red
+// stars, Wardens are heavy violet crystals. `ro` also sets the shield radius.
 const ENEMY_ARCH = {
-  scout:  { spikes:3, ro:36, ri:17, glyph:3, stroke:'#7fdfff', nucleus:'#9fe8ff', halo:'haloScout',  spin:'s-cw-9',  inner:'s-ccw-11', hit:4, charge:0, charged:0 },
-  raider: { spikes:5, ro:43, ri:19, glyph:5, stroke:'var(--red)', nucleus:'var(--red)', halo:'haloRaider', spin:'s-cw-16', inner:'s-ccw-11', hit:6, charge:2, charged:13 },
-  warden: { spikes:6, ro:44, ri:24, glyph:3, stroke:'#c79bff', nucleus:'#c79bff', halo:'haloWarden', spin:'s-cw-28', inner:'s-ccw-11', hit:8, charge:2, charged:18 }
+  scout:  { ro:36, stroke:'#7fdfff', halo:'haloScout'  },
+  raider: { ro:43, stroke:'var(--red)', halo:'haloRaider' },
+  warden: { ro:44, stroke:'#c79bff', halo:'haloWarden' }
 };
 function archOf(en){ return ENEMY_ARCH[en && en.archetype] || ENEMY_ARCH.warden; }
 // Per-row archetype mapping: lets a single lane render a mix of silhouettes
@@ -807,17 +725,12 @@ function shipSpriteFor(en){
 }
 function enemyFigure(x, y, en){
   const a = archOf(en);
-  const warn = (en && en.primed)
-    ? `<circle class="charge-warn" cx="${x}" cy="${y}" r="56" fill="none" stroke="var(--yellow)" stroke-width="3"/>`
-      + `<text x="${x}" y="${y-63}" fill="var(--yellow)" font-size="22" text-anchor="middle">⚡</text>`
-    : '';
   const shield = (en && en.shielded)
     ? `<circle class="shield-ring" cx="${x}" cy="${y}" r="${a.ro + 22}" fill="none" stroke="var(--accent2)" stroke-width="2.5"/>`
     : '';
   const label = (en.archetype || '').charAt(0).toUpperCase() + (en.archetype || '').slice(1);
   const sz = 80;
   return `<circle cx="${x}" cy="${y}" r="56" fill="url(#${a.halo})"/>`
-    + warn
     + shield
     + `<image href="${shipSpriteFor(en)}" x="${x-sz/2}" y="${y-sz/2}" width="${sz}" height="${sz}" class="mote-core" style="filter:drop-shadow(0 0 8px ${a.stroke})"/>`
     + `<text x="${x}" y="${y+63}" fill="#cdd6ff" font-size="13" text-anchor="middle" font-family="var(--mono)">${label}</text>`;
@@ -861,8 +774,6 @@ function spawnDmg(svg, x, y, text, cls){
   setTimeout(()=>t.remove(), 820);
 }
 
-// (creepEnemies removed — FF-style stationary combat. en.advance stays at 0
-//  for the life of the wave; enemyX() returns the fixed squadron X.)
 function applyBaseDmg(dmg){
   if(dmg <= 0) return;
   state.baseHP = Math.max(0, state.baseHP - dmg);
@@ -885,7 +796,7 @@ function volleyClear(done){
   enemiesLive.forEach((en,i)=>{
     if(!en.alive) return;
     en.hp = 0;
-    const p = enemyPos(i, en);
+    const p = enemyPos(i);
     targets.push({ i, x: p.x, y: p.y });
   });
   beep(660, 70); setTimeout(()=>beep(880,90),90);
@@ -949,7 +860,7 @@ function fatality(done){
   enemiesLive.forEach((en,i)=>{
     if(!en.alive) return;
     en.hp = 0;
-    const p = enemyPos(i, en);
+    const p = enemyPos(i);
     targets.push({ i, x: p.x, y: p.y });
   });
   const STEP = 50;
@@ -1741,16 +1652,6 @@ function objectiveHtml(){
   const phaseChip = (w.phases && w.phases.length > 1) ? ` <span class="badge" style="color:var(--yellow)">⚡ Phase ${state.phase + 1}/${w.phases.length}</span>` : '';
   return `<div class="objective"><span class="tag">🎯 Firing solution${phaseChip}</span>${goal}</div>`;
 }
-function objectiveHtml(){
-  // Trail rule: the goal sentence only. Any legacy "Hint:" tail in the wave
-  // data is stripped at render time — help arrives ONLY through misses.
-  const t = currentObjective() || '';
-  const i = t.indexOf('Hint:');
-  const goal = (i === -1 ? t : t.slice(0, i)).trim();
-  const w = currentWave();
-  const phaseChip = (w.phases && w.phases.length > 1) ? ` <span class="badge" style="color:var(--yellow)">⚡ Phase ${state.phase + 1}/${w.phases.length}</span>` : '';
-  return `<div class="objective"><span class="tag">🎯 Firing solution${phaseChip}</span>${goal}</div>`;
-}
 function pipsHtml(){
   return [0,1,2].map(i => `<i class="${i < Math.min(waveTries,3) ? 'used' : ''}"></i>`).join('');
 }
@@ -1767,7 +1668,7 @@ function prepareWave(){
       name: obj.name || obj.id || ('Target '+(i+1)),
       archetype: archFromType(obj.type) || w.enemyArch || 'warden',
       threat: (obj.threat_level != null) ? Number(obj.threat_level) : null,
-      maxHp: ENEMY_MAXHP, hp: ENEMY_MAXHP, advance: 0, alive: true,
+      maxHp: ENEMY_MAXHP, hp: ENEMY_MAXHP, alive: true,
       shielded: isPhased,
       spriteAlt: i % 2 === 1
     };
